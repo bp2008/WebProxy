@@ -1,0 +1,152 @@
+:root
+{
+	font-family: Helvetica, Arial, sans-serif;
+	color: #000000;
+	background-color: #ffffff;
+}
+
+a
+{
+	color: #646cff;
+}
+
+	a:hover
+	{
+		color: #747bff;
+	}
+
+body
+{
+	margin: 0px;
+}
+
+h1
+{
+	color: #213547;
+}
+
+button
+{
+	border-radius: 8px;
+	border: 1px solid transparent;
+	padding: 0.6em 1.2em;
+	font-size: 1em;
+	font-weight: 500;
+	font-family: inherit;
+	background-color: #1a1a1a;
+	cursor: pointer;
+	transition: border-color 0.25s;
+	background-color: #f9f9f9;
+}
+
+	button:hover
+	{
+		border-color: #646cff;
+	}
+
+	button:focus,
+	button:focus-visible
+	{
+		outline: 4px auto -webkit-focus-ring-color;
+	}
+
+
+#app
+{
+	max-width: 1280px;
+	margin: 0 auto;
+	padding: 0px 32px;
+	position: relative;
+}
+
+.code
+{
+	margin-top: 1em;
+	margin-bottom: 1em;
+	border: 1px solid #9999BB;
+	padding: 1em;
+	background-color: #F6F6F6;
+	white-space: pre-wrap;
+	color: #650833;
+}
+
+.icode
+{
+	background-color: #EFF1F2;
+	color: rgb(31, 35, 40);
+	font-weight: normal;
+	font-style: normal;
+	padding: 0.2em 0.4em;
+	margin: 0;
+	font-size: 85%;
+	white-space: break-spaces;
+	border-radius: 6px;
+}
+
+.primaryContainer
+{
+	border: 1px solid #999999;
+	border-radius: 5px;
+	padding: 1em;
+	margin-bottom: 0.5em;
+}
+
+.dashedBorder
+{
+	border: 1px dashed #000000;
+	border-radius: 5px;
+	padding: 8px;
+}
+
+	.primaryContainer > *,
+	.dashedBorder > *
+	{
+		margin-bottom: 0.5em;
+	}
+
+		.primaryContainer > *:first-child,
+		.dashedBorder > *:first-child
+		{
+			margin-top: 0em;
+		}
+
+.primaryContainer .exampleText
+{
+	padding-left: 1em;
+	padding-top: 0px;
+	color: #008800;
+	/*font-weight: bold;
+		font-style: italic;*/
+}
+
+.flexRow
+{
+	display: flex;
+	align-items: baseline;
+	flex-direction: column;
+}
+
+	.flexRow > *
+	{
+		margin-bottom: 0.1em;
+	}
+
+	.flexRow label
+	{
+		flex: 0 0 auto;
+		margin-right: 6px;
+	}
+
+	.flexRow input[type="text"]
+	{
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+@media (max-width: 600px)
+{
+	.flexRow
+	{
+		flex-wrap: wrap;
+	}
+}

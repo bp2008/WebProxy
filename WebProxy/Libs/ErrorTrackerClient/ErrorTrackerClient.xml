@@ -1,0 +1,286 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ErrorTrackerClient</name>
+    </assembly>
+    <members>
+        <member name="T:ErrorTrackerClient.ErrorClient">
+            <summary>
+            Create only one of these per application.
+            </summary>
+        </member>
+        <member name="P:ErrorTrackerClient.ErrorClient.httpClient">
+            <summary>
+            Gets the HttpClient in use by this class.
+            </summary>
+        </member>
+        <member name="P:ErrorTrackerClient.ErrorClient.httpClientHandler">
+            <summary>
+            Gets the HttpClientHandler in use by this class.
+            </summary>
+        </member>
+        <member name="M:ErrorTrackerClient.ErrorClient.#ctor(System.Func{System.Object,System.String},System.Func{System.String},System.Func{System.String})">
+            <summary>
+            <para>Initializes the ErrorClient. Create only one of these per application.</para>
+            <para>This class maintains a background thread for retrying failed event submissions that were saved to disk.
+            As such, only one instance should be created at the start of your app and stored in a static field to be used each time an event is to be submitted.
+            DO NOT create additional instances of ErrorClient unless they use different [submitUrl] and [pathToSaveFailedSubmissions] arguments.</para>
+            </summary>
+            <param name="serializeJson">Provide "JsonConvert.SerializeObject" or an equivalent JSON serializing method.</param>
+            <param name="submitUrl">A Func which returns the submit URL for the error tracker server.</param>
+            <param name="pathToSaveFailedSubmissions">
+            <para>A Func which returns a directory path which can be used to save events for later submission if realtime submission fails.</para>
+            <para>If this path ever changes, items previously saved in it may not ever be successfully submitted to the server.</para>
+            <para>If you use multiple Error Tracker services or multiple ErrorClient instances for any reason, this path must be unique for each one.</para>
+            </param>
+        </member>
+        <member name="M:ErrorTrackerClient.ErrorClient.SubmitEvent(ErrorTrackerClient.Event)">
+            <summary>
+            <para>Submits the event to the server.</para>
+            <para>If submission fails, a copy of the event will be saved to disk (if configured) and resubmitted automatically in the background until successful.</para>
+            <para>Throws an exception if there is an I/O error trying to save an event to disk for later submission (after failing to submit the event).</para>
+            </summary>
+            <param name="ev"></param>
+        </member>
+        <member name="M:ErrorTrackerClient.ErrorClient.SubmitSerialized(System.Byte[])">
+            <summary>
+            <para>Attempts to submit the specified byte array to the server's submit URL. Returns true if successful, otherwise false.</para>
+            <para>This method is used during original submission and also during later fallback submission.</para>
+            </summary>
+            <param name="JSON">JSON-serialized event data.</param>
+            <returns></returns>
+        </member>
+        <member name="T:ErrorTrackerClient.Event">
+            <summary>
+            Represents one event that is sent to an Error Tracker server.
+            </summary>
+        </member>
+        <member name="F:ErrorTrackerClient.Event.EventType">
+            <summary>
+            Type of event.
+            </summary>
+        </member>
+        <member name="F:ErrorTrackerClient.Event.SubType">
+            <summary>
+            A string describing the type of event, to be used as a subtitle and a search filter.  E.g. So you can list "Info" events with SubType "AppStart".
+            </summary>
+        </member>
+        <member name="F:ErrorTrackerClient.Event.Message">
+            <summary>
+            The main body of the event. Describes what happened to cause the event.
+            </summary>
+        </member>
+        <member name="F:ErrorTrackerClient.Event.Date">
+            <summary>
+            A timestamp indicating the date and time of this event, in milliseconds since the unix epoch. Assigned automatically at the start of Event construction.
+            </summary>
+        </member>
+        <member name="F:ErrorTrackerClient.Event.Private_Tags">
+            <summary>
+            <para>DO NOT EDIT THIS DICTIONARY.</para>
+            <para>This dictionary is public so that JSON serializers will see it. Use the methods SetTag, GetTag, etc....  I'd use JSON.NET's JsonProperty attribute on a private field, but that would require including a reference to a specific version of JSON.NET which I'm trying to avoid.</para>
+            <para>The dictionary values here are Tag instances so they can contain the original key while the dictionary key is all lower-case.</para>
+            </summary>
+        </member>
+        <member name="M:ErrorTrackerClient.Event.#ctor">
+            <summary>
+            Zero-argument constructor for deserialization.
+            </summary>
+        </member>
+        <member name="M:ErrorTrackerClient.Event.#ctor(ErrorTrackerClient.EventType,System.String,System.String)">
+            <summary>
+            Constructs a new Event.
+            </summary>
+            <param name="eventType">Primary type of the event.</param>
+            <param name="subType">Sub type of the event, useful for searching/filtering later. This is presented in the Error Tracker UI much like a title.</param>
+            <param name="message">Message describing what happened.</param>
+        </member>
+        <member name="M:ErrorTrackerClient.Event.SetTag(System.String,System.String)">
+            <summary>
+            Sets a tag. (not thread-safe)
+            </summary>
+            <param name="Key">
+            <para>Key string, case-sensitive.</para>
+            <para>Must be non-null and contain at least one alphanumeric character.</para>
+            <para>Must not exactly match any of the reserved Key values "EventType", "SubType", "Message", "Date", "Folder", "Color".</para>
+            <para>Max length: 128 characters.</para>
+            <para>If any of these rules is violated, the Key string will be changed automatically.</para>
+            </param>
+            <param name="Value">Value of the tag.</param>
+        </member>
+        <member name="M:ErrorTrackerClient.Event.TryGetTag(System.String,System.String@)">
+            <summary>
+            Gets the value of the specified tag, returning true if successful. (not thread-safe)
+            </summary>
+            <param name="Key">Key of the tag to retrieve.</param>
+            <param name="Value">Value of the tag, if the tag exists.</param>
+            <returns></returns>
+        </member>
+        <member name="M:ErrorTrackerClient.Event.TryRemoveTag(System.String)">
+            <summary>
+            Tries to remove the specified tag, returning true if successful.
+            </summary>
+            <param name="Key">Key of the tag to remove.</param>
+            <returns></returns>
+        </member>
+        <member name="M:ErrorTrackerClient.Event.GetAllTags">
+            <summary>
+            Returns a list of all the tags in arbitrary order.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:ErrorTrackerClient.EventType">
+            <summary>
+            Primary type of event.
+            </summary>
+        </member>
+        <member name="F:ErrorTrackerClient.EventType.Error">
+            <summary>
+            For events that indicate an error occurred.
+            </summary>
+        </member>
+        <member name="F:ErrorTrackerClient.EventType.Info">
+            <summary>
+            For events that do not indicate an error.  Such as "Application Started".
+            </summary>
+        </member>
+        <member name="F:ErrorTrackerClient.EventType.Debug">
+            <summary>
+            For events intended to log information for debugging purposes.  E.g. Logging the state of an application during a specific point in execution.
+            </summary>
+        </member>
+        <member name="T:ErrorTrackerClient.StaticRandom">
+            <summary>
+            This class keeps an internal thread-local Random instance, making it thread-safe. Each thread's Random instance uses a different seed.
+            </summary>
+        </member>
+        <member name="M:ErrorTrackerClient.StaticRandom.Next">
+            <summary>
+            Returns a nonnegative random number.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:ErrorTrackerClient.StaticRandom.Next(System.Int32)">
+            <summary>
+            Returns a random number in the range [0, maxValue)
+            </summary>
+            <param name="maxValue">Exclusive maximum value.</param>
+            <returns></returns>
+        </member>
+        <member name="M:ErrorTrackerClient.StaticRandom.Next(System.Int32,System.Int32)">
+            <summary>
+            Returns a random number in the range [minvalue, maxValue)
+            </summary>
+            <param name="minValue">Inclusive minimum value.</param>
+            <param name="maxValue">Exclusive maximum value.</param>
+            <returns></returns>
+        </member>
+        <member name="M:ErrorTrackerClient.StaticRandom.NextBytes(System.Int32)">
+            <summary>
+            Returns a byte array of the specified length, filled with random data.
+            </summary>
+            <param name="length">Length of the byte array to return.</param>
+            <returns></returns>
+        </member>
+        <member name="M:ErrorTrackerClient.StaticRandom.NextBytes(System.Byte[])">
+            <summary>
+            Fills the specified byte array with random data.
+            </summary>
+            <param name="buf">A byte array to fill with random data.</param>
+        </member>
+        <member name="T:ErrorTrackerClient.StringUtil">
+            <summary>
+            Provides utilities for working with strings.
+            </summary>
+        </member>
+        <member name="M:ErrorTrackerClient.StringUtil.IsPrintableName(System.String)">
+            <summary>
+            Returns true if the string meets minimum reasonable criteria for a printable display name, meaning it consists of at least one alphanumeric character among any number of spaces or other ASCII-printable characters.
+            </summary>
+            <param name="str">String to test.</param>
+            <returns></returns>
+        </member>
+        <member name="T:ErrorTrackerClient.Tag">
+            <summary>
+            A Key/Value pair indicating an attribute of an event. Example keys: "IP Address", "User Name", "URL"
+            </summary>
+        </member>
+        <member name="F:ErrorTrackerClient.Tag.Key">
+            <summary>
+            Key string. Case-insensitive for matching purposes.
+            </summary>
+        </member>
+        <member name="F:ErrorTrackerClient.Tag.Value">
+            <summary>
+            Value string.
+            </summary>
+        </member>
+        <member name="M:ErrorTrackerClient.Tag.#ctor">
+            <summary>
+            Zero-argument constructor for deserialization.
+            </summary>
+        </member>
+        <member name="M:ErrorTrackerClient.Tag.#ctor(System.String,System.String)">
+            <summary>
+            Constructs a new Tag.
+            </summary>
+        </member>
+        <member name="M:ErrorTrackerClient.Tag.ToString">
+            <summary>
+            Returns: Key + ": " + Value
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:ErrorTrackerClient.ReadOnlyTag">
+            <summary>
+            A Key/Value pair indicating an attribute of an event. Example keys: "IP Address", "User Name", "URL"
+            </summary>
+        </member>
+        <member name="P:ErrorTrackerClient.ReadOnlyTag.Key">
+            <summary>
+            Key string. Case-insensitive for matching purposes.
+            </summary>
+        </member>
+        <member name="P:ErrorTrackerClient.ReadOnlyTag.Value">
+            <summary>
+            Value string.
+            </summary>
+        </member>
+        <member name="M:ErrorTrackerClient.ReadOnlyTag.#ctor(System.String,System.String)">
+            <summary>
+            Constructs a new Tag.
+            </summary>
+        </member>
+        <member name="M:ErrorTrackerClient.ReadOnlyTag.ToString">
+            <summary>
+            Returns: Key + ": " + Value
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:ErrorTrackerClient.TimeUtil">
+            <summary>
+            Provides methods for working with JavaScript-compatible unix epoch timestamps.
+            </summary>
+        </member>
+        <member name="M:ErrorTrackerClient.TimeUtil.DateTimeFromEpochMS(System.Int64)">
+            <summary>
+            Returns a DateTime object based on the specified number of milliseconds since the Unix Epoch (1970/1/1 midnight UTC).  The returned object uses the UTC timezone.
+            </summary>
+            <param name="ms_since_epoch">The number of milliseconds since the Unix Epoch (1970/1/1 midnight UTC).</param>
+            <returns></returns>
+        </member>
+        <member name="M:ErrorTrackerClient.TimeUtil.GetTimeInMsSinceEpoch">
+            <summary>
+            Returns the number of milliseconds since the Unix Epoch (1970/1/1 midnight UTC), calculated against the current time (UTC).
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:ErrorTrackerClient.TimeUtil.GetTimeInMsSinceEpoch(System.DateTime)">
+            <summary>
+            Returns the number of milliseconds since the Unix Epoch (1970/1/1 midnight UTC) until the specified date.
+            </summary>
+            <param name="date">The date to calculate milliseconds for.</param>
+            <returns>The number of milliseconds since the Unix Epoch (1970/1/1 midnight UTC).</returns>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,56 @@
+<template>
+	<div class="floatingButtons">
+		<span title="Drag me!"><ArrowIcon class="dragHandle" /></span>
+		<span title="Delete this"><RemoveIcon @click="$emit('delete')" /></span>
+	</div>
+</template>
+
+<script>
+	import ArrowIcon from '/src/assets/arrows.svg?component'
+	import RemoveIcon from '/src/assets/remove.svg?component'
+
+	export default {
+		components: { ArrowIcon, RemoveIcon },
+	};
+</script>
+
+<style scoped>
+	.floatingButtons
+	{
+		float: right;
+	}
+
+		.floatingButtons > span > *
+		{
+			margin-left: 5px;
+			box-sizing: border-box;
+			min-width: 40px;
+			min-height: 40px;
+			width: 40px;
+			height: 40px;
+			cursor: pointer;
+			user-select: none;
+			margin-left: 5px;
+			border: 1px solid #CCCCCC;
+			border-radius: 7px;
+			background-color: rgba(0,0,0,0.1);
+			fill: #000000;
+			box-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+		}
+
+			.floatingButtons > span > *:hover
+			{
+				background-color: rgba(0,0,0,0.05);
+			}
+
+			.floatingButtons > span > *:active
+			{
+				background-color: #FFFFFF;
+			}
+
+	.dragHandle
+	{
+		transform: rotate(90deg);
+		box-shadow: 1px -1px 3px rgba(0,0,0,0.5);
+	}
+</style>
