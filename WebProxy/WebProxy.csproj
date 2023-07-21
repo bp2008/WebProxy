@@ -115,12 +115,11 @@
     <None Include="WebProxy-Admin\src\components\EntrypointEditor.vue" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\Source\Repos\BPUtil\BPUtil\BPUtil.csproj">
+    <ProjectReference Include="..\..\BPUtil\BPUtil\BPUtil.csproj">
       <Project>{a4981d8d-debf-4b34-b9ce-ff25520a02b7}</Project>
       <Name>BPUtil</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
     <None Include="Resources\CopyButton.bmp" />
     <Content Include="ServiceUI\baseline_content_copy_black_24dp.png" />
