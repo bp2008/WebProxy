@@ -34,7 +34,7 @@ namespace WebProxy.LetsEncrypt
 		/// The URI of the ACME server where certificates will be obtained from.
 		/// </summary>
 		private static Uri acmeServerUri = WellKnownServers.LetsEncryptStagingV2;
-		private static async void Initialize(string email)
+		private static async void Initialize()
 		{
 			if (acme != null)
 				return;
@@ -45,21 +45,24 @@ namespace WebProxy.LetsEncrypt
 				if (acme != null)
 					return;
 				Settings settings = WebProxyService.MakeLocalSettingsReference();
+
+				if (string.IsNullOrWhiteSpace(settings.acmeAccountEmail))
+					throw new ApplicationException("ACME Account Email has not been specified. Unable to generate certificate automatically.");
+
 				if (string.IsNullOrWhiteSpace(settings.acmeAccountKey))
 				{
-					Logger.Info("CertMgr.Initialize: Create LetsEncrypt Staging Account (" + email + ")");
+					Logger.Info("CertMgr.Initialize: Create LetsEncrypt Staging Account (" + settings.acmeAccountEmail + ")");
 					acme = new AcmeContext(acmeServerUri);
-					IAccountContext account = await acme.NewAccount(email, true);
+					IAccountContext account = await acme.NewAccount(settings.acmeAccountEmail, true);
 
 					// Save the account key for later use
 					settings = WebProxyService.CloneSettingsObjectSlow();
-					settings.acmeAccountEmail = email;
 					settings.acmeAccountKey = acme.AccountKey.ToPem();
 					WebProxyService.SaveNewSettings(settings);
 				}
 				else
 				{
-					Logger.Info("CertMgr.Initialize: Use existing LetsEncrypt Staging Account (" + email + ")");
+					Logger.Info("CertMgr.Initialize: Use existing LetsEncrypt Staging Account (" + settings.acmeAccountEmail + ")");
 					IKey accountKey = KeyFactory.FromPem(settings.acmeAccountKey);
 					acme = new AcmeContext(acmeServerUri, accountKey);
 					IAccountContext accountContext = await acme.Account();
@@ -86,21 +89,15 @@ namespace WebProxy.LetsEncrypt
 		}
 
 		/// <summary>
-		/// Returns the certificate for this connection or throws an exception if unable.
+		/// Renews if necessary, then returns the automatically-generated certificate for this connection or throws an exception if unable.
 		/// </summary>
-		/// <param name="letsEncryptAccountEmail">LetsEncrypt account email address, used only during account creation.</param>
 		/// <param name="host">Hostname requested by the client.</param>
 		/// <param name="entrypoint">Entrypoint</param>
 		/// <param name="exitpoint">Exitpoint</param>
 		/// <returns></returns>
-		public static async Task<X509Certificate> GetCertificate(string letsEncryptAccountEmail, string host, Entrypoint entrypoint, Exitpoint exitpoint)
+		public static async Task<X509Certificate> GetCertificate(string host, Entrypoint entrypoint, Exitpoint exitpoint)
 		{
-			if (string.IsNullOrWhiteSpace(letsEncryptAccountEmail))
-			{
-				SetLastError("ACME Account Email has not been specified. Unable to generate certificate automatically.");
-				return null;
-			}
-			Initialize(letsEncryptAccountEmail);
+			Initialize();
 
 			string[] domains = ValidateRequest(entrypoint, exitpoint);
 
@@ -136,6 +133,41 @@ namespace WebProxy.LetsEncrypt
 				return cert;
 			}
 		}
+
+		/// <summary>
+		/// Forcibly renews the certificate for this connection, restarting the regular cooldown. Returns null if successful, otherwise an error message.
+		/// </summary>
+		/// <param name="entrypoint">Entrypoint</param>
+		/// <param name="exitpoint">Exitpoint</param>
+		/// <returns></returns>
+		public static async Task<string> ForceRenew(Entrypoint entrypoint, Exitpoint exitpoint)
+		{
+			try
+			{
+				Initialize();
+
+				string[] domains = ValidateRequest(entrypoint, exitpoint);
+
+				lock (renewCheckLock)
+					renewalCooldowns[domains[0]] = Stopwatch.StartNew();
+
+				Logger.Info("CertMgr: Force renew " + string.Join(" ", domains));
+
+				bool success = await CreateCertificateForDomains(entrypoint.httpPort == 80, entrypoint.httpsPort == 443, domains);
+				if (!success)
+				{
+					string err = LastError;
+					if (err == null)
+						err = "Unknown Error";
+					return err;
+				}
+				return null;
+			}
+			catch (Exception ex)
+			{
+				return ex.ToHierarchicalString();
+			}
+		}
 		#region Renewal
 		private static object renewCheckLock = new object();
 		private static Dictionary<string, Stopwatch> renewalCooldowns = new Dictionary<string, Stopwatch>();
@@ -167,6 +199,7 @@ namespace WebProxy.LetsEncrypt
 			}
 			lock (renewCheckLock)
 			{
+				Settings settings = WebProxyService.MakeLocalSettingsReference();
 				if (renewalCooldowns.TryGetValue(domains[0], out Stopwatch sw))
 				{
 					if (sw.Elapsed > cooldownTime)
@@ -271,7 +304,7 @@ namespace WebProxy.LetsEncrypt
 					Certes.Pkcs.PfxBuilder pfxBuilder = cert.ToPfx(privateKey);
 					if (acmeServerUri == WellKnownServers.LetsEncryptStagingV2)
 					{
-						DirectoryInfo diCerts = new DirectoryInfo(Globals.ApplicationDirectoryBase + "../../StagingCerts");
+						DirectoryInfo diCerts = new DirectoryInfo(Path.Combine(WebServer.projectDirPath, "StagingCerts"));
 						if (diCerts.Exists)
 						{
 							Logger.Info("CertMgr.Create: Load LetsEncryptStagingV2 certificates from \"" + diCerts.FullName + "\".  If certificate building fails after this, download new certificates from https://github.com/letsencrypt/website/tree/master/static/certs/staging");
@@ -446,10 +479,23 @@ namespace WebProxy.LetsEncrypt
 			return StringUtil.MakeSafeForFileName(domain).ToLower();
 		}
 
+		/// <summary>
+		/// Validates that the given entrypoint and exitpoint are eligible for automatic certificate management and returns the array of domain names.
+		/// </summary>
+		/// <param name="entrypoint">An entrypoint that is listening for HTTP on port 80 or HTTPS on port 443.</param>
+		/// <param name="exitpoint">An exitpoint with [autoCertificate] enabled and one or more domains specified.</param>
+		/// <returns></returns>
+		/// <exception cref="ArgumentException"></exception>
 		private static string[] ValidateRequest(Entrypoint entrypoint, Exitpoint exitpoint)
 		{
 			if (entrypoint.httpPort != 80 && entrypoint.httpsPort != 443)
 				throw new ArgumentException("CertMgr: entrypoint httpPort must be 80 or httpsPort must be 443.");
+
+			if (exitpoint.type == ExitpointType.Disabled)
+				throw new ArgumentException("CertMgr: exitpoint is currently disabled.");
+
+			if (!exitpoint.autoCertificate)
+				throw new ArgumentException("CertMgr: exitpoint does not have autoCertificate enabled.");
 
 			string[] domains = exitpoint.getAllDomains();
 

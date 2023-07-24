@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BPUtil;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -65,12 +66,12 @@ namespace WebProxy.ServiceUI
 
 		private void linkLabelHttp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
 		{
-			Process.Start((string)((LinkLabel)sender).Tag);
+			ProcessRunner.Start((string)((LinkLabel)sender).Tag);
 		}
 
 		private void linkLabelHttps_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
 		{
-			Process.Start((string)((LinkLabel)sender).Tag);
+			ProcessRunner.Start((string)((LinkLabel)sender).Tag);
 		}
 
 		private void txtUser_TextChanged(object sender, EventArgs e)

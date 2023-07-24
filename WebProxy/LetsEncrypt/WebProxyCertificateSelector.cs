@@ -58,7 +58,7 @@ namespace WebProxy.LetsEncrypt
 			{
 				try
 				{
-					return await CertMgr.GetCertificate(settings.acmeAccountEmail, serverName, myEntrypoint, myExitpoint);
+					return await CertMgr.GetCertificate(serverName, myEntrypoint, myExitpoint);
 				}
 				catch (Exception ex)
 				{

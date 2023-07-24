@@ -21,7 +21,7 @@ namespace WebProxy.Controllers
 		/// <returns></returns>
 		public JsonResult ApiError(string errorMessage)
 		{
-			return Json(new { error = errorMessage });
+			return Json(new ApiResponseBase(false, errorMessage));
 		}
 	}
 }

@@ -24,7 +24,8 @@
 						<input type="checkbox" v-model="exitpoint.autoCertificate" /> Automatic Certificate from LetsEncrypt
 					</label>
 				</div>
-				<div class="flexRow">
+				<div><input type="button" v-if="exitpoint.autoCertificate" value="Force Renew Certificate" @click="$emit('renew')" /></div>
+				<div class="flexRow" v-if="!exitpoint.autoCertificate">
 					<label>Certificate Path</label>
 					<input type="text" v-model="exitpoint.certificatePath" class="certificatePathInput" title="Path to the certificate file (pfx).  If null or empty, a default path will be automatically assigned to this field." />
 				</div>
@@ -66,15 +67,15 @@
 		created()
 		{
 		},
-		watch:
-		{
-		},
 		computed:
 		{
 			availableExitpointTypes()
 			{
 				return store.exitpointTypes;
 			}
+		},
+		watch:
+		{
 		}
 	};
 </script>

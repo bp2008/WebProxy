@@ -21,7 +21,7 @@
 		<h2>Exitpoints</h2>
 		<p>An Exitpoint is a web destination which a client wants to reach.  This Admin Console is an Exitpoint, but an Exitpoint could also be another web server.</p>
 		<draggable v-model="store.entrypoints" handle=".dragHandle">
-			<ExitpointEditor v-for="exitpoint in store.exitpoints" :key="exitpoint.uniqueId" :exitpoint="exitpoint" @delete="deleteExitpoint(exitpoint)" />
+			<ExitpointEditor v-for="exitpoint in store.exitpoints" :key="exitpoint.uniqueId" :exitpoint="exitpoint" @delete="deleteExitpoint(exitpoint)" @renew="renewCertificate(exitpoint)" />
 		</draggable>
 		<div class="buttonBar">
 			<button @click="addExitpoint()">Add New Exitpoint</button>
@@ -161,12 +161,15 @@
 						}
 					}
 
-					this.showFullscreenLoader = false;
 				}
 				catch (ex)
 				{
 					console.log(ex);
 					toaster.error(ex);
+				}
+				finally
+				{
+					this.showFullscreenLoader = false;
 				}
 			},
 			consumeConfigurationResponse(response)
@@ -224,6 +227,38 @@
 			deleteProxyRoute(proxyRoute)
 			{
 				DeleteFromArray(proxyRoute, store.proxyRoutes);
+			},
+			async renewCertificate(exitpoint)
+			{
+				if (this.configurationChanged)
+				{
+					toaster.info("Please save the changes on this page, then try again to force renewal of the certificate.");
+					return;
+				}
+
+				if (confirm("The certificate for \"" + exitpoint.name + "\" will be renewed now, which will affect your account's rate limits.  Continue if this is okay."))
+				{
+					try
+					{
+						this.showFullscreenLoader = true;
+						const response = await ExecAPI("Configuration/ForceRenew", { forceRenewExitpointName: exitpoint.name });
+						if (response.success)
+							toaster.success("Renewal completed.");
+						else
+							toaster.error(response.error);
+					}
+					catch (ex)
+					{
+						console.log(ex);
+						toaster.error(ex);
+					}
+					finally
+					{
+						this.showFullscreenLoader = false;
+					}
+				}
+				else
+					toaster.info("Force renewal was cancelled");
 			}
 		},
 		watch:

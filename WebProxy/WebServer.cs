@@ -19,6 +19,8 @@ namespace WebProxy
 	{
 		MVCMain mvcAdminConsole;
 		ViteProxy viteProxy = null;
+		public static string projectDirPath { get; private set; } = "";
+
 		public WebServer() : base(CreateCertificateSelector())
 		{
 			SimpleHttpLogger.RegisterLogger(Logger.httpLogger, true);
@@ -27,7 +29,14 @@ namespace WebProxy
 			mvcAdminConsole = new MVCMain(Assembly.GetExecutingAssembly(), typeof(AdminConsoleControllerBase).Namespace, (Context, ex) => Logger.Debug(ex, "AdminConsole: " + Context.OriginalRequestPath));
 #if DEBUG
 			if (System.Diagnostics.Debugger.IsAttached)
-				viteProxy = new ViteProxy(5173, Globals.ApplicationDirectoryBase + "../../WebProxy-Admin");
+			{
+				string binFolderPath = FileUtil.FindAncestorDirectory(Globals.ApplicationDirectoryBase, "bin");
+				if (binFolderPath == null)
+					throw new ApplicationException("Unable to locate bin folder in path: " + Globals.ApplicationDirectoryBase);
+				projectDirPath = new DirectoryInfo(binFolderPath).Parent.FullName;
+				string path = Path.Combine(projectDirPath, "WebProxy-Admin");
+				viteProxy = new ViteProxy(5173, path);
+			}
 #endif
 		}
 

@@ -1,127 +1,20 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{910A05A8-3EB9-48C7-9D97-4B06EC3F619C}</ProjectGuid>
+    <TargetFramework>net6.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>WebProxy</RootNamespace>
-    <AssemblyName>WebProxy</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <Deterministic>true</Deterministic>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="BouncyCastle.Crypto, Version=1.9.0.0, Culture=neutral, PublicKeyToken=0e99375e54769942, processorArchitecture=MSIL">
-      <HintPath>..\packages\Portable.BouncyCastle.1.9.0\lib\net40\BouncyCastle.Crypto.dll</HintPath>
-    </Reference>
-    <Reference Include="Certes, Version=3.0.4.0, Culture=neutral, PublicKeyToken=308b9c08e7effcb1, processorArchitecture=MSIL">
-      <HintPath>..\packages\Certes.3.0.4\lib\net462\Certes.dll</HintPath>
-    </Reference>
-    <Reference Include="ErrorTrackerClient">
-      <HintPath>Libs\ErrorTrackerClient\ErrorTrackerClient.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.ValueTuple.4.5.0\lib\net461\System.ValueTuple.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.ServiceProcess" />
-    <Reference Include="System.Xml" />
+    <Compile Remove="Libs\**" />
+    <EmbeddedResource Remove="Libs\**" />
+    <None Remove="Libs\**" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="API\ApiRequestBase.cs" />
-    <Compile Include="API\ApiResponseBase.cs" />
-    <Compile Include="Configuration\Middleware.cs" />
-    <Compile Include="Configuration\Entrypoint.cs" />
-    <Compile Include="Configuration\Exitpoint.cs" />
-    <Compile Include="Configuration\ProxyRoute.cs" />
-    <Compile Include="Controllers\Base\AdminConsoleControllerBase.cs" />
-    <Compile Include="Controllers\Configuration.cs" />
-    <Compile Include="LetsEncrypt\CertMgr.cs" />
-    <Compile Include="LetsEncrypt\ManagedCertificate.cs" />
-    <Compile Include="LetsEncrypt\WebProxyCertificateSelector.cs" />
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-    <Compile Include="ServiceUI\AdminConsoleInfoForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="ServiceUI\AdminConsoleInfoForm.Designer.cs">
-      <DependentUpon>AdminConsoleInfoForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Settings.cs" />
-    <Compile Include="WebProxyService.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="WebProxyService.Designer.cs">
-      <DependentUpon>WebProxyService.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="WebServer.cs" />
+    <ProjectReference Include="..\..\BPUtil\BPUtil\BPUtil6.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
-    <None Include="packages.config" />
-    <None Include="WebProxy-Admin\.gitignore" />
-    <None Include="WebProxy-Admin\jsconfig.json" />
-    <None Include="WebProxy-Admin\package-lock.json" />
-    <None Include="WebProxy-Admin\package.json" />
-    <None Include="WebProxy-Admin\src\App.vue" />
-    <None Include="WebProxy-Admin\src\components\ExitpointSelector.vue" />
-    <None Include="WebProxy-Admin\src\components\FloatingButtons.vue" />
-    <None Include="WebProxy-Admin\src\components\EntrypointSelector.vue" />
-    <None Include="WebProxy-Admin\src\components\UNPWEditor.vue" />
-    <None Include="WebProxy-Admin\src\components\MiddlewareSelector.vue" />
-    <None Include="WebProxy-Admin\src\components\ArrayEditor.vue" />
-    <None Include="WebProxy-Admin\src\components\ProxyRouteEditor.vue" />
-    <None Include="WebProxy-Admin\src\components\MiddlewareEditor.vue" />
-    <None Include="WebProxy-Admin\src\components\ExitpointEditor.vue" />
-    <None Include="WebProxy-Admin\src\components\EntrypointEditor.vue" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\BPUtil\BPUtil\BPUtil.csproj">
-      <Project>{a4981d8d-debf-4b34-b9ce-ff25520a02b7}</Project>
-      <Name>BPUtil</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\CopyButton.bmp" />
     <Content Include="ServiceUI\baseline_content_copy_black_24dp.png" />
     <Content Include="WebProxy-Admin\index.html" />
     <Content Include="WebProxy-Admin\public\vite.svg" />
@@ -137,23 +30,22 @@
     <Content Include="WebProxy-Admin\vite.config.js" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-    <EmbeddedResource Include="ServiceUI\AdminConsoleInfoForm.resx">
-      <DependentUpon>AdminConsoleInfoForm.cs</DependentUpon>
-    </EmbeddedResource>
+    <PackageReference Include="Certes" Version="3.0.4" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
+    <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>echo Building admin console with vite
-cd "$(ProjectDir)WebProxy-Admin"
-call npm run-script build
-cd "$(ProjectDir)"
-
-echo Deploying dist to www
-rmdir /S /Q "$(TargetDir)www"
-xcopy "$(ProjectDir)WebProxy-Admin\dist" "$(TargetDir)www" /E /C /R /Y /I</PostBuildEvent>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <NoWarn>1701;1702;CA1416</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <NoWarn>1701;1702;CA1416</NoWarn>
+  </PropertyGroup>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="echo SolutionDir = $(SolutionDir)&#xD;&#xA;echo SolutionName = $(SolutionName)&#xD;&#xA;echo SolutionFileName = $(SolutionFileName)&#xD;&#xA;echo SolutionPath = $(SolutionPath)&#xD;&#xA;echo OutDir: $(OutDir)&#xD;&#xA;echo ProjectDir = $(ProjectDir)&#xD;&#xA;echo ProjectName = $(ProjectName)&#xD;&#xA;echo ProjectFileName = $(ProjectFileName)&#xD;&#xA;echo ProjectPath = $(ProjectPath)&#xD;&#xA;echo TargetDir = $(TargetDir)&#xD;&#xA;echo TargetName = $(TargetName)&#xD;&#xA;echo TargetFileName = $(TargetFileName)&#xD;&#xA;echo TargetPath = $(TargetPath)&#xD;&#xA;&#xD;&#xA;echo Building admin console with vite&#xD;&#xA;cd &quot;$(ProjectDir)WebProxy-Admin&quot;&#xD;&#xA;call npm run-script build&#xD;&#xA;echo cd &quot;$(ProjectDir)&quot;&#xD;&#xA;&#xD;&#xA;echo Deploying dist to www&#xD;&#xA;rmdir /S /Q &quot;$(TargetDir)www&quot;&#xD;&#xA;xcopy &quot;$(ProjectDir)WebProxy-Admin\dist&quot; &quot;$(TargetDir)www&quot; /E /C /R /Y /I" />
+  </Target>
 </Project>

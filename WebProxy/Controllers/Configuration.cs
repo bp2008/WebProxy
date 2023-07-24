@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using WebProxy.LetsEncrypt;
 
 namespace WebProxy.Controllers
 {
@@ -63,6 +64,32 @@ namespace WebProxy.Controllers
 
 			return Json(response);
 		}
+		public ActionResult ForceRenew()
+		{
+			ForceRenewRequest request = ParseRequest<ForceRenewRequest>();
+
+			Settings s = WebProxyService.MakeLocalSettingsReference();
+			Exitpoint exitpoint = s.exitpoints.FirstOrDefault(e => e.name == request.forceRenewExitpointName);
+
+			if (exitpoint == null)
+				return ApiError("Unable to find the chosen exitpoint.");
+
+			foreach (ProxyRoute route in s.proxyRoutes.Where(r => r.exitpointName == exitpoint.name))
+			{
+				Entrypoint entrypoint = s.entrypoints.FirstOrDefault(e => e.name == route.entrypointName);
+				if (entrypoint != null)
+				{
+					if (entrypoint.httpPort == 80 || entrypoint.httpsPort == 443)
+					{
+						string result = CertMgr.ForceRenew(entrypoint, exitpoint).Result;
+						if (string.IsNullOrEmpty(result))
+							return Json(new ApiResponseBase(true));
+						return ApiError(result);
+					}
+				}
+			}
+			return ApiError("Unable to find an acceptable Entrypoint that is routed to the chosen Exitpoint.");
+		}
 	}
 	public class GetConfigurationResponse : ApiResponseBase
 	{
@@ -85,5 +112,9 @@ namespace WebProxy.Controllers
 		public Exitpoint[] exitpoints;
 		public Middleware[] middlewares;
 		public ProxyRoute[] proxyRoutes;
+	}
+	public class ForceRenewRequest
+	{
+		public string forceRenewExitpointName;
 	}
 }
