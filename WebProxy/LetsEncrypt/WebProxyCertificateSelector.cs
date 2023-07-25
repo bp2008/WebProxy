@@ -43,7 +43,7 @@ namespace WebProxy.LetsEncrypt
 			Entrypoint[] matchedEntrypoints = settings.identifyThisEntrypoint((IPEndPoint)p.tcpClient.Client.RemoteEndPoint, (IPEndPoint)p.tcpClient.Client.LocalEndPoint, true);
 			if (matchedEntrypoints.Length == 0)
 			{
-				Logger.Info("WebProxyCertificateSelector: Unable to identify any matching entrypoint for request from client " + p.RemoteIPAddressStr + " to " + p.request_url);
+				WebProxyService.ReportError("WebProxyCertificateSelector: Unable to identify any matching entrypoint for request from client " + p.RemoteIPAddressStr + " to " + p.request_url);
 				return null;
 			}
 
@@ -51,7 +51,7 @@ namespace WebProxy.LetsEncrypt
 			if (myExitpoint == null || myExitpoint.type == ExitpointType.Disabled)
 			{
 				// Set responseWritten = true to prevent a fallback response.  We want this connection to simply close.
-				Logger.Info("WebProxyCertificateSelector: No exitpoint for request from client " + p.RemoteIPAddressStr + " to " + p.request_url);
+				//Logger.Info("WebProxyCertificateSelector: No exitpoint for request from client " + p.RemoteIPAddressStr + " to " + p.request_url);
 				return null;
 			}
 
@@ -70,7 +70,7 @@ namespace WebProxy.LetsEncrypt
 				}
 				catch (Exception ex)
 				{
-					Logger.Debug(ex);
+					WebProxyService.ReportError(ex);
 					return null;
 				}
 			}
@@ -80,7 +80,7 @@ namespace WebProxy.LetsEncrypt
 				string certPath = myExitpoint.certificatePath;
 				if (string.IsNullOrWhiteSpace(certPath))
 				{
-					Logger.Info("Certificate requested for exitpoint with null or whitespace certificatePath.");
+					WebProxyService.ReportError("Certificate requested for exitpoint with null or whitespace certificatePath.");
 					return null;
 				}
 				if (!staticCertDict.TryGetValue(certPath, out CachedObject<X509Certificate2> cache))
@@ -96,7 +96,7 @@ namespace WebProxy.LetsEncrypt
 							}
 							catch (Exception ex)
 							{
-								Logger.Debug(ex);
+								WebProxyService.ReportError(ex);
 								return null;
 							}
 							return null;

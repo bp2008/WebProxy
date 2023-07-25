@@ -1,51 +1,46 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net6.0-windows</TargetFramework>
-    <OutputType>WinExe</OutputType>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <UseWindowsForms>true</UseWindowsForms>
-    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Remove="Libs\**" />
-    <EmbeddedResource Remove="Libs\**" />
-    <None Remove="Libs\**" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\BPUtil\BPUtil\BPUtil6.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="ServiceUI\baseline_content_copy_black_24dp.png" />
-    <Content Include="WebProxy-Admin\index.html" />
-    <Content Include="WebProxy-Admin\public\vite.svg" />
-    <Content Include="WebProxy-Admin\src\assets\arrows.svg" />
-    <Content Include="WebProxy-Admin\src\assets\remove.svg" />
-    <Content Include="WebProxy-Admin\src\assets\vue.svg" />
-    <Content Include="WebProxy-Admin\src\library\store.js" />
-    <Content Include="WebProxy-Admin\src\library\ToasterHelper.js" />
-    <Content Include="WebProxy-Admin\src\library\Util.js" />
-    <Content Include="WebProxy-Admin\src\library\API.js" />
-    <Content Include="WebProxy-Admin\src\main.js" />
-    <Content Include="WebProxy-Admin\src\style.css" />
-    <Content Include="WebProxy-Admin\vite.config.js" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Certes" Version="3.0.4" />
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
-    <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-  </ItemGroup>
-  <PropertyGroup>
-    <Nullable>disable</Nullable>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <NoWarn>1701;1702;CA1416</NoWarn>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <NoWarn>1701;1702;CA1416</NoWarn>
-  </PropertyGroup>
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="echo SolutionDir = $(SolutionDir)&#xD;&#xA;echo SolutionName = $(SolutionName)&#xD;&#xA;echo SolutionFileName = $(SolutionFileName)&#xD;&#xA;echo SolutionPath = $(SolutionPath)&#xD;&#xA;echo OutDir: $(OutDir)&#xD;&#xA;echo ProjectDir = $(ProjectDir)&#xD;&#xA;echo ProjectName = $(ProjectName)&#xD;&#xA;echo ProjectFileName = $(ProjectFileName)&#xD;&#xA;echo ProjectPath = $(ProjectPath)&#xD;&#xA;echo TargetDir = $(TargetDir)&#xD;&#xA;echo TargetName = $(TargetName)&#xD;&#xA;echo TargetFileName = $(TargetFileName)&#xD;&#xA;echo TargetPath = $(TargetPath)&#xD;&#xA;&#xD;&#xA;echo Building admin console with vite&#xD;&#xA;cd &quot;$(ProjectDir)WebProxy-Admin&quot;&#xD;&#xA;call npm run-script build&#xD;&#xA;echo cd &quot;$(ProjectDir)&quot;&#xD;&#xA;&#xD;&#xA;echo Deploying dist to www&#xD;&#xA;rmdir /S /Q &quot;$(TargetDir)www&quot;&#xD;&#xA;xcopy &quot;$(ProjectDir)WebProxy-Admin\dist&quot; &quot;$(TargetDir)www&quot; /E /C /R /Y /I" />
-  </Target>
+	<PropertyGroup>
+		<TargetFramework>net6.0-windows</TargetFramework>
+		<OutputType>WinExe</OutputType>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<UseWindowsForms>true</UseWindowsForms>
+		<ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+	</PropertyGroup>
+	<ItemGroup>
+		<Compile Remove="Libs\**" />
+		<EmbeddedResource Remove="Libs\**" />
+		<None Remove="Libs\**" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\BPUtil\BPUtil\BPUtil6.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Certes" Version="3.0.4" />
+		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+		<PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
+		<PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	</ItemGroup>
+	<ItemGroup>
+		<Reference Include="ErrorTrackerClient">
+			<HintPath>Libs\ErrorTrackerClient\ErrorTrackerClient.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+	<ItemGroup>
+		<Compile Remove="objLinux\**" />
+		<EmbeddedResource Remove="objLinux\**" />
+		<None Remove="objLinux\**" />
+	</ItemGroup>
+	<PropertyGroup>
+		<Nullable>disable</Nullable>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<NoWarn>1701;1702;CA1416</NoWarn>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<NoWarn>1701;1702;CA1416</NoWarn>
+	</PropertyGroup>
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Exec Command="echo SolutionDir = $(SolutionDir)&#xD;&#xA;echo SolutionName = $(SolutionName)&#xD;&#xA;echo SolutionFileName = $(SolutionFileName)&#xD;&#xA;echo SolutionPath = $(SolutionPath)&#xD;&#xA;echo OutDir: $(OutDir)&#xD;&#xA;echo ProjectDir = $(ProjectDir)&#xD;&#xA;echo ProjectName = $(ProjectName)&#xD;&#xA;echo ProjectFileName = $(ProjectFileName)&#xD;&#xA;echo ProjectPath = $(ProjectPath)&#xD;&#xA;echo TargetDir = $(TargetDir)&#xD;&#xA;echo TargetName = $(TargetName)&#xD;&#xA;echo TargetFileName = $(TargetFileName)&#xD;&#xA;echo TargetPath = $(TargetPath)&#xD;&#xA;&#xD;&#xA;echo Building admin console with vite&#xD;&#xA;cd &quot;$(ProjectDir)WebProxy-Admin&quot;&#xD;&#xA;call npm run-script build&#xD;&#xA;echo cd &quot;$(ProjectDir)&quot;&#xD;&#xA;&#xD;&#xA;echo Deploying dist to &quot;$(TargetDir)www&quot;&#xD;&#xA;rmdir /S /Q &quot;$(TargetDir)www&quot;&#xD;&#xA;xcopy &quot;$(ProjectDir)WebProxy-Admin\dist&quot; &quot;$(TargetDir)www&quot; /E /C /R /Y /I" />
+	</Target>
 </Project>

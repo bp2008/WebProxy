@@ -24,32 +24,24 @@ namespace WebProxy.ServiceUI
 		{
 			lblValidationError.Text = "";
 
-			WebProxyService.SettingsValidateAndAdminConsoleSetup(out Entrypoint adminEntry, out Exitpoint adminExit, out Middleware adminLogin);
+			AdminInfo adminInfo = new AdminInfo();
 
-			string adminIp = string.IsNullOrEmpty(adminEntry.ipAddress) ? "Any IP" : adminEntry.ipAddress;
-			string adminHost = adminExit.host;
-			adminHost = adminHost?.Replace("*", "");
-			if (string.IsNullOrEmpty(adminHost))
-				adminHost = "localhost";
-
-			if (adminEntry.httpPortValid())
+			if (adminInfo.httpUrl != null)
 			{
-				string url = "http://" + adminHost + (adminEntry.httpPort == 80 ? "" : (":" + adminEntry.httpPort));
-				linkLabelHttp.Text = url + " (" + adminIp + ")";
-				linkLabelHttp.Tag = url;
-				linkLabelHttp.LinkArea = new LinkArea(0, url.Length);
+				linkLabelHttp.Text = adminInfo.httpUrl + " (" + adminInfo.adminIp + ")";
+				linkLabelHttp.Tag = adminInfo.httpUrl;
+				linkLabelHttp.LinkArea = new LinkArea(0, adminInfo.httpUrl.Length);
 			}
 			else
 			{
 				linkLabelHttp.Text = "Disabled";
 				linkLabelHttp.Enabled = false;
 			}
-			if (adminEntry.httpsPortValid())
+			if (adminInfo.httpsUrl != null)
 			{
-				string url = "https://" + adminHost + (adminEntry.httpsPort == 443 ? "" : (":" + adminEntry.httpsPort));
-				linkLabelHttps.Text = url + " (" + adminIp + ")";
-				linkLabelHttps.Tag = url;
-				linkLabelHttps.LinkArea = new LinkArea(0, url.Length);
+				linkLabelHttps.Text = adminInfo.httpsUrl + " (" + adminInfo.adminIp + ")";
+				linkLabelHttps.Tag = adminInfo.httpsUrl;
+				linkLabelHttps.LinkArea = new LinkArea(0, adminInfo.httpsUrl.Length);
 			}
 			else
 			{
@@ -57,11 +49,9 @@ namespace WebProxy.ServiceUI
 				linkLabelHttps.Enabled = false;
 			}
 
-			string user = adminLogin.AuthCredentials[0].User;
-			string pass = adminLogin.AuthCredentials[0].Pass;
-			txtUser.Text = user;
-			txtUser.Tag = user;
-			txtPass.Text = pass;
+			txtUser.Text = adminInfo.user;
+			txtUser.Tag = adminInfo.user;
+			txtPass.Text = adminInfo.pass;
 		}
 
 		private void linkLabelHttp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)

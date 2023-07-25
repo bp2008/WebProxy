@@ -20,6 +20,7 @@ namespace WebProxy.Controllers
 			response.exitpoints = s.exitpoints.ToArray();
 			response.middlewares = s.middlewares.ToArray();
 			response.proxyRoutes = s.proxyRoutes.ToArray();
+			response.errorTrackerSubmitUrl = s.errorTrackerSubmitUrl;
 			return Json(response);
 		}
 		public ActionResult Set()
@@ -31,6 +32,7 @@ namespace WebProxy.Controllers
 			s.exitpoints = request.exitpoints.ToList();
 			s.middlewares = request.middlewares.ToList();
 			s.proxyRoutes = request.proxyRoutes.ToList();
+			s.errorTrackerSubmitUrl = request.errorTrackerSubmitUrl;
 			WebProxyService.SaveNewSettings(s);
 
 			WebProxyService.SettingsValidateAndAdminConsoleSetup(out Entrypoint adminEntry, out Exitpoint adminExit, out Middleware adminLogin);
@@ -46,6 +48,7 @@ namespace WebProxy.Controllers
 			response.exitpoints = s.exitpoints.ToArray();
 			response.middlewares = s.middlewares.ToArray();
 			response.proxyRoutes = s.proxyRoutes.ToArray();
+			response.errorTrackerSubmitUrl = s.errorTrackerSubmitUrl;
 
 			{
 				string adminHost = adminExit.host;
@@ -97,6 +100,7 @@ namespace WebProxy.Controllers
 		public Exitpoint[] exitpoints;
 		public Middleware[] middlewares;
 		public ProxyRoute[] proxyRoutes;
+		public string errorTrackerSubmitUrl;
 		public string[] exitpointTypes = Enum.GetNames(typeof(ExitpointType));
 		public string[] middlewareTypes = Enum.GetNames(typeof(MiddlewareType));
 
@@ -112,6 +116,7 @@ namespace WebProxy.Controllers
 		public Exitpoint[] exitpoints;
 		public Middleware[] middlewares;
 		public ProxyRoute[] proxyRoutes;
+		public string errorTrackerSubmitUrl;
 	}
 	public class ForceRenewRequest
 	{

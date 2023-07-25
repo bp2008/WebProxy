@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<OutputType>Exe</OutputType>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+	</PropertyGroup>
+	<ItemGroup>
+		<Compile Remove="Libs\**" />
+		<Compile Remove="Properties\**" />
+		<Compile Remove="Resources\**" />
+		<Compile Remove="ServiceUI\**" />
+		<EmbeddedResource Remove="Libs\**" />
+		<EmbeddedResource Remove="Properties\**" />
+		<EmbeddedResource Remove="Resources\**" />
+		<EmbeddedResource Remove="ServiceUI\**" />
+		<None Remove="Libs\**" />
+		<None Remove="Properties\**" />
+		<None Remove="Resources\**" />
+		<None Remove="ServiceUI\**" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Certes" Version="3.0.4" />
+		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+		<PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
+		<PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="System.ServiceProcess.ServiceController" Version="7.0.1" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\BPUtil\BPUtil\BPUtil6Linux.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<Reference Include="ErrorTrackerClient">
+			<HintPath>Libs\ErrorTrackerClient\ErrorTrackerClient.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+	<ItemGroup>
+		<Compile Remove="obj\**" />
+		<EmbeddedResource Remove="obj\**" />
+		<None Remove="obj\**" />
+	</ItemGroup>
+	<PropertyGroup>
+		<Nullable>disable</Nullable>
+		<BaseIntermediateOutputPath>objLinux\</BaseIntermediateOutputPath>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<NoWarn>1701;1702;CA1416</NoWarn>
+		<DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<NoWarn>1701;1702;CA1416</NoWarn>
+		<DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+	</PropertyGroup>
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Exec Command="echo This build event must be run after the WebProxy build is fully completed.&#xD;&#xA;echo cd &quot;$(ProjectDir)&quot;&#xD;&#xA;&#xD;&#xA;echo Deploying dist to &quot;$(TargetDir)www&quot;&#xD;&#xA;rmdir /S /Q &quot;$(TargetDir)www&quot;&#xD;&#xA;xcopy &quot;$(ProjectDir)WebProxy-Admin\dist&quot; &quot;$(TargetDir)www&quot; /E /C /R /Y /I" />
+	</Target>
+</Project>

@@ -18,7 +18,10 @@ namespace WebProxy
 	/// <summary>
 	/// Singleton service class for WebProxy.
 	/// </summary>
-	public partial class WebProxyService : ServiceBase
+	public partial class WebProxyService
+#if !LINUX
+		: ServiceBase
+#endif
 	{
 		/// <summary>
 		/// Reference to the constructed WebProxyService instance. Null if none has been constructed yet.
@@ -27,14 +30,13 @@ namespace WebProxy
 		/// <summary>
 		/// The web server.
 		/// </summary>
-		private static WebServer webServer = new WebServer();
+		private static WebServer webServer;
 		public WebProxyService()
 		{
 			if (service != null)
 				throw new Exception("Unable to create WebProxyService because one was already created.");
 
 			InitializeSettings();
-
 
 			// These should not affect proxying because we use TcpClient and implement HTTP at a low level instead of any built-in high level HTTP client.
 			// Nonetheless I'm setting them.
@@ -43,8 +45,14 @@ namespace WebProxy
 			if (ServicePointManager.DefaultConnectionLimit < 16)
 				ServicePointManager.DefaultConnectionLimit = 16;
 
+#if !LINUX
 			InitializeComponent();
+#endif
 
+			BasicErrorTracker.Initialize();
+			Logger.CatchAll((source, ex) => ReportError(ex, source));
+
+			webServer = new WebServer();
 			webServer.pool.MaxThreads = 1024;
 			service = this;
 		}
@@ -56,6 +64,118 @@ namespace WebProxy
 			staticSettings.SaveIfNoExist();
 
 			SettingsValidateAndAdminConsoleSetup(out Entrypoint adminEntry, out Exitpoint adminExit, out Middleware adminLogin);
+		}
+		/// <summary>
+		/// Logs the Exception.
+		/// </summary>
+		/// <param name="ex">Exception to log.</param>
+		public static void ReportError(Exception ex)
+		{
+			Logger.Debug(ex);
+			BasicErrorTracker.GenericError(ex.ToHierarchicalString());
+		}
+
+		/// <summary>
+		/// Logs the Exception.
+		/// </summary>
+		/// <param name="ex">Exception to log.</param>
+		/// <param name="additionalInformation">Optional additional information to log with the exception.</param>
+		public static void ReportError(Exception ex, string additionalInformation)
+		{
+			Logger.Debug(ex, additionalInformation);
+			string msg = string.IsNullOrWhiteSpace(additionalInformation) ? ex.ToHierarchicalString() : (additionalInformation + Environment.NewLine + ex.ToHierarchicalString());
+			BasicErrorTracker.GenericError(msg);
+		}
+		/// <summary>
+		/// Logs the Exception.
+		/// </summary>
+		/// <param name="message">Message to log.</param>
+		public static void ReportError(string message)
+		{
+			Logger.Debug(message);
+			BasicErrorTracker.GenericError(message);
+		}
+
+#if LINUX
+		protected void OnStart(string[] args)
+		{
+			UpdateWebServerBindings();
+		}
+
+		protected void OnStop()
+		{
+			webServer.Stop();
+		}
+#else
+		protected override void OnStart(string[] args)
+		{
+			UpdateWebServerBindings();
+		}
+
+		protected override void OnStop()
+		{
+			webServer.Stop();
+		}
+#endif
+
+		/// <summary>
+		/// Updates the web server bindings according to the current configuration.  It is safe to call this even if bindings have not changed.
+		/// </summary>
+		public static void UpdateWebServerBindings()
+		{
+			webServer.UpdateBindings();
+		}
+		#region Settings
+		/// <summary>
+		/// <para>Static settings object. To retain maximum performance and exception safety without locks, some usage constraints are necessary:</para>
+		/// <para>* To read the settings, call MakeLocalSettingsReference and store the returned value in a local variable.  Treat the fields/properties of the settings object as read-only.</para>
+		/// <para>* To write/change anything in settings, make a local COPY of the settings object via CloneSettingsObjectSlow(), edit the copy, then pass it to SaveNewSettings().</para>
+		/// </summary>
+		private static Settings staticSettings;
+
+		/// <summary>
+		/// Returns a snapshot of the settings.  Store the returned value in a local variable and use it from there, because calling this method is not guaranteed to return the same object each time.  Failure to treat the returned object as read-only will yield race conditions and errors in other threads.
+		/// </summary>
+		/// <returns></returns>
+		public static Settings MakeLocalSettingsReference()
+		{
+			return staticSettings;
+		}
+		/// <summary>
+		/// Returns a detached copy of the settings.  You can modify the returned object and send it to SaveNewSettings().
+		/// </summary>
+		/// <returns></returns>
+		public static Settings CloneSettingsObjectSlow()
+		{
+			return JsonConvert.DeserializeObject<Settings>(JsonConvert.SerializeObject(staticSettings));
+		}
+		private static object settingsSaveLock = new object();
+		/// <summary>
+		/// Replaces the internal settings object with this one and saves the settings to disk in a thread-safe manner.  You should not modify the settings object again after calling this; instead, make a new clone of the settings object if you need to make more changes.
+		/// </summary>
+		/// <param name="newSettings">A clone of the settings object.  The clone contains changes that you want to save.</param>
+		public static void SaveNewSettings(Settings newSettings)
+		{
+			lock (settingsSaveLock)
+			{
+				staticSettings = newSettings;
+				newSettings.Save();
+			}
+
+			string settingsBackupDir = Path.Combine(Globals.WritableDirectoryBase, "SettingsBackup");
+			Directory.CreateDirectory(settingsBackupDir);
+			string settingsBackupPath = Path.Combine(settingsBackupDir, "SettingsBackup.zip");
+			string backupJsonFilename = "Settings-" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss_fff") + ".json";
+			string json = JsonConvert.SerializeObject(newSettings);
+			byte[] fileBody = ByteUtil.Utf8NoBOM.GetBytes(json);
+			try
+			{
+				Compression.AddFileToZip(settingsBackupPath, backupJsonFilename, fileBody);
+			}
+			catch (Exception ex)
+			{
+				ReportError(ex);
+			}
 		}
 		public const string AdminConsoleLoginId = "WebProxy Admin Console Login";
 		/// <summary>
@@ -159,66 +279,6 @@ namespace WebProxy
 			// After all changes are made to the settings object, the settings can be saved.
 			if (shouldSave)
 				SaveNewSettings(s);
-		}
-
-		public static void ReportError(Exception ex)
-		{
-			Logger.Debug(ex);
-		}
-
-		protected override void OnStart(string[] args)
-		{
-			UpdateWebServerBindings();
-		}
-
-		/// <summary>
-		/// Updates the web server bindings according to the current configuration.  It is safe to call this even if bindings have not changed.
-		/// </summary>
-		public static void UpdateWebServerBindings()
-		{
-			webServer.UpdateBindings();
-		}
-
-		protected override void OnStop()
-		{
-			webServer.Stop();
-		}
-		#region Settings
-		/// <summary>
-		/// <para>Static settings object. To retain maximum performance and exception safety without locks, some usage constraints are necessary:</para>
-		/// <para>* To read the settings, call MakeLocalSettingsReference and store the returned value in a local variable.  Treat the fields/properties of the settings object as read-only.</para>
-		/// <para>* To write/change anything in settings, make a local COPY of the settings object via CloneSettingsObjectSlow(), edit the copy, then pass it to SaveNewSettings().</para>
-		/// </summary>
-		private static Settings staticSettings;
-
-		/// <summary>
-		/// Returns a snapshot of the settings.  Store the returned value in a local variable and use it from there, because calling this method is not guaranteed to return the same object each time.  Failure to treat the returned object as read-only will yield race conditions and errors in other threads.
-		/// </summary>
-		/// <returns></returns>
-		public static Settings MakeLocalSettingsReference()
-		{
-			return staticSettings;
-		}
-		/// <summary>
-		/// Returns a detached copy of the settings.  You can modify the returned object and send it to SaveNewSettings().
-		/// </summary>
-		/// <returns></returns>
-		public static Settings CloneSettingsObjectSlow()
-		{
-			return JsonConvert.DeserializeObject<Settings>(JsonConvert.SerializeObject(staticSettings));
-		}
-		private static object settingsSaveLock = new object();
-		/// <summary>
-		/// Replaces the internal settings object with this one and saves the settings to disk in a thread-safe manner.  You should not modify the settings object again after calling this; instead, make a new clone of the settings object if you need to make more changes.
-		/// </summary>
-		/// <param name="newSettings">A clone of the settings object.  The clone contains changes that you want to save.</param>
-		public static void SaveNewSettings(Settings newSettings)
-		{
-			lock (settingsSaveLock)
-			{
-				staticSettings = newSettings;
-				newSettings.Save();
-			}
 		}
 		#endregion
 		//#region Acme Account Key

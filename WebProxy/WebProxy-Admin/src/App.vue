@@ -20,7 +20,7 @@
 		</div>
 		<h2>Exitpoints</h2>
 		<p>An Exitpoint is a web destination which a client wants to reach.  This Admin Console is an Exitpoint, but an Exitpoint could also be another web server.</p>
-		<draggable v-model="store.entrypoints" handle=".dragHandle">
+		<draggable v-model="store.exitpoints" handle=".dragHandle">
 			<ExitpointEditor v-for="exitpoint in store.exitpoints" :key="exitpoint.uniqueId" :exitpoint="exitpoint" @delete="deleteExitpoint(exitpoint)" @renew="renewCertificate(exitpoint)" />
 		</draggable>
 		<div class="buttonBar">
@@ -28,7 +28,7 @@
 		</div>
 		<h2>Middlewares</h2>
 		<p>A Middleware is a module which applies additional logic to Entrypoints or Exitpoints.  A Middleware is typically used for access control or to manipulate default WebProxy behavior in some way, such as by adding an HTTP header to all responses.</p>
-		<draggable v-model="store.entrypoints" handle=".dragHandle">
+		<draggable v-model="store.middlewares" handle=".dragHandle">
 			<MiddlewareEditor v-for="middleware in store.middlewares" :key="middleware.uniqueId" :middleware="middleware" @delete="deleteMiddleware(middleware)" />
 		</draggable>
 		<div class="buttonBar">
@@ -36,11 +36,16 @@
 		</div>
 		<h2>Proxy Routes</h2>
 		<p>The Proxy Routes list defines which Exitpoints are reachable from which Entrypoints.  In order for an Exitpoint to be reachable by clients, it must be bound to at least one Entrypoint via a Proxy Route.</p>
-		<draggable v-model="store.entrypoints" handle=".dragHandle">
+		<draggable v-model="store.proxyRoutes" handle=".dragHandle">
 			<ProxyRouteEditor v-for="proxyRoute in store.proxyRoutes" :key="proxyRoute.uniqueId" :proxyRoute="proxyRoute" @delete="deleteProxyRoute(proxyRoute)" />
 		</draggable>
 		<div class="buttonBar">
 			<button @click="addProxyRoute()">Add New Proxy Route</button>
+		</div>
+		<h2>Other Settings</h2>
+		<div class="flexRow">
+			<label>ErrorTracker Submission URL</label>
+			<input type="text" v-model="store.errorTrackerSubmitUrl" placeholder="(optional) submit URL for an ErrorTracker instance" />
 		</div>
 		<h2>Raw Data</h2>
 		<div class="code">
@@ -83,7 +88,8 @@
 					entrypoints: store.entrypoints,
 					exitpoints: store.exitpoints,
 					middlewares: store.middlewares,
-					proxyRoutes: store.proxyRoutes
+					proxyRoutes: store.proxyRoutes,
+					errorTrackerSubmitUrl: store.errorTrackerSubmitUrl
 				});
 			},
 			configurationChanged()
@@ -127,7 +133,8 @@
 						entrypoints: store.entrypoints,
 						exitpoints: store.exitpoints,
 						middlewares: store.middlewares,
-						proxyRoutes: store.proxyRoutes
+						proxyRoutes: store.proxyRoutes,
+						errorTrackerSubmitUrl: store.errorTrackerSubmitUrl
 					});
 
 					this.consumeConfigurationResponse(response);
@@ -193,6 +200,7 @@
 				store.exitpoints = response.exitpoints;
 				store.middlewares = response.middlewares;
 				store.proxyRoutes = response.proxyRoutes;
+				store.errorTrackerSubmitUrl = response.errorTrackerSubmitUrl;
 
 				this.originalJson = this.currentJson;
 			},

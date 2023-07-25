@@ -23,10 +23,10 @@ namespace WebProxy
 
 		public WebServer() : base(CreateCertificateSelector())
 		{
-			SimpleHttpLogger.RegisterLogger(Logger.httpLogger, true);
+			SimpleHttpLogger.RegisterLogger(Logger.httpLogger, WebProxyService.MakeLocalSettingsReference().verboseWebServerLogs);
 			MvcJson.DeserializeObject = JsonConvert.DeserializeObject;
 			MvcJson.SerializeObject = JsonConvert.SerializeObject;
-			mvcAdminConsole = new MVCMain(Assembly.GetExecutingAssembly(), typeof(AdminConsoleControllerBase).Namespace, (Context, ex) => Logger.Debug(ex, "AdminConsole: " + Context.OriginalRequestPath));
+			mvcAdminConsole = new MVCMain(Assembly.GetExecutingAssembly(), typeof(AdminConsoleControllerBase).Namespace, (Context, ex) => WebProxyService.ReportError(ex, "AdminConsole: " + Context.OriginalRequestPath));
 #if DEBUG
 			if (System.Diagnostics.Debugger.IsAttached)
 			{
@@ -74,7 +74,7 @@ namespace WebProxy
 				Entrypoint[] matchedEntrypoints = settings.identifyThisEntrypoint((IPEndPoint)p.tcpClient.Client.RemoteEndPoint, (IPEndPoint)p.tcpClient.Client.LocalEndPoint, p.secure_https);
 				if (matchedEntrypoints.Length == 0)
 				{
-					Logger.Info("Unable to identify any matching entrypoint for request from client " + p.RemoteIPAddressStr + " to " + p.request_url);
+					WebProxyService.ReportError("Unable to identify any matching entrypoint for request from client " + p.RemoteIPAddressStr + " to " + p.request_url);
 					p.writeFailure("500 Internal Server Error");
 					return;
 				}
@@ -83,7 +83,7 @@ namespace WebProxy
 				if (myExitpoint == null || myExitpoint.type == ExitpointType.Disabled)
 				{
 					// Set responseWritten = true to prevent a fallback response.  We want this connection to simply close.
-					Logger.Info("No exitpoint for request from client " + p.RemoteIPAddressStr + " to " + p.request_url);
+					//Logger.Info("No exitpoint for request from client " + p.RemoteIPAddressStr + " to " + p.request_url);
 					p.responseWritten = true;
 					return;
 				}
@@ -247,7 +247,7 @@ namespace WebProxy
 				}
 				else
 				{
-					Logger.Info("Unhandled Exitpoint type `" + myExitpoint.type + "` in " + JsonConvert.SerializeObject(myExitpoint));
+					WebProxyService.ReportError("Unhandled Exitpoint type `" + myExitpoint.type + "` in " + JsonConvert.SerializeObject(myExitpoint));
 				}
 			}
 			finally

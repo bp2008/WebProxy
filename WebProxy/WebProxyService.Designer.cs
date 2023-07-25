@@ -1,4 +1,5 @@
-﻿
+﻿#if !LINUX
+
 namespace WebProxy
 {
 	partial class WebProxyService
@@ -36,3 +37,4 @@ namespace WebProxy
 		#endregion
 	}
 }
+#endif

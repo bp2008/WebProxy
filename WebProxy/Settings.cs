@@ -35,6 +35,14 @@ namespace WebProxy
 		/// Account key used for certificate creation with LetsEncrypt.  This should be nullified when <see cref="acmeAccountEmail"/> is changed.
 		/// </summary>
 		public string acmeAccountKey = null;
+		/// <summary>
+		/// If true at service startup, the web server will do verbose logging.
+		/// </summary>
+		public bool verboseWebServerLogs = false;
+		/// <summary>
+		/// If assigned, errors will be submitted to this ErrorTracker submission URL.
+		/// </summary>
+		public string errorTrackerSubmitUrl = null;
 
 		protected override object DeserializeFromJson(string str)
 		{
