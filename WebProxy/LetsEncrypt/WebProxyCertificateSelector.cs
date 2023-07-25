@@ -22,6 +22,7 @@ namespace WebProxy.LetsEncrypt
 		/// <returns>an X509Certificate or null</returns>
 		public Task<X509Certificate> GetAcmeTls1Certificate(HttpProcessor p, string serverName)
 		{
+			// Ignore all configuration for Entrypoints, Exitpoints, Middlewares, etc.  This is only for "TLS-ALPN-01" validation.  If there's no certificate prepared, the connection will simply be closed.
 			X509Certificate cert = CertMgr.GetAcmeTls1Certificate(serverName);
 			Logger.Info("ACME TLS-ALPN-01: " + p.RemoteIPAddressStr + " -> " + serverName + ": " + (cert == null ? "NO CERT WAS PREPARED" : "X509Certificate"));
 			return Task.FromResult(cert);
@@ -53,6 +54,13 @@ namespace WebProxy.LetsEncrypt
 				Logger.Info("WebProxyCertificateSelector: No exitpoint for request from client " + p.RemoteIPAddressStr + " to " + p.request_url);
 				return null;
 			}
+
+			IEnumerable<Middleware> allApplicableMiddlewares = settings.middlewares
+				.Where(m => myEntrypoint.middlewares?.Contains(m.Id) == true
+							|| myExitpoint.middlewares?.Contains(m.Id) == true);
+
+			if (!WebServer.IPWhitelistCheck(p.RemoteIPAddress, allApplicableMiddlewares))
+				return null;
 
 			if (myExitpoint.autoCertificate)
 			{

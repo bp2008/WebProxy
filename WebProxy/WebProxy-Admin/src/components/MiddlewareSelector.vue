@@ -2,7 +2,8 @@
 	<div class="middlewareSelector">
 		<label>Middlewares: </label>
 		<div class="middlewareRow" v-for="m in allMiddlewareRows">
-			<label><input type="checkbox" v-model="m.checked" @change="onCheckChange" /> {{m.id}}</label>
+			<label :class="{ orphan: m.orphan }"
+				   :title="m.orphan ? 'This middleware no longer exists.' : ''"><input type="checkbox" v-model="m.checked" @change="onCheckChange" /> {{m.id}} <span v-if="m.orphan"> (missing)</span></label>
 		</div>
 	</div>
 </template>
@@ -40,14 +41,23 @@
 			setupAllMiddlewareRows()
 			{
 				this.allMiddlewareRows = [];
+				let added = {};
 				for (let i = 0; i < this.allMiddlewares.length; i++)
 				{
 					let id = this.allMiddlewares[i].Id;
-					let row = {
-						id: id,
-						checked: this.getIndex(id) > -1
-					};
+					let row = { id: id, checked: this.getIndex(id) > -1 };
 					this.allMiddlewareRows.push(row);
+					added[id] = true;
+				}
+				for (let i = 0; i < this.modelValue.length; i++)
+				{
+					let id = this.modelValue[i];
+					if (!added[id])
+					{
+						let row = { id: id, checked: true, orphan: true };
+						this.allMiddlewareRows.push(row);
+						added[id] = true;
+					}
 				}
 			},
 			getIndex(id)
@@ -109,5 +119,11 @@
 	.middlewareRow
 	{
 		margin-top: 0.3em;
+	}
+
+	.orphan
+	{
+		font-weight: bold;
+		color: #880000;
 	}
 </style>

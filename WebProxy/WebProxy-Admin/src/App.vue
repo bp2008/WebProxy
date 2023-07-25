@@ -27,7 +27,7 @@
 			<button @click="addExitpoint()">Add New Exitpoint</button>
 		</div>
 		<h2>Middlewares</h2>
-		<p>A Middleware is a module which applies additional logic to Entrypoints or Exitpoints.  A Middleware typically adds a usage constraint such as an authentication requirement or an IP Address whitelist, or can be used to automatically redirect unencrypted HTTP traffic to HTTPS.</p>
+		<p>A Middleware is a module which applies additional logic to Entrypoints or Exitpoints.  A Middleware is typically used for access control or to manipulate default WebProxy behavior in some way, such as by adding an HTTP header to all responses.</p>
 		<draggable v-model="store.entrypoints" handle=".dragHandle">
 			<MiddlewareEditor v-for="middleware in store.middlewares" :key="middleware.uniqueId" :middleware="middleware" @delete="deleteMiddleware(middleware)" />
 		</draggable>
@@ -284,6 +284,8 @@
 	{
 		if (!o.middlewares)
 			o.middlewares = [];
+		if (!o.type)
+			o.type = store.exitpointTypes[0];
 		o.uniqueId = idCounter++;
 		return o;
 	}
@@ -292,7 +294,9 @@
 		if (!o.WhitelistedIpRanges)
 			o.WhitelistedIpRanges = [];
 		if (!o.AuthCredentials)
-			o.AuthCredentials = {};
+			o.AuthCredentials = [];
+		if (!o.Type)
+			o.Type = store.middlewareTypes[0];
 		o.uniqueId = idCounter++;
 		return o;
 	}

@@ -19,6 +19,10 @@
 			<label>Credentials</label>
 			<ArrayEditor v-model="middleware.AuthCredentials" arrayType="credentials" />
 		</div>
+		<div v-if="middleware.Type === 'AddHttpHeaderToResponse'" class="flexRow">
+			<label>Http Header</label>
+			<input type="text" v-model="middleware.HttpHeader" />
+		</div>
 	</div>
 </template>
 

@@ -50,7 +50,7 @@ namespace WebProxy
 		/// Returns all Entrypoints from the <see cref="entrypoints"/> collection which the client has connected to, in order of preference (Entrypoints listening on a single IP address appear earlier than Entrypoints listening on "all interfaces").
 		/// </summary>
 		/// <param name="remoteEndpoint">The remote endpoint of the connection.</param>
-		/// <param name="remoteEndpoint">The local endpoint of the connection.</param>
+		/// <param name="localEndpoint">The local endpoint of the connection.</param>
 		/// <param name="isHttps">True if the connection is using HTTPS.</param>
 		/// <returns></returns>
 		public Entrypoint[] identifyThisEntrypoint(IPEndPoint remoteEndpoint, IPEndPoint localEndpoint, bool isHttps)

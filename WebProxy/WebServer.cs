@@ -115,15 +115,18 @@ namespace WebProxy
 					{
 						UriBuilder builder = new UriBuilder(p.request_url);
 						builder.Port = myEntrypoint.httpsPort;
+						builder.Scheme = "https";
 						p.writeRedirect(builder.Uri.ToString());
 						return;
 					}
 				}
 
 				// MiddlewareType.IPWhitelist
-				foreach (Middleware m in allApplicableMiddlewares.Where(m => m.Type == MiddlewareType.IPWhitelist))
+				if (!IPWhitelistCheck(p.RemoteIPAddress, allApplicableMiddlewares))
 				{
-					Logger.Info("Middleware \"" + m.Id + "\" is unable to execute because type MiddlewareType.IPWhitelist is not implemented in this version of WebProxy.");
+					// IP whitelisting is in effect, but the client is not communicating from a whitelisted IP.  Close the connection without writing a response.
+					p.responseWritten = true;
+					return;
 				}
 
 				// MiddlewareType.HttpDigestAuth
@@ -139,6 +142,29 @@ namespace WebProxy
 						p.writeFailure("401 Unauthorized", additionalHeaders: headers);
 						return;
 					}
+				}
+
+				// MiddlewareType.AddProxyServerTiming
+				bool AddProxyServerTiming = allApplicableMiddlewares.Any(m => m.Type == MiddlewareType.AddProxyServerTiming);
+
+				// MiddlewareType.AddHttpHeaderToResponse
+				HttpHeaderCollection overrideResponseHeaders = new HttpHeaderCollection();
+				foreach (Middleware m in allApplicableMiddlewares.Where(m => m.Type == MiddlewareType.AddHttpHeaderToResponse))
+				{
+					if (string.IsNullOrWhiteSpace(m.HttpHeader))
+						continue;
+
+					int separator = m.HttpHeader.IndexOf(':');
+					if (separator == -1)
+						throw new ApplicationException("invalid http header line in middleware of type AddHttpHeaderToResponse: " + m.HttpHeader);
+
+					string name = m.HttpHeader.Substring(0, separator);
+					int pos = separator + 1;
+					while (pos < m.HttpHeader.Length && m.HttpHeader[pos] == ' ')
+						pos++; // strip any spaces
+
+					string value = m.HttpHeader.Substring(pos);
+					overrideResponseHeaders[name] = value;
 				}
 
 				// Process the request in the context of the chosen Exitpoint.
@@ -205,6 +231,15 @@ namespace WebProxy
 					options.snoopy = new ProxyDataBuffer();
 					options.bet = bet;
 					options.host = myExitpoint.destinationHostHeader;
+					options.includeServerTimingHeader = AddProxyServerTiming;
+					if (overrideResponseHeaders.Count > 0)
+					{
+						options.BeforeResponseHeadersSent += (sender, e) =>
+						{
+							foreach (KeyValuePair<string, string> header in overrideResponseHeaders)
+								e[header.Key] = header.Value;
+						};
+					}
 
 					bet.Start("Calling p.ProxyToAsync");
 					p.ProxyToAsync(builder.Uri.ToString(), options).Wait();
@@ -221,6 +256,7 @@ namespace WebProxy
 				//Logger.Info(p.http_method + " " + p.request_url + "\r\n\r\n" + bet.ToString("\r\n") + "\r\n");
 			}
 		}
+
 		private List<KeyValuePair<string, string>> GetCacheLastModifiedHeaders(TimeSpan maxAge, DateTime lastModifiedUTC)
 		{
 			List<KeyValuePair<string, string>> additionalHeaders = new List<KeyValuePair<string, string>>();
@@ -277,6 +313,33 @@ namespace WebProxy
 				bindings.Add(new IPEndPoint(IPAddress.Any, port));
 				bindings.Add(new IPEndPoint(IPAddress.IPv6Any, port));
 			}
+		}
+		/// <summary>
+		/// Given an IP address and a collection of IPWhitelist middlewares, returns true if the given IP address is allowed to access the resource.  The IP is allowed if there are no IPWhitelist middlewares or if the IP is on one of the whitelists.
+		/// </summary>
+		/// <param name="remoteIPAddress">IP address that must be authenticated against a possible collection of IPWhitelist middlewares.</param>
+		/// <param name="middlewares">Collection of middlewares. If this contains no IPWhitelist middlewares, the method will simply return true.</param>
+		/// <returns></returns>
+		public static bool IPWhitelistCheck(IPAddress remoteIPAddress, IEnumerable<Middleware> middlewares)
+		{
+			bool ipIsWhitelisted = false;
+			bool ipNeedsWhitelisted = false;
+			foreach (Middleware m in middlewares.Where(m => m.Type == MiddlewareType.IPWhitelist))
+			{
+				if (ipIsWhitelisted)
+					break;
+				ipNeedsWhitelisted = true;
+				foreach (string ipRangeStr in m.WhitelistedIpRanges)
+				{
+					IPAddressRange range = new IPAddressRange(ipRangeStr);
+					if (range.IsInRange(remoteIPAddress))
+					{
+						ipIsWhitelisted = true;
+						break;
+					}
+				}
+			}
+			return !ipNeedsWhitelisted || ipIsWhitelisted;
 		}
 	}
 }

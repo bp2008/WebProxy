@@ -27,7 +27,15 @@ namespace WebProxy
 		/// <para>This Middleware only applies to requests that arrive using plain unencrypted HTTP on an Entrypoint that supports both HTTP and HTTPS.</para>
 		/// <para>This Middleware does not apply to LetsEncrypt certificate validation requests, which must use unencrypted HTTP.</para>
 		/// </summary>
-		RedirectHttpToHttps = 2
+		RedirectHttpToHttps = 2,
+		/// <summary>
+		/// Responses will have a static HTTP header added.
+		/// </summary>
+		AddHttpHeaderToResponse = 3,
+		/// <summary>
+		/// All proxied responses will include a Server-Timing header for debugging purposes, showing time taken to connect, send the request, and read the response.
+		/// </summary>
+		AddProxyServerTiming = 4,
 	}
 	/// <summary>
 	/// Applies additional logic to an Entrypoint or Exitpoint.  Constraints may be applied to an Entrypoint or an Exitpoint or both.
@@ -55,6 +63,11 @@ namespace WebProxy
 		/// <para>This is a dictionary of user name and password that are acceptable.</para>
 		/// </summary>
 		public List<UnPwCredential> AuthCredentials = new List<UnPwCredential>();
+		/// <summary>
+		/// <para>For [Type] = AddHttpHeaderToResponse</para>
+		/// <para>Responses to our client will have this HTTP header set (overrides any proxied HTTP headers using the same name).</para>
+		/// </summary>
+		public string HttpHeader;
 		/// <summary>
 		/// Gets the password for the given username, or null.
 		/// </summary>
