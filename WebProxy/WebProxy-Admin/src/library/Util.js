@@ -83,3 +83,11 @@ export class ApiError extends Error
 		this.data = data;
 	}
 }
+/**
+ * Splits the given string on ',' and ' ', removing empty entries.
+ * @param {String} str String to split.
+ */
+export function splitExitpointHostList(str)
+{
+    return str.split(/,| /).filter(Boolean);
+}

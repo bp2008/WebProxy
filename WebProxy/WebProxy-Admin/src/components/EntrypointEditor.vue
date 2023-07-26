@@ -4,10 +4,12 @@
 		<div class="flexRow">
 			<label>Entrypoint Name</label>
 			<input type="text" v-model="entrypoint.name" />
+			<div class="comment">You can change the Entrypoint Name after creation, but you must manually update all affected ProxyRoutes.</div>
 		</div>
 		<div class="flexRow">
 			<label>IP Address Binding</label>
 			<input type="text" v-model="entrypoint.ipAddress" class="ipAddressInput" placeholder="(when empty) listen on all interfaces" title="(when empty) listen on all interfaces" />
+			<div class="comment">IP Address to listen on.  Leave empty to listen on all interfaces.</div>
 		</div>
 		<div>
 			<label><input type="checkbox" v-model="httpPortEnabled" /> HTTP Port: </label>
@@ -16,6 +18,9 @@
 		<div>
 			<label><input type="checkbox" v-model="httpsPortEnabled" /> HTTPS Port: </label>
 			<input type="number" min="1" max="65535" v-model="entrypoint.httpsPort" :disabled="!httpsPortEnabled" />
+		</div>
+		<div>
+			<div class="comment">HTTP and HTTPS can share the same port, if you like.</div>
 		</div>
 		<div class="middlewares">
 			<MiddlewareSelector v-model="entrypoint.middlewares"></MiddlewareSelector>

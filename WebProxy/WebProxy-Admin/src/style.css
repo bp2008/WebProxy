@@ -72,6 +72,7 @@ button
 
 .icode
 {
+	display: inline;
 	background-color: #EFF1F2;
 	color: rgb(31, 35, 40);
 	font-weight: normal;
@@ -110,13 +111,22 @@ button
 			margin-top: 0em;
 		}
 
-.primaryContainer .exampleText
+.primaryContainer .exampleText,
+.primaryContainer .comment,
+.flexRow .exampleText,
+.flexRow .comment
 {
 	padding-left: 1em;
 	padding-top: 0px;
 	color: #008800;
 	/*font-weight: bold;
 		font-style: italic;*/
+}
+
+.flexRow .exampleText,
+.flexRow .comment
+{
+	padding-top: 3px;
 }
 
 .flexRow

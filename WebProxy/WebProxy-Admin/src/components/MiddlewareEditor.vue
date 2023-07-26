@@ -4,6 +4,7 @@
 		<div class="flexRow">
 			<label>Middleware Name</label>
 			<input type="text" v-model="middleware.Id" />
+			<div class="comment">You can change the Middleware Name after creation, but you must manually update all Entrypoints and Exitpoints that used it.</div>
 		</div>
 		<div class="flexRow">
 			<label>Type</label>
@@ -11,18 +12,59 @@
 				<option v-for="middlewareType in availableMiddlewareTypes">{{middlewareType}}</option>
 			</select>
 		</div>
-		<div v-if="middleware.Type === 'IPWhitelist'">
-			<label>Whitelisted IP Ranges</label>
-			<ArrayEditor v-model="middleware.WhitelistedIpRanges" arrayType="text" />
-		</div>
-		<div v-if="middleware.Type === 'HttpDigestAuth'">
-			<label>Credentials</label>
-			<ArrayEditor v-model="middleware.AuthCredentials" arrayType="credentials" />
-		</div>
-		<div v-if="middleware.Type === 'AddHttpHeaderToResponse'" class="flexRow">
-			<label>Http Header</label>
-			<input type="text" v-model="middleware.HttpHeader" />
-		</div>
+		<template v-if="middleware.Type === 'IPWhitelist'">
+			<div>
+				Provides IP whitelisting of client connections to Entrypoints and/or Exitpoints where this middleware is enabled.
+				<ul>
+					<li>If the client IP is not on the whitelist, their connection is dropped.</li>
+					<li>Multiple IPWhitelist middlewares can apply to the same client connection, in which case the client IP only needs to be on one of the whitelists.</li>
+					<li>IP Whitelists are optional: If no IPWhitelist middleware is enabled for the client connection, the connection is allowed regardless of IP address.</li>
+				</ul>
+			</div>
+			<div v-if="!middleware.WhitelistedIpRanges || !middleware.WhitelistedIpRanges.length">
+				Click the <b>+</b> button below to add an IP range.
+			</div>
+			<div>
+				<label>Whitelisted IP Ranges</label>
+				<ArrayEditor v-model="middleware.WhitelistedIpRanges" arrayType="text" />
+			</div>
+			<div class="exampleText">Examples:</div>
+			<div class="exampleText"><span class="icode">192.168.0.100</span> (single IP address)</div>
+			<div class="exampleText"><span class="icode">192.168.0.90 - 192.168.0.110</span> (IP range)</div>
+			<div class="exampleText"><span class="icode">192.168.0.100/30</span> (subnet prefix notation)</div>
+		</template>
+		<template v-if="middleware.Type === 'HttpDigestAuth'">
+			<div>
+				This middleware causes requests to require HTTP Digest Authentication.
+			</div>
+			<div v-if="!middleware.AuthCredentials || !middleware.AuthCredentials.length">
+				Click the <b>+</b> button below to add a credential.
+			</div>
+			<div>
+				<label>Credentials</label>
+				<ArrayEditor v-model="middleware.AuthCredentials" arrayType="credentials" />
+			</div>
+		</template>
+		<template v-if="middleware.Type === 'RedirectHttpToHttps'">
+			<div>
+				Requests using HTTP are automatically redirected to HTTPS on the best supported Entrypoint.  This middleware only applies to requests that arrive using plain unencrypted HTTP on an Entrypoint that supports both HTTP and HTTPS.
+			</div>
+		</template>
+		<template v-if="middleware.Type === 'AddHttpHeaderToResponse'">
+			<div>
+				This middleware adds a static HTTP header to all responses.  Only affects Exitpoints of type WebProxy.
+			</div>
+			<div class="flexRow">
+				<label>Http Header</label>
+				<input type="text" v-model="middleware.HttpHeader" />
+				<div class="exampleText">e.g. <span class="icode">Strict-Transport-Security: max-age=31536000; includeSubDomains</span></div>
+			</div>
+		</template>
+		<template v-if="middleware.Type === 'AddProxyServerTiming'">
+			<div>
+				This middleware adds a "Server-Timing" HTTP header to all responses.  Only affects Exitpoints of type WebProxy.
+			</div>
+		</template>
 	</div>
 </template>
 

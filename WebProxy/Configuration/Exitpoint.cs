@@ -27,11 +27,11 @@ namespace WebProxy
 		/// </summary>
 		public string host;
 		/// <summary>
-		/// If true, certificates for this host will be obtained and managed automatically via LetsEncrypt.  Automatic certificate management will only work if this host is mapped to an http entrypoint that is reachable on the internet at "http://host:80/".  Wildcards are not allowed in <see cref="host"/> when using <see cref="autoCertificate"/>.
+		/// If enabled, certificates for this host will be obtained and managed automatically via LetsEncrypt.  Automatic certificate management will only work if this exitpoint is mapped to an entrypoint that is reachable on the internet at 'http://host:80/' or 'https://host:443/'.  Wildcards are not allowed in <see cref="host"/> when using <see cref="autoCertificate"/>.
 		/// </summary>
 		public bool autoCertificate;
 		/// <summary>
-		/// [Requires autoCertificate == false] Path to the certificate file (pfx).  If null or empty, a default path will be automatically assigned to this field.
+		/// [Requires autoCertificate == false] Path to the certificate file (pfx).
 		/// </summary>
 		public string certificatePath;
 		/// <summary>
@@ -42,6 +42,10 @@ namespace WebProxy
 		/// [Requires type == WebProxy] If you need to override the host string used in outgoing proxy requests (for the Host header and TLS Server Name Indication), provide the host string here.  Otherwise leave this null or empty and the host from [destinationOrigin] value will be used.
 		/// </summary>
 		public string destinationHostHeader;
+		/// <summary>
+		/// If true, skip certificate validation for destination origin.
+		/// </summary>
+		public bool proxyAcceptAnyCertificate = false;
 		/// <summary>
 		/// Defines the type of Exitpoint this is.  Can be Disabled, AdminConsole, or WebProxy.
 		/// </summary>

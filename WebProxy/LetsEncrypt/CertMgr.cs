@@ -34,20 +34,28 @@ namespace WebProxy.LetsEncrypt
 		/// The URI of the ACME server where certificates will be obtained from.
 		/// </summary>
 		private static Uri acmeServerUri = WellKnownServers.LetsEncryptStagingV2;
+		/// <summary>
+		/// The last email address in use when Initialize was called.
+		/// </summary>
+		private static string LastEmail = null;
 		private static async void Initialize()
 		{
-			if (acme != null)
+			Settings settings = WebProxyService.MakeLocalSettingsReference();
+			if (string.IsNullOrWhiteSpace(settings.acmeAccountEmail))
+				throw new ApplicationException("LetsEncrypt Account Email has not been specified. Unable to use automatic certificate management.");
+
+			if (acme != null && LastEmail == settings.acmeAccountEmail)
 				return;
 
 			await myLock.WaitAsync();
 			try
 			{
-				if (acme != null)
-					return;
-				Settings settings = WebProxyService.MakeLocalSettingsReference();
-
+				settings = WebProxyService.MakeLocalSettingsReference();
 				if (string.IsNullOrWhiteSpace(settings.acmeAccountEmail))
-					throw new ApplicationException("ACME Account Email has not been specified. Unable to generate certificate automatically.");
+					throw new ApplicationException("LetsEncrypt Account Email has not been specified. Unable to use automatic certificate management.");
+
+				if (acme != null && LastEmail == settings.acmeAccountEmail)
+					return;
 
 				if (string.IsNullOrWhiteSpace(settings.acmeAccountKey))
 				{
@@ -75,6 +83,7 @@ namespace WebProxy.LetsEncrypt
 						await accountContext.Update(newContact, true);
 					}
 				}
+				LastEmail = settings.acmeAccountEmail;
 			}
 			catch (Exception ex)
 			{

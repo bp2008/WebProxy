@@ -4,6 +4,7 @@
 		<div class="flexRow">
 			<label><b>Exitpoint Name</b></label>
 			<input type="text" v-model="exitpoint.name" class="nameInput" />
+			<div class="comment">You can change the Exitpoint Name after creation, but you must manually update all affected ProxyRoutes.</div>
 		</div>
 		<div class="flexRow">
 			<label>Exitpoint Type</label>
@@ -20,22 +21,29 @@
 			</div>
 			<div class="dashedBorder">
 				<div>
-					<label title="If true, certificates for this host will be obtained and managed automatically via LetsEncrypt.  Automatic certificate management will only work if this host is mapped to an http entrypoint that is reachable on the internet at 'http://host:80/'.  Wildcards are not allowed in [Host] when using this option.">
-						<input type="checkbox" v-model="exitpoint.autoCertificate" /> Automatic Certificate from LetsEncrypt
-					</label>
+					<label><input type="checkbox" v-model="exitpoint.autoCertificate" /> Automatic Certificate from LetsEncrypt</label>
+					<div class="comment">If enabled, certificates for this host will be obtained and managed automatically via LetsEncrypt.  Automatic certificate management will only work if this exitpoint is mapped to an entrypoint that is reachable on the internet at 'http://host:80/' or 'https://host:443/'.  Wildcards are not allowed in [Host] when using this option.</div>
 				</div>
 				<div><input type="button" v-if="exitpoint.autoCertificate" value="Force Renew Certificate" @click="$emit('renew')" /></div>
 				<div class="flexRow" v-if="!exitpoint.autoCertificate">
 					<label>Certificate Path</label>
-					<input type="text" v-model="exitpoint.certificatePath" class="certificatePathInput" title="Path to the certificate file (pfx).  If null or empty, a default path will be automatically assigned to this field." />
+					<input type="text" v-model="exitpoint.certificatePath" class="certificatePathInput" placeholder="Path to the certificate file (pfx)" title="Path to the certificate file (pfx)" />
 				</div>
 			</div>
 			<template v-if="exitpoint.type === 'WebProxy'">
-				<div class="flexRow" title="Requests shall be proxied to this origin, e.g. https://example.com:8000">
+				<div class="flexRow">
 					<label>Destination Origin</label>
 					<input type="text" v-model="exitpoint.destinationOrigin" class="destinationOriginInput" />
+					<div class="comment">Requests shall be proxied to this origin, e.g. <span class="icode">https://example.com:8000</span></div>
 				</div>
-				<div class="exampleText">e.g. <span class="icode">https://example.com:8000</span></div>
+				<div class="flexRow" v-if="destinationOriginIsHttps">
+					<label><input type="checkbox" v-model="exitpoint.proxyAcceptAnyCertificate" /> Skip Certificate Validation for Destination Origin</label>
+				</div>
+				<div class="flexRow">
+					<label>Destination Host Header</label>
+					<input type="text" v-model="exitpoint.destinationHostHeader" />
+					<div class="comment">If you need to override the host string used in outgoing proxy requests (for the Host header and TLS Server Name Indication), provide the host string here.  Otherwise leave this empty and the host from the Destination Origin will be used. DO NOT include a port number.</div>
+				</div>
 			</template>
 			<div class="middlewares">
 				<MiddlewareSelector v-model="exitpoint.middlewares"></MiddlewareSelector>
@@ -72,6 +80,10 @@
 			availableExitpointTypes()
 			{
 				return store.exitpointTypes;
+			},
+			destinationOriginIsHttps()
+			{
+				return this.exitpoint && this.exitpoint.destinationOrigin && this.exitpoint.destinationOrigin.toLowerCase().indexOf("https:") === 0;
 			}
 		},
 		watch:

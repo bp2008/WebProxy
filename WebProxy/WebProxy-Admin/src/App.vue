@@ -10,6 +10,19 @@
 		<loading v-model:active="showFullscreenLoader"
 				 :can-cancel="false"
 				 :is-full-page="true" />
+		<h2>Global Settings</h2>
+		<div class="primaryContainer">
+			<div class="flexRow">
+				<label>LetsEncrypt Account Email</label>
+				<input type="text" v-model="store.acmeAccountEmail" />
+				<div class="comment">Required for automatic certificate management.  Account will be created upon first use.  You may change the email address after creating the account.</div>
+			</div>
+			<div class="flexRow">
+				<label>ErrorTracker Submission URL</label>
+				<input type="text" v-model="store.errorTrackerSubmitUrl" />
+				<div class="comment">Optional submit URL for an ErrorTracker instance.</div>
+			</div>
+		</div>
 		<h2>Entrypoints</h2>
 		<p>Entrypoints define how the web server listens for incoming network requests.</p>
 		<draggable v-model="store.entrypoints" handle=".dragHandle">
@@ -42,12 +55,9 @@
 		<div class="buttonBar">
 			<button @click="addProxyRoute()">Add New Proxy Route</button>
 		</div>
-		<h2>Other Settings</h2>
-		<div class="flexRow">
-			<label>ErrorTracker Submission URL</label>
-			<input type="text" v-model="store.errorTrackerSubmitUrl" placeholder="(optional) submit URL for an ErrorTracker instance" />
-		</div>
-		<h2>Raw Data</h2>
+		<h2>Hosted URL Summary</h2>
+		<HostedUrlSummary />
+		<h2>Raw Settings.json</h2>
 		<div class="code">
 			{{JSON.stringify(store, null, 2)}}
 		</div>
@@ -59,13 +69,14 @@
 	import ExitpointEditor from './components/ExitpointEditor.vue';
 	import MiddlewareEditor from './components/MiddlewareEditor.vue';
 	import ProxyRouteEditor from './components/ProxyRouteEditor.vue';
+	import HostedUrlSummary from './components/HostedUrlSummary.vue';
 	import ExecAPI from './library/API';
 	import store from '/src/library/store';
 	import Loading from 'vue-loading-overlay';
 	import { VueDraggableNext } from 'vue-draggable-next';
 
 	export default {
-		components: { EntrypointEditor, ExitpointEditor, MiddlewareEditor, ProxyRouteEditor, Loading, draggable: VueDraggableNext },
+		components: { EntrypointEditor, ExitpointEditor, MiddlewareEditor, ProxyRouteEditor, HostedUrlSummary, Loading, draggable: VueDraggableNext },
 		data()
 		{
 			return {
@@ -85,6 +96,7 @@
 			currentJson()
 			{
 				return JSON.stringify({
+					acmeAccountEmail: store.acmeAccountEmail,
 					entrypoints: store.entrypoints,
 					exitpoints: store.exitpoints,
 					middlewares: store.middlewares,
@@ -130,6 +142,7 @@
 				{
 					this.showFullscreenLoader = true;
 					const response = await ExecAPI("Configuration/Set", {
+						acmeAccountEmail: store.acmeAccountEmail,
 						entrypoints: store.entrypoints,
 						exitpoints: store.exitpoints,
 						middlewares: store.middlewares,
@@ -167,7 +180,6 @@
 							}
 						}
 					}
-
 				}
 				catch (ex)
 				{
@@ -181,6 +193,11 @@
 			},
 			consumeConfigurationResponse(response)
 			{
+				if (!response.success)
+				{
+					toaster.error(response.error, 60000);
+					return;
+				}
 				store.exitpointTypes = response.exitpointTypes;
 				store.middlewareTypes = response.middlewareTypes;
 
@@ -196,6 +213,7 @@
 				for (let i = 0; i < response.proxyRoutes.length; i++)
 					FixProxyRoute(response.proxyRoutes[i]);
 
+				store.acmeAccountEmail = response.acmeAccountEmail;
 				store.entrypoints = response.entrypoints;
 				store.exitpoints = response.exitpoints;
 				store.middlewares = response.middlewares;
@@ -222,19 +240,23 @@
 			},
 			deleteEntrypoint(entrypoint)
 			{
-				DeleteFromArray(entrypoint, store.entrypoints);
+				if (confirm("You are about to delete Entrypoint: " + entrypoint.name))
+					DeleteFromArray(entrypoint, store.entrypoints);
 			},
 			deleteExitpoint(exitpoint)
 			{
-				DeleteFromArray(exitpoint, store.exitpoints);
+				if (confirm("You are about to delete Exitpoint: " + exitpoint.name))
+					DeleteFromArray(exitpoint, store.exitpoints);
 			},
 			deleteMiddleware(middleware)
 			{
-				DeleteFromArray(middleware, store.middlewares);
+				if (confirm("You are about to delete Middleware: " + middleware.Id))
+					DeleteFromArray(middleware, store.middlewares);
 			},
 			deleteProxyRoute(proxyRoute)
 			{
-				DeleteFromArray(proxyRoute, store.proxyRoutes);
+				if (confirm("You are about to delete ProxyRoute:\n\n" + proxyRoute.entrypointName + "\n -> \n" + proxyRoute.exitpointName))
+					DeleteFromArray(proxyRoute, store.proxyRoutes);
 			},
 			async renewCertificate(exitpoint)
 			{
@@ -271,13 +293,6 @@
 		},
 		watch:
 		{
-			middlewares:
-			{
-				deep: true,
-				handler()
-				{
-				}
-			}
 		}
 	};
 	let idCounter = 1;

@@ -16,6 +16,7 @@ namespace WebProxy.Controllers
 		{
 			Settings s = WebProxyService.MakeLocalSettingsReference();
 			GetConfigurationResponse response = new GetConfigurationResponse();
+			response.acmeAccountEmail = s.acmeAccountEmail;
 			response.entrypoints = s.entrypoints.ToArray();
 			response.exitpoints = s.exitpoints.ToArray();
 			response.middlewares = s.middlewares.ToArray();
@@ -28,12 +29,20 @@ namespace WebProxy.Controllers
 			SetConfigurationRequest request = ParseRequest<SetConfigurationRequest>();
 
 			Settings s = WebProxyService.CloneSettingsObjectSlow();
+			s.acmeAccountEmail = request.acmeAccountEmail;
 			s.entrypoints = request.entrypoints.ToList();
 			s.exitpoints = request.exitpoints.ToList();
 			s.middlewares = request.middlewares.ToList();
 			s.proxyRoutes = request.proxyRoutes.ToList();
 			s.errorTrackerSubmitUrl = request.errorTrackerSubmitUrl;
-			WebProxyService.SaveNewSettings(s);
+			try
+			{
+				WebProxyService.SaveNewSettings(s);
+			}
+			catch (Exception ex)
+			{
+				return ApiError(ex.FlattenMessages());
+			}
 
 			WebProxyService.SettingsValidateAndAdminConsoleSetup(out Entrypoint adminEntry, out Exitpoint adminExit, out Middleware adminLogin);
 
@@ -44,6 +53,7 @@ namespace WebProxy.Controllers
 
 			s = WebProxyService.MakeLocalSettingsReference();
 			GetConfigurationResponse response = new GetConfigurationResponse();
+			response.acmeAccountEmail = s.acmeAccountEmail;
 			response.entrypoints = s.entrypoints.ToArray();
 			response.exitpoints = s.exitpoints.ToArray();
 			response.middlewares = s.middlewares.ToArray();
@@ -54,7 +64,7 @@ namespace WebProxy.Controllers
 				string adminHost = adminExit.host;
 				adminHost = adminHost?.Replace("*", "");
 				if (string.IsNullOrEmpty(adminHost))
-					adminHost = "localhost";
+					adminHost = Context.httpProcessor.hostName;
 
 				List<string> adminEntryOrigins = new List<string>();
 				if (adminEntry.httpPortValid())
@@ -96,6 +106,7 @@ namespace WebProxy.Controllers
 	}
 	public class GetConfigurationResponse : ApiResponseBase
 	{
+		public string acmeAccountEmail;
 		public Entrypoint[] entrypoints;
 		public Exitpoint[] exitpoints;
 		public Middleware[] middlewares;
@@ -112,6 +123,7 @@ namespace WebProxy.Controllers
 	}
 	public class SetConfigurationRequest
 	{
+		public string acmeAccountEmail;
 		public Entrypoint[] entrypoints;
 		public Exitpoint[] exitpoints;
 		public Middleware[] middlewares;

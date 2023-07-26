@@ -57,13 +57,20 @@ namespace WebProxy
 			service = this;
 		}
 
-		private static void InitializeSettings()
+		/// <summary>
+		/// Loads the settings file, saves it if it does not exist, and then validates the settings and ensures the admin console is available.
+		/// </summary>
+		public static void InitializeSettings()
 		{
-			staticSettings = new Settings();
-			staticSettings.Load();
-			staticSettings.SaveIfNoExist();
+			Settings s = new Settings();
+			s.Load();
+			lock (settingsSaveLock)
+			{
+				staticSettings = s;
+				staticSettings.SaveIfNoExist();
 
-			SettingsValidateAndAdminConsoleSetup(out Entrypoint adminEntry, out Exitpoint adminExit, out Middleware adminLogin);
+				SettingsValidateAndAdminConsoleSetup(out Entrypoint adminEntry, out Exitpoint adminExit, out Middleware adminLogin);
+			}
 		}
 		/// <summary>
 		/// Logs the Exception.
@@ -156,6 +163,8 @@ namespace WebProxy
 		/// <param name="newSettings">A clone of the settings object.  The clone contains changes that you want to save.</param>
 		public static void SaveNewSettings(Settings newSettings)
 		{
+			ValidateSettings(newSettings);
+
 			lock (settingsSaveLock)
 			{
 				staticSettings = newSettings;
@@ -177,6 +186,7 @@ namespace WebProxy
 				ReportError(ex);
 			}
 		}
+
 		public const string AdminConsoleLoginId = "WebProxy Admin Console Login";
 		/// <summary>
 		/// Validate setup and create/repair admin console access. Do not modify the objects returned via out parameters.
@@ -229,6 +239,16 @@ namespace WebProxy
 				s.exitpoints.Add(adminConsoleExitpoint);
 				shouldSave = true;
 			}
+			if (string.IsNullOrWhiteSpace(adminConsoleExitpoint.name))
+			{
+				adminConsoleExitpoint.name = "WebProxy Admin Console";
+				shouldSave = true;
+			}
+			if (string.IsNullOrWhiteSpace(adminConsoleExitpoint.host))
+			{
+				adminConsoleExitpoint.host = "*";
+				shouldSave = true;
+			}
 			if (!adminConsoleExitpoint.middlewares.Contains(adminConsoleLogin.Id))
 			{
 				adminConsoleExitpoint.middlewares = adminConsoleExitpoint.middlewares.Concat(new string[] { adminConsoleLogin.Id }).ToArray();
@@ -244,7 +264,20 @@ namespace WebProxy
 				adminConsoleEntrypoint = s.entrypoints.FirstOrDefault(e => e.name == adminConsoleRoute.entrypointName);
 				if (adminConsoleEntrypoint != null)
 				{
-					// Admin console route exists and so does the entrypoint.  The settings are fine.
+					// Admin console route exists and so does the entrypoint.
+					if (!adminConsoleEntrypoint.httpPortValid() && !adminConsoleEntrypoint.httpsPortValid())
+					{
+						adminConsoleEntrypoint.httpPort = 8080;
+						adminConsoleEntrypoint.httpsPort = 8080;
+						adminConsoleEntrypoint.ipAddress = null;
+						shouldSave = true;
+					}
+					if (string.IsNullOrWhiteSpace(adminConsoleEntrypoint.name))
+					{
+						adminConsoleEntrypoint.name = "WebProxy Admin Console Entrypoint";
+						shouldSave = true;
+					}
+					// Currently we do not attempt to repair bad IP Address bindings.
 				}
 				else
 				{
@@ -279,6 +312,134 @@ namespace WebProxy
 			// After all changes are made to the settings object, the settings can be saved.
 			if (shouldSave)
 				SaveNewSettings(s);
+		}
+		/// <summary>
+		/// Validate the settings file.  Throw an exception if anything is invalid that can't be cleanly repaired automatically.
+		/// </summary>
+		/// <param name="s">Settings instance containing settings that need to be validated.</param>
+		/// <exception cref="Exception">If validation fails.</exception>
+		private static void ValidateSettings(Settings s)
+		{
+			if (s.entrypoints == null)
+				s.entrypoints = new List<Entrypoint>();
+			if (s.exitpoints == null)
+				s.exitpoints = new List<Exitpoint>();
+			if (s.middlewares == null)
+				s.middlewares = new List<Middleware>();
+			if (s.proxyRoutes == null)
+				s.proxyRoutes = new List<ProxyRoute>();
+
+			// Validate Entrypoints
+			foreach (Entrypoint entrypoint in s.entrypoints)
+			{
+				if (entrypoint == null)
+					throw new Exception("Exitpoint is null.");
+
+				if (string.IsNullOrWhiteSpace(entrypoint.name))
+					throw new Exception("Entrypoint index " + s.entrypoints.IndexOf(entrypoint) + " does not have a name.");
+
+				if (entrypoint.middlewares == null)
+					entrypoint.middlewares = new string[0];
+			}
+
+			// Validate Exitpoints
+			foreach (Exitpoint exitpoint in s.exitpoints)
+			{
+				if (exitpoint == null)
+					throw new Exception("Exitpoint is null.");
+
+				if (string.IsNullOrWhiteSpace(exitpoint.name))
+					throw new Exception("Exitpoint index " + s.exitpoints.IndexOf(exitpoint) + " does not have a name.");
+
+				if (exitpoint.middlewares == null)
+					exitpoint.middlewares = new string[0];
+
+				if (exitpoint.type == ExitpointType.AdminConsole || exitpoint.type == ExitpointType.WebProxy)
+				{
+					if (exitpoint.autoCertificate && string.IsNullOrWhiteSpace(s.acmeAccountEmail))
+						throw new Exception("Exitpoint \"" + exitpoint.name + "\" is not allowed to use automatic certificate management because the LetsEncrypt Account Email field is not assigned in Global Settings.");
+
+					if (exitpoint.certificatePath == null)
+						exitpoint.certificatePath = "";
+
+					if (StringUtil.MakeSafeForFileName(exitpoint.certificatePath) != exitpoint.certificatePath)
+						throw new Exception("Exitpoint \"" + exitpoint.name + "\" has invalid Certificate Path.");
+				}
+
+				if (exitpoint.type == ExitpointType.WebProxy)
+				{
+					if (exitpoint.destinationOrigin == null || !Uri.TryCreate(exitpoint.destinationOrigin, UriKind.Absolute, out Uri ignored))
+						throw new Exception("Exitpoint \"" + exitpoint.name + "\" has invalid Destination Origin.");
+
+					if (!string.IsNullOrEmpty(exitpoint.destinationHostHeader) && !Uri.TryCreate("http://" + exitpoint.destinationHostHeader + ":80/", UriKind.Absolute, out Uri ignored2))
+						throw new Exception("Exitpoint \"" + exitpoint.name + "\" has invalid Destination Host Header.");
+				}
+			}
+
+			// Validate Middlewares
+			foreach (Middleware middleware in s.middlewares)
+			{
+				if (middleware == null)
+					throw new Exception("Middleware is null.");
+
+				if (string.IsNullOrWhiteSpace(middleware.Id))
+					throw new Exception("Middleware index " + s.middlewares.IndexOf(middleware) + " does not have a name.");
+
+				if (middleware.Type == MiddlewareType.IPWhitelist)
+				{
+					foreach (string range in middleware.WhitelistedIpRanges)
+					{
+						try
+						{
+							IPAddressRange ipr = new IPAddressRange(range);
+						}
+						catch (Exception ex)
+						{
+							throw new Exception("Middleware \"" + middleware.Id + "\" defines invalid IPAddressRange \"" + range + "\"", ex);
+						}
+					}
+				}
+
+				if (middleware.Type == MiddlewareType.HttpDigestAuth)
+				{
+					foreach (UnPwCredential c in middleware.AuthCredentials)
+					{
+						if (string.IsNullOrWhiteSpace(c.User))
+							throw new Exception("Middleware \"" + middleware.Id + "\" defines invalid credential (missing username)");
+						if (string.IsNullOrEmpty(c.Pass))
+							throw new Exception("Middleware \"" + middleware.Id + "\" defines invalid credential (missing password)");
+					}
+				}
+
+				if (middleware.Type == MiddlewareType.AddHttpHeaderToResponse)
+				{
+					HttpHeaderCollection collection = new HttpHeaderCollection();
+					try
+					{
+						collection.AssignHeaderFromString(middleware.HttpHeader);
+					}
+					catch (Exception ex)
+					{
+						throw new Exception("Middleware \"" + middleware.Id + "\" failed HTTP header validation.", ex);
+					}
+				}
+			}
+
+			// Validate ProxyRoutes
+			foreach (ProxyRoute r in s.proxyRoutes)
+			{
+				if (r == null)
+					throw new Exception("ProxyRoute is null.");
+
+				if (string.IsNullOrWhiteSpace(r.entrypointName))
+					throw new Exception("ProxyRoute index " + s.proxyRoutes.IndexOf(r) + " does not specify an Entrypoint.");
+				if (string.IsNullOrWhiteSpace(r.exitpointName))
+					throw new Exception("ProxyRoute index " + s.proxyRoutes.IndexOf(r) + " does not specify an Exitpoint.");
+				if (!s.entrypoints.Any(e => e.name == r.entrypointName))
+					throw new Exception("ProxyRoute index " + s.proxyRoutes.IndexOf(r) + " specifies non-existent Entrypoint named \"" + r.entrypointName + "\".");
+				if (!s.exitpoints.Any(e => e.name == r.exitpointName))
+					throw new Exception("ProxyRoute index " + s.proxyRoutes.IndexOf(r) + " specifies non-existent Exitpoint named \"" + r.exitpointName + "\".");
+			}
 		}
 		#endregion
 		//#region Acme Account Key
