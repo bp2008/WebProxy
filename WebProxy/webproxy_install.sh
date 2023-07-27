@@ -3,6 +3,7 @@
 AppName="webproxy"
 GithubRepo="bp2008/WebProxy"
 ExeName="WebProxyLinux.dll"
+AssemblyName="WebProxyLinux"
 
 ################################################################
 # Function: Check if a package exists, and if not, install it.
@@ -100,11 +101,12 @@ InstallUnzipIfNotAlready () {
 
 uninstallApp () {
 	echo Uninstalling $AppName.
-	echo "The .NET 6.0 runtime will remain installed."
+	echo "The .NET 6.0 runtime and other dependencies will remain installed."
+	echo "The application's settings, logs, and other generated files remain in \"/usr/share/@AssemblyName\" and may be deleted manually if you wish."
 	
 	cd ~
+    sudo /usr/bin/dotnet "$(pwd)/$AppName/$ExeName" uninstall
 	sudo rm -r -f "$AppName"
-	sudo rm -f "/etc/systemd/system/$AppName.service"
 }
 
 #########################################
