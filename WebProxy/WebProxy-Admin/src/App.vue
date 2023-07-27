@@ -61,6 +61,8 @@
 		<div class="code">
 			{{JSON.stringify(store, null, 2)}}
 		</div>
+		<h2>Live Log File</h2>
+		<LogReader />
 	</template>
 </template>
 
@@ -70,13 +72,14 @@
 	import MiddlewareEditor from './components/MiddlewareEditor.vue';
 	import ProxyRouteEditor from './components/ProxyRouteEditor.vue';
 	import HostedUrlSummary from './components/HostedUrlSummary.vue';
+	import LogReader from './components/LogReader.vue';
 	import ExecAPI from './library/API';
 	import store from '/src/library/store';
 	import Loading from 'vue-loading-overlay';
 	import { VueDraggableNext } from 'vue-draggable-next';
 
 	export default {
-		components: { EntrypointEditor, ExitpointEditor, MiddlewareEditor, ProxyRouteEditor, HostedUrlSummary, Loading, draggable: VueDraggableNext },
+		components: { EntrypointEditor, ExitpointEditor, MiddlewareEditor, ProxyRouteEditor, HostedUrlSummary, LogReader, Loading, draggable: VueDraggableNext },
 		data()
 		{
 			return {

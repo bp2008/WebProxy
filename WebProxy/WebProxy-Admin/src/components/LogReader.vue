@@ -1,0 +1,144 @@
+﻿<template>
+	<div>
+		<div class="log-box">
+			<div class="connection-status" :class="{connected: isConnected}" :title="isConnected?'Connected and streaming text from the log.':'Not connected. Attempting to reconnect.'"></div>
+			<pre>{{ logText }}</pre>
+		</div>
+	</div>
+</template>
+
+<script>
+	export default {
+		data()
+		{
+			return {
+				logText: '',
+				isConnected: false,
+				socket: null,
+			};
+		},
+		methods:
+		{
+			connect()
+			{
+				console.debug("LogReader.connect");
+
+				let URL = location.origin + '/Log/GetLogData';
+				if (URL.toLowerCase().indexOf("http:") === 0)
+					URL = "ws:" + URL.substr("http:".length);
+				else if (URL.toLowerCase().indexOf("https:") === 0)
+					URL = "wss:" + URL.substr("https:".length);
+				else
+				{
+					alert("Unexpected protocol. LogReader can't start.");
+					return;
+				}
+
+				this.socket = new WebSocket(URL);
+
+				this.socket.onopen = event =>
+				{
+					console.log("LogReader Connected");
+					this.logText = '';
+					this.isConnected = true;
+				};
+
+				this.socket.onmessage = (event) =>
+				{
+					this.logText += event.data + '\n';
+				};
+
+				this.socket.onclose = event =>
+				{
+					console.log("LogReader Disconnected", event.code + ": " + getStatusCodeString(event.code));
+					this.isConnected = false;
+					setTimeout(this.connect, 1000);
+				};
+			},
+		},
+		mounted()
+		{
+			this.connect();
+		},
+		beforeUnmount()
+		{
+			this.socket.close();
+		},
+	};
+
+	let specificStatusCodeMappings = {
+		'1000': 'Normal Closure',
+		'1001': 'Going Away',
+		'1002': 'Protocol Error',
+		'1003': 'Unsupported Data',
+		'1004': '(For future)',
+		'1005': 'No Status Received',
+		'1006': 'Abnormal Closure',
+		'1007': 'Invalid frame payload data',
+		'1008': 'Policy Violation',
+		'1009': 'Message too big',
+		'1010': 'Missing Extension',
+		'1011': 'Internal Error',
+		'1012': 'Service Restart',
+		'1013': 'Try Again Later',
+		'1014': 'Bad Gateway',
+		'1015': 'TLS Handshake'
+	};
+
+	function getStatusCodeString(code)
+	{
+		if (code >= 0 && code <= 999)
+			return '(Unused)';
+		else if (code >= 1016)
+		{
+			if (code <= 1999)
+				return '(For WebSocket standard)';
+			else if (code <= 2999)
+				return '(For WebSocket extensions)';
+			else if (code <= 3999)
+				return '(For libraries and frameworks)';
+			else if (code <= 4999)
+				return '(For applications)';
+		}
+		if (typeof (specificStatusCodeMappings[code]) !== 'undefined')
+			return specificStatusCodeMappings[code];
+		return '(Unknown)';
+	}
+</script>
+
+<style>
+	.log-box
+	{
+		border: 1px solid black;
+		position: relative;
+		height: 90vh;
+		overflow-x: hidden;
+		overflow-y: scroll;
+		margin-bottom: 1em;
+	}
+
+		.log-box pre
+		{
+			white-space: pre-wrap;
+		}
+
+	.connection-status
+	{
+		position: absolute;
+		top: 5px;
+		right: 5px;
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+	}
+
+		.connection-status.connected
+		{
+			background-color: green;
+		}
+
+		.connection-status:not(.connected)
+		{
+			background-color: red;
+		}
+</style>

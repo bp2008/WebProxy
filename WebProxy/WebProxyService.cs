@@ -31,6 +31,10 @@ namespace WebProxy
 		/// The web server.
 		/// </summary>
 		private static WebServer webServer;
+		/// <summary>
+		/// This is set = true when the service's OnStop method is called.
+		/// </summary>
+		public static bool abort { get; private set; } = false;
 		public WebProxyService()
 		{
 			if (service != null)
@@ -114,28 +118,36 @@ namespace WebProxy
 #if LINUX
 		protected void OnStart(string[] args)
 		{
-			Logger.Info(Globals.AssemblyName + " Starting Up ");
-			UpdateWebServerBindings();
+			DoStart(args);
 		}
 
 		protected void OnStop()
 		{
-			webServer.Stop();
-			Logger.Info(Globals.AssemblyName + " Shutting Down");
+			DoStop();
 		}
 #else
 		protected override void OnStart(string[] args)
+		{
+			DoStart(args);
+		}
+
+		protected override void OnStop()
+		{
+			DoStop();
+		}
+#endif
+		protected void DoStart(string[] args)
 		{
 			Logger.Info(Globals.AssemblyName + " Starting Up ");
 			UpdateWebServerBindings();
 		}
 
-		protected override void OnStop()
+		protected void DoStop()
 		{
+			abort = true;
 			webServer.Stop();
 			Logger.Info(Globals.AssemblyName + " Shutting Down");
 		}
-#endif
 
 		/// <summary>
 		/// Updates the web server bindings according to the current configuration.  It is safe to call this even if bindings have not changed.
