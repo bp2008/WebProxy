@@ -2,7 +2,7 @@
 	<div>
 		<div class="log-box">
 			<div class="connection-status" :class="{connected: isConnected}" :title="isConnected?'Connected and streaming text from the log.':'Not connected. Attempting to reconnect.'"></div>
-			<pre>{{ logText }}</pre>
+			<pre ref="logBox">{{ logText }}</pre>
 		</div>
 	</div>
 </template>
@@ -15,6 +15,7 @@
 				logText: '',
 				isConnected: false,
 				socket: null,
+				isScrolledToBottom: false
 			};
 		},
 		methods:
@@ -45,6 +46,11 @@
 
 				this.socket.onmessage = (event) =>
 				{
+					if (this.$refs.logBox)
+					{
+						// Check if within 20px of bottom
+						this.isScrolledToBottom = this.$refs.logBox.scrollHeight - (this.$refs.logBox.scrollTop + this.$refs.logBox.clientHeight) < 20;
+					}
 					this.logText += event.data + '\n';
 				};
 
@@ -55,6 +61,22 @@
 					setTimeout(this.connect, 1000);
 				};
 			},
+			scrollToBottom()
+			{
+				this.$nextTick(() =>
+				{
+					if (this.$refs.logBox)
+						this.$refs.logBox.scrollTop = this.$refs.logBox.scrollHeight;
+				});
+			}
+		},
+		watch:
+		{
+			logText(newVal, oldVal)
+			{
+				if (this.$refs.logBox && this.isScrolledToBottom)
+					this.scrollToBottom();
+			}
 		},
 		mounted()
 		{
@@ -109,26 +131,26 @@
 <style>
 	.log-box
 	{
-		border: 1px solid black;
 		position: relative;
-		height: 90vh;
-		overflow-x: hidden;
-		overflow-y: scroll;
 		margin-bottom: 1em;
 	}
 
 		.log-box pre
 		{
+			border: 1px solid black;
+			height: 90vh;
 			white-space: pre-wrap;
+			overflow-x: hidden;
+			overflow-y: scroll;
 		}
 
 	.connection-status
 	{
 		position: absolute;
 		top: 5px;
-		right: 5px;
-		width: 10px;
-		height: 10px;
+		right: 22px;
+		width: 16px;
+		height: 16px;
 		border-radius: 50%;
 	}
 

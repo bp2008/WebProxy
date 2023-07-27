@@ -18,10 +18,21 @@ namespace WebProxy.Controllers
 		public ActionResult Index(string logFileName)
 		{
 			string filePath = Globals.WritableDirectoryBase + "Logs/" + logFileName;
-			if (!logFileName.Contains('/') && !logFileName.Contains('\\') && File.Exists(filePath))
-				return PlainText(File.ReadAllText(filePath));
-			else
-				return this.StatusCode("404 Not Found");
+			if (!logFileName.Contains('/') && !logFileName.Contains('\\'))
+			{
+				if (File.Exists(filePath))
+					return PlainText(File.ReadAllText(filePath));
+
+				filePath = Globals.WritableDirectoryBase + "Logs/" + Globals.AssemblyName + "_" + logFileName;
+				if (File.Exists(filePath))
+					return PlainText(File.ReadAllText(filePath));
+
+				filePath = Globals.WritableDirectoryBase + "Logs/" + Globals.AssemblyName + "_" + logFileName + ".txt";
+				if (File.Exists(filePath))
+					return PlainText(File.ReadAllText(filePath));
+			}
+
+			return this.StatusCode("404 Not Found");
 		}
 		public ActionResult GetLogData()
 		{
@@ -42,7 +53,7 @@ namespace WebProxy.Controllers
 				});
 
 			StringBuilder sb = new StringBuilder();
-			using (StreamingLogReader2 reader = new StreamingLogReader2(101))
+			using (StreamingLogReader2 reader = new StreamingLogReader2(257))
 			{
 				CountdownStopwatch pingTimer = CountdownStopwatch.StartNew(TimeSpan.FromSeconds(15));
 				while (isConnected && !WebProxyService.abort)

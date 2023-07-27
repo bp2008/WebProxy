@@ -3,6 +3,7 @@ using BPUtil.MVC;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -103,6 +104,10 @@ namespace WebProxy.Controllers
 			}
 			return ApiError("Unable to find an acceptable Entrypoint that is routed to the chosen Exitpoint.");
 		}
+		public ActionResult GetRaw()
+		{
+			return PlainText(JsonConvert.SerializeObject(WebProxyService.MakeLocalSettingsReference(), Formatting.Indented));
+		}
 	}
 	public class GetConfigurationResponse : ApiResponseBase
 	{
@@ -114,11 +119,31 @@ namespace WebProxy.Controllers
 		public string errorTrackerSubmitUrl;
 		public string[] exitpointTypes = Enum.GetNames(typeof(ExitpointType));
 		public string[] middlewareTypes = Enum.GetNames(typeof(MiddlewareType));
+		public LogFile[] logFiles = GetLogFiles();
 
 		[JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
 		public string[] adminEntryOrigins;
+
 		public GetConfigurationResponse() : base(true, null)
 		{
+		}
+
+		private static LogFile[] GetLogFiles()
+		{
+			DirectoryInfo di = new DirectoryInfo(Globals.WritableDirectoryBase + "Logs");
+			return di.GetFiles("*.txt").Select(fi => new LogFile(fi.Name, fi.Length)).ToArray();
+		}
+	}
+	public class LogFile
+	{
+		public string fileName;
+		public string size;
+		public LogFile() { }
+
+		public LogFile(string fileName, long length)
+		{
+			this.fileName = fileName;
+			this.size = StringUtil.FormatDiskBytes(length);
 		}
 	}
 	public class SetConfigurationRequest

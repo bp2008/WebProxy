@@ -58,8 +58,10 @@
 		<h2>Hosted URL Summary</h2>
 		<HostedUrlSummary />
 		<h2>Raw Settings.json</h2>
-		<div class="code">
-			{{JSON.stringify(store, null, 2)}}
+		<a href="/Configuration/GetRaw" target="_blank">Settings.json</a>
+		<h2>Log Files</h2>
+		<div v-for="logFile in store.logFiles">
+			<a :href="'/Log/' + logFile.fileName" target="_blank">{{logFile.fileName}}</a> ({{logFile.size}})
 		</div>
 		<h2>Live Log File</h2>
 		<LogReader />
@@ -222,6 +224,7 @@
 				store.middlewares = response.middlewares;
 				store.proxyRoutes = response.proxyRoutes;
 				store.errorTrackerSubmitUrl = response.errorTrackerSubmitUrl;
+				store.logFiles = response.logFiles;
 
 				this.originalJson = this.currentJson;
 			},
