@@ -26,10 +26,13 @@ chmod u+x webproxy_install.sh
 
 The installation script will ask if you wish to install or uninstall.  Once installed, WebProxy will start automatically.
 
-You can manage the webproxy service via standard `systemctl` commands or by running WebProxy with the argument "cmd":
+Access the interactive command line interface by running WebProxy with the argument "cmd":
 
 ```
 sudo /usr/bin/dotnet ~/webproxy/WebProxyLinux.dll cmd
 ```
 
-Do that now to open the interactive command-line interface.  Use the command `admin` to see the URLs and credentials for the Admin Console website.
+Within the interactive command line interface, use the command `admin` to see the URLs and credentials for the Admin Console website.
+
+
+If you prefer, you can manage the webproxy service via standard `systemctl` commands (the service name is `webproxy`).
