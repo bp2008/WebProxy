@@ -31,7 +31,7 @@ namespace WebProxy
 		/// </summary>
 		public bool autoCertificate;
 		/// <summary>
-		/// [Requires autoCertificate == false] Path to the certificate file (pfx).
+		/// [Requires autoCertificate == false] Path to the certificate file (pfx). If omitted, a path will be automatically filled in upon first use.
 		/// </summary>
 		public string certificatePath;
 		/// <summary>

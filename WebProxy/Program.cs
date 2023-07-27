@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.ServiceProcess;
 using System.Text;
 using System.Threading;
@@ -17,17 +18,19 @@ namespace WebProxy
 {
 	static class Program
 	{
+		static string serviceName;
 		/// <summary>
 		/// The main entry point for the application.
 		/// </summary>
 		static void Main()
 		{
+			// TODO: Expose the log files in the web interface. The latest log file should be streaming.
 			WindowsServiceInitOptions options = new WindowsServiceInitOptions();
 #if LINUX
-			options.ServiceName = "webproxy";
-			options.LinuxCommandLineInterface = runShellInterface;
+			options.ServiceName = serviceName = "webproxy";
+			options.LinuxCommandLineInterface = runCommandLineInterface;
 #else
-			options.ServiceName = "WebProxy";
+			options.ServiceName = serviceName = "WebProxy";
 			options.ServiceManagerButtons = new ButtonDefinition[] {
 				new ButtonDefinition("Admin Console", (object sender, EventArgs e) =>
 				{
@@ -40,69 +43,125 @@ namespace WebProxy
 		}
 
 #if LINUX
-		private static void runShellInterface()
+		private static EConsole c = EConsole.I;
+		private static void runCommandLineInterface()
 		{
-			Console.WriteLine("Running WebProxy " + Globals.AssemblyVersion + " in command-line mode.");
+			c.CyanLine("Running WebProxy " + Globals.AssemblyVersion + " in command-line mode.");
+			c.Line();
+			c.Line("Data directory:").CyanLine("\t" + Globals.WritableDirectoryBase);
+			c.Line();
 			WriteUsage();
 			string input = Console.ReadLine();
 			while (input != null && input != "exit")
 			{
-				Console.WriteLine();
+				c.Line();
 				if (input == "admin")
 				{
 					AdminInfo adminInfo = new AdminInfo();
-					Console.WriteLine("------Credentials------");
-					Console.WriteLine("User: " + adminInfo.user);
-					Console.WriteLine("Pass: " + adminInfo.pass);
-					Console.WriteLine("---------URLs----------");
+					c.YellowLine("------Credentials------");
+					c.Yellow("User: ").WriteLine(adminInfo.user);
+					c.Yellow("Pass: ").WriteLine(adminInfo.pass);
+					c.YellowLine("---------URLs----------");
 					if (adminInfo.httpUrl != null)
-						Console.WriteLine(adminInfo.httpUrl + " (" + adminInfo.adminIp + ")");
+						c.Cyan(adminInfo.httpUrl).YellowLine(" (" + adminInfo.adminIp + ")");
 					if (adminInfo.httpsUrl != null)
-						Console.WriteLine(adminInfo.httpsUrl + " (" + adminInfo.adminIp + ")");
-					Console.WriteLine("-----------------------");
+						c.Cyan(adminInfo.httpsUrl).YellowLine(" (" + adminInfo.adminIp + ")");
+					c.YellowLine("-----------------------");
 				}
 				else if (input == "install")
 				{
-					AppInit.InstallLinuxSystemdService("webproxy");
+					AppInit.InstallLinuxSystemdService(serviceName);
 				}
 				else if (input == "uninstall")
 				{
-					AppInit.UninstallLinuxSystemdService("webproxy");
+					AppInit.UninstallLinuxSystemdService(serviceName);
 				}
-				else if (input == "viewconfig")
+				else if (input == "status")
 				{
-					Console.WriteLine(JsonConvert.SerializeObject(WebProxyService.MakeLocalSettingsReference(), Formatting.Indented));
+					AppInit.StatusLinuxSystemdService(serviceName);
+				}
+				else if (input == "start")
+				{
+					AppInit.StartLinuxSystemdService(serviceName);
+				}
+				else if (input == "stop")
+				{
+					AppInit.StopLinuxSystemdService(serviceName);
+				}
+				else if (input == "restart")
+				{
+					AppInit.RestartLinuxSystemdService(serviceName);
+				}
+				else if (input == "readconfig")
+				{
+					AdminCommandLineInterfaceAPICall("ReadConfig");
 				}
 				else if (input == "loadconfig")
 				{
-					WebProxyService.InitializeSettings();
+					AdminCommandLineInterfaceAPICall("LoadConfig");
 				}
 				else if (input == "saveconfig")
 				{
-					WebProxyService.SaveNewSettings(WebProxyService.CloneSettingsObjectSlow());
+					AdminCommandLineInterfaceAPICall("SaveConfig");
 				}
 				else
 				{
-					Console.WriteLine("Unrecognized command");
+					c.RedLine("Unrecognized command");
 				}
 				WriteUsage();
 				input = Console.ReadLine();
 			}
 		}
-
+		private static WebRequestUtility wru = new WebRequestUtility("WebProxy Command Line Interface", 4000);
+		private static void AdminCommandLineInterfaceAPICall(string methodName)
+		{
+			try
+			{
+				AdminInfo adminInfo = new AdminInfo();
+				UriBuilder builder = new UriBuilder(adminInfo.httpUrl ?? adminInfo.httpsUrl);
+				if (!string.IsNullOrWhiteSpace(adminInfo.adminEntry.ipAddress) && IPAddress.TryParse(adminInfo.adminEntry.ipAddress, out IPAddress ipAddress))
+				{
+					builder.Host = ipAddress.ToString();
+				}
+				builder.Path = "/CommandLineInterface/" + methodName;
+				if (!string.IsNullOrWhiteSpace(adminInfo.user) && wru.BasicAuthCredentials == null)
+					wru.BasicAuthCredentials = new NetworkCredential(adminInfo.user, adminInfo.pass);
+				BpWebResponse response = wru.GET(builder.Uri.ToString());
+				if (response.StatusCode == 0)
+					c.RedLine("Failed to get a response from the service. Is it running?");
+				else
+				{
+					dynamic responseData = JsonConvert.DeserializeObject(response.str);
+					if (responseData.success == true)
+						c.Line((string)responseData.message);
+					else if (responseData.success == false)
+						c.RedLine((string)responseData.error);
+					else
+						c.YellowLine(response.str);
+				}
+			}
+			catch (Exception ex)
+			{
+				c.RedLine(ex.ToHierarchicalString());
+			}
+		}
 		private static void WriteUsage()
 		{
-			Console.WriteLine();
-			Console.WriteLine("Commands:");
-			Console.WriteLine("\t" + "admin      - Display admin console login link and credentials.");
-			Console.WriteLine("\t" + "install    - Install as service using systemd.");
-			Console.WriteLine("\t" + "uninstall  - Uninstall as service using systemd.");
-			Console.WriteLine("\t" + "viewconfig - Display current configuration JSON.");
-			Console.WriteLine("\t" + "loadconfig - Reload Settings.json file.");
-			Console.WriteLine("\t" + "saveconfig - Rewrite Settings.json file. Can be helpful if ");
-			Console.WriteLine("\t" + "             the JSON schema has been changed in an update.");
-			Console.WriteLine("\t" + "exit       - Close this program");
-			Console.WriteLine();
+			c.WriteLine();
+			c.WriteLine("Commands:");
+			ConsoleAppHelper.MaxCommandSize = 11;
+			ConsoleAppHelper.WriteUsageCommand("admin", "Display admin console login link and credentials.");
+			ConsoleAppHelper.WriteUsageCommand("install", "Install as service using systemd.");
+			ConsoleAppHelper.WriteUsageCommand("uninstall", "Uninstall as service using systemd.");
+			ConsoleAppHelper.WriteUsageCommand("status", "Display the service status.");
+			ConsoleAppHelper.WriteUsageCommand("start", "Start the service.");
+			ConsoleAppHelper.WriteUsageCommand("stop", "Stop the service.");
+			ConsoleAppHelper.WriteUsageCommand("restart", "Restart the service.");
+			ConsoleAppHelper.WriteUsageCommand("readconfig", "Read current configuration from the running service and display it here.");
+			ConsoleAppHelper.WriteUsageCommand("loadconfig", "Instruct the running service to validate and reload the Settings.json file.");
+			ConsoleAppHelper.WriteUsageCommand("saveconfig", "Instruct the running service to save its current settings to the Settings.json file.");
+			ConsoleAppHelper.WriteUsageCommand("exit", "Close this command line interface.");
+			c.WriteLine();
 		}
 #endif
 	}

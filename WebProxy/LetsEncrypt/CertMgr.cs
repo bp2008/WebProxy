@@ -33,7 +33,7 @@ namespace WebProxy.LetsEncrypt
 		/// <summary>
 		/// The URI of the ACME server where certificates will be obtained from.
 		/// </summary>
-		private static Uri acmeServerUri = WellKnownServers.LetsEncryptStagingV2;
+		private static Uri acmeServerUri = WellKnownServers.LetsEncryptV2;
 		/// <summary>
 		/// The last email address in use when Initialize was called.
 		/// </summary>
@@ -329,17 +329,16 @@ namespace WebProxy.LetsEncrypt
 					byte[] pfx = pfxBuilder.Build(domains[0], "");
 
 					Logger.Info("CertMgr.Create: Save");
-					string certsBaseDir = Globals.WritableDirectoryBase + "Certs/";
 					Robust.RetryPeriodic(() =>
 					{
-						Directory.CreateDirectory(certsBaseDir);
+						Directory.CreateDirectory(CertsBaseDir);
 					}, 50, 100);
 
 					foreach (string domain in domains)
 					{
 						Robust.RetryPeriodic(() =>
 						{
-							File.WriteAllBytes(certsBaseDir + DomainToFileName(domain) + ".pfx", pfx);
+							File.WriteAllBytes(GetDefaultCertificatePath(domain), pfx);
 						}, 50, 100);
 					}
 				}
@@ -451,7 +450,6 @@ namespace WebProxy.LetsEncrypt
 		private static Dictionary<string, CachedObject<X509Certificate2>> certCache = new Dictionary<string, CachedObject<X509Certificate2>>();
 		private static CachedObject<X509Certificate2> GetCertCache(string host)
 		{
-			string certsBaseDir = Globals.WritableDirectoryBase + "Certs/";
 			string fileName = DomainToFileName(host) + ".pfx";
 			if (!certCache.TryGetValue(fileName, out CachedObject<X509Certificate2> cache))
 			{
@@ -459,8 +457,8 @@ namespace WebProxy.LetsEncrypt
 				{
 					byte[] certData = Robust.Retry<byte[]>(() =>
 					{
-						if (File.Exists(certsBaseDir + fileName))
-							return File.ReadAllBytes(certsBaseDir + fileName);
+						if (File.Exists(CertsBaseDir + fileName))
+							return File.ReadAllBytes(CertsBaseDir + fileName);
 						return new byte[0];
 					}
 						 , ba => ba != null
@@ -479,13 +477,36 @@ namespace WebProxy.LetsEncrypt
 		#endregion
 		#region Helpers
 		/// <summary>
+		/// Gets the base directory path for the "Certs" directory, ending with '/'.
+		/// </summary>
+		public static string CertsBaseDir
+		{
+			get
+			{
+				return Globals.WritableDirectoryBase + "Certs/";
+			}
+		}
+		/// <summary>
 		/// Returns a lower case file name built from the given domain string.
 		/// </summary>
-		/// <param name="domain"></param>
+		/// <param name="domain">domain name for the certificate file.</param>
 		/// <returns></returns>
-		private static string DomainToFileName(string domain)
+		public static string DomainToFileName(string domain)
 		{
-			return StringUtil.MakeSafeForFileName(domain).ToLower();
+			string str = StringUtil.MakeSafeForFileName(domain).Trim().ToLower();
+			if (string.IsNullOrWhiteSpace(str))
+				str = "undefined";
+			return str;
+		}
+		/// <summary>
+		/// <para>Returns the default certificate path for the given host.</para>
+		/// <para><c>Globals.WritableDirectoryBase + "Certs/" + DomainToFileName(host) + ".pfx"</c></para>
+		/// </summary>
+		/// <param name="host"></param>
+		/// <returns></returns>
+		public static string GetDefaultCertificatePath(string host)
+		{
+			return CertsBaseDir + DomainToFileName(host) + ".pfx";
 		}
 
 		/// <summary>

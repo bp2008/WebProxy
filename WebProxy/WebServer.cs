@@ -268,6 +268,15 @@ namespace WebProxy
 		protected override void stopServer()
 		{
 		}
+		
+		/// <summary>
+		/// If this method returns true, socket bind events will be logged normally.  If false, they will use the LogVerbose call.
+		/// </summary>
+		/// <returns></returns>
+		public override bool shouldLogSocketBind()
+		{
+			return true;
+		}
 
 		/// <summary>
 		/// Reconfigures the web server to listen on all entrypoints currently in the settings object.

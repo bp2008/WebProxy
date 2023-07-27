@@ -28,6 +28,7 @@
 				<div class="flexRow" v-if="!exitpoint.autoCertificate">
 					<label>Certificate Path</label>
 					<input type="text" v-model="exitpoint.certificatePath" class="certificatePathInput" placeholder="Path to the certificate file (pfx)" title="Path to the certificate file (pfx)" />
+					<div class="comment">Path to the certificate file (pfx). If omitted, a path will be automatically filled in upon first use.</div>
 				</div>
 			</div>
 			<template v-if="exitpoint.type === 'WebProxy'">

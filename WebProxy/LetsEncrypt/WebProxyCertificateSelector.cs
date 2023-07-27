@@ -80,8 +80,10 @@ namespace WebProxy.LetsEncrypt
 				string certPath = myExitpoint.certificatePath;
 				if (string.IsNullOrWhiteSpace(certPath))
 				{
-					WebProxyService.ReportError("Certificate requested for exitpoint with null or whitespace certificatePath.");
-					return null;
+					Settings newSettings = WebProxyService.CloneSettingsObjectSlow();
+					myExitpoint = newSettings.exitpoints.First(e => e.name == myExitpoint.name);
+					myExitpoint.certificatePath = certPath = CertMgr.GetDefaultCertificatePath(serverName);
+					WebProxyService.SaveNewSettings(newSettings);
 				}
 				if (!staticCertDict.TryGetValue(certPath, out CachedObject<X509Certificate2> cache))
 				{
@@ -91,23 +93,63 @@ namespace WebProxy.LetsEncrypt
 						{
 							try
 							{
-								if (File.Exists(certPath))
-									return new X509Certificate2(certPath);
+								FileInfo fiCert = new FileInfo(certPath);
+								if (!fiCert.Exists)
+								{
+									lock (selfSignedCertLock)
+									{
+										if (!File.Exists(certPath))
+										{
+											string[] domains = myExitpoint.getAllDomains();
+											for (int i = 0; i < domains.Length; i++)
+											{
+												domains[i] = domains[i].Replace("*", "").Trim();
+												if (string.IsNullOrEmpty(domains[i]))
+													domains[i] = "undefined";
+											}
+											domains = domains.Distinct().ToArray();
+											using (System.Security.Cryptography.RSA key = System.Security.Cryptography.RSA.Create(2048))
+											{
+												CertificateRequest request = new CertificateRequest("cn=" + domains[0], key, System.Security.Cryptography.HashAlgorithmName.SHA256, System.Security.Cryptography.RSASignaturePadding.Pkcs1);
+
+												SubjectAlternativeNameBuilder sanBuilder = new SubjectAlternativeNameBuilder();
+												foreach (string domain in domains)
+													sanBuilder.AddDnsName(domain);
+												request.CertificateExtensions.Add(sanBuilder.Build());
+
+												X509Certificate2 ssl_certificate = request.CreateSelfSigned(DateTime.Today.AddDays(-1), DateTime.Today.AddYears(100));
+
+												byte[] certData = ssl_certificate.Export(X509ContentType.Pfx);
+												Robust.RetryPeriodic(() =>
+												{
+													Directory.CreateDirectory(fiCert.Directory.FullName);
+													File.WriteAllBytes(fiCert.FullName, certData);
+												}, 50, 6);
+
+												return ssl_certificate;
+											}
+										}
+									}
+								}
+								return new X509Certificate2(certPath);
 							}
 							catch (Exception ex)
 							{
 								WebProxyService.ReportError(ex);
 								return null;
 							}
-							return null;
 						}
 						, TimeSpan.FromSeconds(10)
 						, TimeSpan.FromSeconds(60)
 					);
 				}
-				return cache.GetInstance();
+				X509Certificate2 cert = cache.GetInstance();
+				if (cert == null)
+					cert = cache.Reload();
+				return cert;
 			}
 		}
+		private static object selfSignedCertLock = new object();
 		private ConcurrentDictionary<string, CachedObject<X509Certificate2>> staticCertDict = new ConcurrentDictionary<string, CachedObject<X509Certificate2>>();
 	}
 }

@@ -64,10 +64,18 @@ namespace WebProxy
 		{
 			Settings s = new Settings();
 			s.Load();
+			string settingsOriginal = JsonConvert.SerializeObject(s);
+			ValidateSettings(s);
+			string settingsAfterValidation = JsonConvert.SerializeObject(s);
 			lock (settingsSaveLock)
 			{
-				staticSettings = s;
-				staticSettings.SaveIfNoExist();
+				if (settingsOriginal != settingsAfterValidation)
+					SaveNewSettings(s);
+				else
+				{
+					staticSettings = s;
+					staticSettings.SaveIfNoExist();
+				}
 
 				SettingsValidateAndAdminConsoleSetup(out Entrypoint adminEntry, out Exitpoint adminExit, out Middleware adminLogin);
 			}
@@ -106,22 +114,26 @@ namespace WebProxy
 #if LINUX
 		protected void OnStart(string[] args)
 		{
+			Logger.Info(Globals.AssemblyName + " Starting Up ");
 			UpdateWebServerBindings();
 		}
 
 		protected void OnStop()
 		{
 			webServer.Stop();
+			Logger.Info(Globals.AssemblyName + " Shutting Down");
 		}
 #else
 		protected override void OnStart(string[] args)
 		{
+			Logger.Info(Globals.AssemblyName + " Starting Up ");
 			UpdateWebServerBindings();
 		}
 
 		protected override void OnStop()
 		{
 			webServer.Stop();
+			Logger.Info(Globals.AssemblyName + " Shutting Down");
 		}
 #endif
 
@@ -314,12 +326,15 @@ namespace WebProxy
 				SaveNewSettings(s);
 		}
 		/// <summary>
-		/// Validate the settings file.  Throw an exception if anything is invalid that can't be cleanly repaired automatically.
+		/// Validate the settings file and repair simple problems.  Throw an exception if anything is invalid that can't be cleanly repaired automatically.  Because this can modify the settings, this should never be passed the static settings instance, and should only be called just prior to saving the settings.
 		/// </summary>
 		/// <param name="s">Settings instance containing settings that need to be validated.</param>
 		/// <exception cref="Exception">If validation fails.</exception>
 		private static void ValidateSettings(Settings s)
 		{
+			if (s == staticSettings)
+				throw new Exception("Application error: Refusing to run ValidateSettings on the static settings instance due to causing race conditions.");
+
 			if (s.entrypoints == null)
 				s.entrypoints = new List<Entrypoint>();
 			if (s.exitpoints == null)
@@ -328,6 +343,8 @@ namespace WebProxy
 				s.middlewares = new List<Middleware>();
 			if (s.proxyRoutes == null)
 				s.proxyRoutes = new List<ProxyRoute>();
+
+			HashSet<string> nameUniqueness = new HashSet<string>();
 
 			// Validate Entrypoints
 			foreach (Entrypoint entrypoint in s.entrypoints)
@@ -340,7 +357,17 @@ namespace WebProxy
 
 				if (entrypoint.middlewares == null)
 					entrypoint.middlewares = new string[0];
+
+				for (int i = 0; i < entrypoint.middlewares.Length; i++)
+					entrypoint.middlewares[i] = entrypoint.middlewares[i].Trim();
+
+				entrypoint.name = entrypoint.name.Trim();
+				if (nameUniqueness.Contains(entrypoint.name.ToLower()))
+					throw new Exception("Entrypoint names are not unique. Duplicate name: \"" + entrypoint.name + "\"");
+				nameUniqueness.Add(entrypoint.name.ToLower());
 			}
+
+			nameUniqueness.Clear();
 
 			// Validate Exitpoints
 			foreach (Exitpoint exitpoint in s.exitpoints)
@@ -354,6 +381,9 @@ namespace WebProxy
 				if (exitpoint.middlewares == null)
 					exitpoint.middlewares = new string[0];
 
+				for (int i = 0; i < exitpoint.middlewares.Length; i++)
+					exitpoint.middlewares[i] = exitpoint.middlewares[i].Trim();
+
 				if (exitpoint.type == ExitpointType.AdminConsole || exitpoint.type == ExitpointType.WebProxy)
 				{
 					if (exitpoint.autoCertificate && string.IsNullOrWhiteSpace(s.acmeAccountEmail))
@@ -362,8 +392,17 @@ namespace WebProxy
 					if (exitpoint.certificatePath == null)
 						exitpoint.certificatePath = "";
 
-					if (StringUtil.MakeSafeForFileName(exitpoint.certificatePath) != exitpoint.certificatePath)
-						throw new Exception("Exitpoint \"" + exitpoint.name + "\" has invalid Certificate Path.");
+					if (!string.IsNullOrWhiteSpace(exitpoint.certificatePath))
+					{
+						try
+						{
+							FileInfo fi = new FileInfo(exitpoint.certificatePath);
+						}
+						catch (Exception ex)
+						{
+							throw new Exception("Exitpoint \"" + exitpoint.name + "\" has invalid Certificate Path.", ex);
+						}
+					}
 				}
 
 				if (exitpoint.type == ExitpointType.WebProxy)
@@ -374,7 +413,14 @@ namespace WebProxy
 					if (!string.IsNullOrEmpty(exitpoint.destinationHostHeader) && !Uri.TryCreate("http://" + exitpoint.destinationHostHeader + ":80/", UriKind.Absolute, out Uri ignored2))
 						throw new Exception("Exitpoint \"" + exitpoint.name + "\" has invalid Destination Host Header.");
 				}
+
+				exitpoint.name = exitpoint.name.Trim();
+				if (nameUniqueness.Contains(exitpoint.name.ToLower()))
+					throw new Exception("Exitpoint names are not unique. Duplicate name: \"" + exitpoint.name + "\"");
+				nameUniqueness.Add(exitpoint.name.ToLower());
 			}
+
+			nameUniqueness.Clear();
 
 			// Validate Middlewares
 			foreach (Middleware middleware in s.middlewares)
@@ -384,6 +430,11 @@ namespace WebProxy
 
 				if (string.IsNullOrWhiteSpace(middleware.Id))
 					throw new Exception("Middleware index " + s.middlewares.IndexOf(middleware) + " does not have a name.");
+
+				middleware.Id = middleware.Id.Trim();
+				if (nameUniqueness.Contains(middleware.Id.ToLower()))
+					throw new Exception("Middleware names are not unique. Duplicate name: \"" + middleware.Id + "\"");
+				nameUniqueness.Add(middleware.Id.ToLower());
 
 				if (middleware.Type == MiddlewareType.IPWhitelist)
 				{
@@ -425,6 +476,8 @@ namespace WebProxy
 				}
 			}
 
+			nameUniqueness.Clear();
+
 			// Validate ProxyRoutes
 			foreach (ProxyRoute r in s.proxyRoutes)
 			{
@@ -435,10 +488,19 @@ namespace WebProxy
 					throw new Exception("ProxyRoute index " + s.proxyRoutes.IndexOf(r) + " does not specify an Entrypoint.");
 				if (string.IsNullOrWhiteSpace(r.exitpointName))
 					throw new Exception("ProxyRoute index " + s.proxyRoutes.IndexOf(r) + " does not specify an Exitpoint.");
+
+				r.entrypointName = r.entrypointName.Trim();
+				r.exitpointName = r.exitpointName.Trim();
+
 				if (!s.entrypoints.Any(e => e.name == r.entrypointName))
 					throw new Exception("ProxyRoute index " + s.proxyRoutes.IndexOf(r) + " specifies non-existent Entrypoint named \"" + r.entrypointName + "\".");
 				if (!s.exitpoints.Any(e => e.name == r.exitpointName))
 					throw new Exception("ProxyRoute index " + s.proxyRoutes.IndexOf(r) + " specifies non-existent Exitpoint named \"" + r.exitpointName + "\".");
+
+				string routeId = "[" + r.entrypointName + "] -> [" + r.exitpointName + "]";
+				if (nameUniqueness.Contains(routeId.ToLower()))
+					throw new Exception("ProxyRoutes are not unique. Duplicate ProxyRoutes: \"" + routeId + "\"");
+				nameUniqueness.Add(routeId.ToLower());
 			}
 		}
 		#endregion
