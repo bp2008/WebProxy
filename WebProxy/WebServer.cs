@@ -228,7 +228,6 @@ namespace WebProxy
 
 					HttpProcessor.ProxyOptions options = new HttpProcessor.ProxyOptions();
 					options.networkTimeoutMs = 15000;
-					options.snoopy = new ProxyDataBuffer();
 					options.bet = bet;
 					options.host = myExitpoint.destinationHostHeader;
 					options.includeServerTimingHeader = AddProxyServerTiming;

@@ -24,7 +24,6 @@ namespace WebProxy
 		/// </summary>
 		static void Main()
 		{
-			// TODO: Expose the log files in the web interface. The latest log file should be streaming.
 			WindowsServiceInitOptions options = new WindowsServiceInitOptions();
 #if LINUX
 			options.ServiceName = serviceName = "webproxy";
