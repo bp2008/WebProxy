@@ -1,4 +1,5 @@
 ﻿using BPUtil;
+using BPUtil.SimpleHttp.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
@@ -39,19 +40,23 @@ namespace WebProxy
 		/// <summary>
 		/// Allows configuration of the X-Forwarded-For header.  Default behavior (if middleware is not enabled) is to drop the header when proxying a request.
 		/// </summary>
-		AddXForwardedFor = 5,
+		XForwardedFor = 5,
 		/// <summary>
 		/// Allows configuration of the X-Forwarded-Host header.  Default behavior (if middleware is not enabled) is to drop the header when proxying a request.
 		/// </summary>
-		AddXForwardedHost = 6,
+		XForwardedHost = 6,
 		/// <summary>
 		/// Allows configuration of the X-Forwarded-Proto header.  Default behavior (if middleware is not enabled) is to drop the header when proxying a request.
 		/// </summary>
-		AddXForwardedProto = 7,
+		XForwardedProto = 7,
 		/// <summary>
 		/// Allows configuration of the X-Real-Ip header.  Default behavior (if middleware is not enabled) is to drop the header when proxying a request.
 		/// </summary>
-		AddXRealIp = 8,
+		XRealIp = 8,
+		/// <summary>
+		/// Allows the caller to provide a list of trusted IP ranges for [XForwardedFor, XForwardedHost, XForwardedProto, XRealIp] middlewares.
+		/// </summary>
+		TrustedProxyIPRanges = 9
 	}
 	/// <summary>
 	/// Applies additional logic to an Entrypoint or Exitpoint.  Constraints may be applied to an Entrypoint or an Exitpoint or both.
@@ -68,7 +73,7 @@ namespace WebProxy
 		[JsonConverter(typeof(StringEnumConverter))]
 		public MiddlewareType Type;
 		/// <summary>
-		/// <para>For [Type] = IPWhitelist</para>
+		/// <para>For [Type] in [IPWhitelist, TrustedProxyIPRanges]</para>
 		/// <para>Client connections are dropped if they do not come from an IP address that is listed here.</para>
 		/// <para>This is an array of strings defining single IP addresses ("1.1.1.1"), IP ranges ("1.1.1.1 - 1.1.1.5"), or subnets ("1.1.1.0/24"). IPv4 and IPv6 are both supported.</para>
 		/// </summary>
@@ -81,9 +86,16 @@ namespace WebProxy
 		public List<UnPwCredential> AuthCredentials = new List<UnPwCredential>();
 		/// <summary>
 		/// <para>For [Type] = AddHttpHeaderToResponse</para>
-		/// <para>Responses to our client will have this HTTP header set (overrides any proxied HTTP headers using the same name).</para>
+		/// <para>Responses to our client will have these HTTP headers set (overrides any proxied HTTP headers using the same name).</para>
 		/// </summary>
-		public string HttpHeader;
+		public string[] HttpHeaders;
+		/// <summary>
+		/// <para>For [Type] in [XForwardedFor, XForwardedHost, XForwardedProto, XRealIp]</para>
+		/// <para>
+		/// The header named by [Type] shall be manipulated in the way defined by this field.  If unspecified, the default behavior for all such headers is to drop them.</para>
+		/// </summary>
+		[JsonConverter(typeof(StringEnumConverter))]
+		public ProxyHeaderBehavior ProxyHeaderBehavior = ProxyHeaderBehavior.Drop;
 		/// <summary>
 		/// Gets the password for the given username, or null.
 		/// </summary>

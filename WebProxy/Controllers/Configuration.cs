@@ -119,6 +119,8 @@ namespace WebProxy.Controllers
 		public string errorTrackerSubmitUrl;
 		public string[] exitpointTypes = Enum.GetNames(typeof(ExitpointType));
 		public string[] middlewareTypes = Enum.GetNames(typeof(MiddlewareType));
+		public string[] proxyHeaderBehaviorOptions = Enum.GetNames(typeof(BPUtil.SimpleHttp.Client.ProxyHeaderBehavior));
+		public Dictionary<string,string> proxyHeaderBehaviorOptionsDescriptions = DescriptionAttribute.GetDescriptions< BPUtil.SimpleHttp.Client.ProxyHeaderBehavior>();
 		public LogFile[] logFiles = GetLogFiles();
 
 		[JsonProperty(NullValueHandling = NullValueHandling.Ignore)]

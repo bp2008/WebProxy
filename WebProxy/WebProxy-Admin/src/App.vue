@@ -203,8 +203,14 @@
 					toaster.error(response.error, 60000);
 					return;
 				}
+				// If adding fields to store, please add them in store.js too!
 				store.exitpointTypes = response.exitpointTypes;
 				store.middlewareTypes = response.middlewareTypes;
+				store.proxyHeaderBehaviorOptions = response.proxyHeaderBehaviorOptions;
+				store.proxyHeaderBehaviorOptionsDescriptions = response.proxyHeaderBehaviorOptionsDescriptions;
+				store.acmeAccountEmail = response.acmeAccountEmail;
+				store.errorTrackerSubmitUrl = response.errorTrackerSubmitUrl;
+				store.logFiles = response.logFiles;
 
 				for (let i = 0; i < response.entrypoints.length; i++)
 					FixEntrypoint(response.entrypoints[i]);
@@ -218,13 +224,10 @@
 				for (let i = 0; i < response.proxyRoutes.length; i++)
 					FixProxyRoute(response.proxyRoutes[i]);
 
-				store.acmeAccountEmail = response.acmeAccountEmail;
 				store.entrypoints = response.entrypoints;
 				store.exitpoints = response.exitpoints;
 				store.middlewares = response.middlewares;
 				store.proxyRoutes = response.proxyRoutes;
-				store.errorTrackerSubmitUrl = response.errorTrackerSubmitUrl;
-				store.logFiles = response.logFiles;
 
 				this.originalJson = this.currentJson;
 			},
@@ -326,6 +329,10 @@
 			o.AuthCredentials = [];
 		if (!o.Type)
 			o.Type = store.middlewareTypes[0];
+		if (!o.ProxyHeaderBehavior)
+			o.ProxyHeaderBehavior = store.proxyHeaderBehaviorOptions[0];
+		if (!o.HttpHeaders)
+			o.HttpHeaders = [];
 		o.uniqueId = idCounter++;
 		return o;
 	}
@@ -356,6 +363,7 @@
 	.topBar
 	{
 		position: sticky;
+		z-index: 1;
 		top: 0px;
 		background-color: #FFFFFF;
 		border-bottom: 1px solid #AAAAAA;

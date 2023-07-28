@@ -9,14 +9,20 @@
 		<Compile Remove="Properties\**" />
 		<Compile Remove="Resources\**" />
 		<Compile Remove="ServiceUI\**" />
+		<Compile Remove="WebProxy-Admin\dist\**" />
+		<Compile Remove="WebProxy-Admin\node_modules\**" />
 		<EmbeddedResource Remove="Libs\**" />
 		<EmbeddedResource Remove="Properties\**" />
 		<EmbeddedResource Remove="Resources\**" />
 		<EmbeddedResource Remove="ServiceUI\**" />
+		<EmbeddedResource Remove="WebProxy-Admin\dist\**" />
+		<EmbeddedResource Remove="WebProxy-Admin\node_modules\**" />
 		<None Remove="Libs\**" />
 		<None Remove="Properties\**" />
 		<None Remove="Resources\**" />
 		<None Remove="ServiceUI\**" />
+		<None Remove="WebProxy-Admin\dist\**" />
+		<None Remove="WebProxy-Admin\node_modules\**" />
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Certes" Version="3.0.4" />

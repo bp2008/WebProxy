@@ -6,7 +6,9 @@
 				<a v-else-if="!origin.wildcard" :href="origin.href">{{origin.href}}</a>
 			</div>
 			<div class="destination">
-				&#8594 {{route.destination}}
+				&#8594
+				<a v-if="route.destination.href" :href="route.destination.href">{{route.destination.href}}</a>
+				{{route.destination.label}}
 			</div>
 			<div class="constraint" v-for="constraint in route.constraints">
 				{{constraint}}
@@ -106,14 +108,15 @@
 			},
 			getDestination(exitpoint)
 			{
-				let destination = "unknown";
+				let destination = { href: "", label: "unknown" };
 				if (exitpoint.type === "AdminConsole")
-					destination = "Admin Console";
+					destination.label = "Admin Console";
 				else if (exitpoint.type === "WebProxy")
 				{
-					destination = exitpoint.destinationOrigin;
+					destination.label = "";
+					destination.href = exitpoint.destinationOrigin;
 					if (exitpoint.destinationHostHeader)
-						destination += " [Host: " + exitpoint.destinationHostHeader + "]";
+						destination.label = "[Override Host: " + exitpoint.destinationHostHeader + "]";
 				}
 				return destination;
 			},
@@ -139,11 +142,23 @@
 							else if (m.Type === "HttpDigestAuth")
 								constraints["HTTP Digest Authentication"] = true;
 							else if (m.Type === "AddHttpHeaderToResponse")
-								constraints["Add Header: " + m.HttpHeader] = true;
+								constraints["Add Headers: " + m.Id] = true;
 							else if (m.Type === "AddProxyServerTiming")
 								constraints["Add Header: Server-Timing"] = true;
 							else if (m.Type === "RedirectHttpToHttps")
 								constraints["Force TLS"] = true;
+							else if (m.Type === "XForwardedFor")
+								constraints["Manipulate Header: X-Forwarded-For: " + m.ProxyHeaderBehavior] = true;
+							else if (m.Type === "XForwardedHost")
+								constraints["Manipulate Header: X-Forwarded-Host: " + m.ProxyHeaderBehavior] = true;
+							else if (m.Type === "XForwardedProto")
+								constraints["Manipulate Header: X-Forwarded-Proto: " + m.ProxyHeaderBehavior] = true;
+							else if (m.Type === "XRealIp")
+								constraints["Manipulate Header: X-Real-Ip: " + m.ProxyHeaderBehavior] = true;
+							else if (m.Type === "TrustedProxyIPRanges")
+								constraints["Has Trusted Proxy IP Ranges"] = true;
+							else
+								constraints["Unknown Constraint(s)"] = true;
 
 							break;
 						}

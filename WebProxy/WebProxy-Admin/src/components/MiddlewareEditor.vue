@@ -53,11 +53,11 @@
 		</template>
 		<template v-if="middleware.Type === 'AddHttpHeaderToResponse'">
 			<div>
-				This middleware adds a static HTTP header to all responses.  Only affects Exitpoints of type WebProxy.
+				This middleware adds static HTTP headers to all responses.  Only affects Exitpoints of type WebProxy.
 			</div>
-			<div class="flexRow">
-				<label>Http Header</label>
-				<input type="text" v-model="middleware.HttpHeader" />
+			<div>
+				<label>Http Headers</label>
+				<ArrayEditor v-model="middleware.HttpHeaders" arrayType="text" />
 				<div class="exampleText">e.g. <span class="icode">Strict-Transport-Security: max-age=31536000; includeSubDomains</span></div>
 			</div>
 		</template>
@@ -66,14 +66,40 @@
 				This middleware adds a "Server-Timing" HTTP header to all responses.  Only affects Exitpoints of type WebProxy.
 			</div>
 		</template>
+		<template v-if="middleware.Type === 'XForwardedFor' || middleware.Type === 'XForwardedHost' || middleware.Type === 'XForwardedProto' || middleware.Type === 'XRealIp'">
+			<div>
+				This middleware manipulates the <span class="icode">{{proxyHeaderName}}</span> HTTP header in all outgoing requests.  Only affects Exitpoints of type WebProxy.
+			</div>
+			<div class="flexRow">
+				<label><span class="icode">{{proxyHeaderName}}</span> Behavior</label>
+				<select v-model="middleware.ProxyHeaderBehavior">
+					<option v-for="proxyHeaderBehaviorOption in availableProxyHeaderBehaviorOptions">{{proxyHeaderBehaviorOption}}</option>
+				</select>
+			</div>
+			<div v-if="proxyHeaderBehaviorDescription">
+				{{proxyHeaderBehaviorDescription}}
+			</div>
+		</template>
+		<template v-if="middleware.Type === 'TrustedProxyIPRanges'">
+			<div>
+				This middleware allows you to provide a list of trusted proxy IP Ranges as a requirement to properly use some proxy header behaviors.
+			</div>
+
+			<div>
+				<label>Trusted Proxy IP Ranges</label>
+				<ArrayEditor v-model="middleware.WhitelistedIpRanges" arrayType="text" />
+			</div>
+			<div class="exampleText">Examples:</div>
+			<div class="exampleText"><span class="icode">192.168.0.100</span> (single IP address)</div>
+			<div class="exampleText"><span class="icode">192.168.0.90 - 192.168.0.110</span> (IP range)</div>
+			<div class="exampleText"><span class="icode">192.168.0.100/30</span> (subnet prefix notation)</div>
+		</template>
 	</div>
 </template>
-
 <script>
 	import store from '/src/library/store';
 	import ArrayEditor from '/src/components/ArrayEditor.vue';
 	import FloatingButtons from '/src/components/FloatingButtons.vue'
-
 	export default {
 		components: { ArrayEditor, FloatingButtons },
 		props: {
@@ -92,6 +118,33 @@
 			availableMiddlewareTypes()
 			{
 				return store.middlewareTypes;
+			},
+			availableProxyHeaderBehaviorOptions()
+			{
+				if (this.middleware.Type === "XForwardedFor")
+					return store.proxyHeaderBehaviorOptions;
+				else
+					return store.proxyHeaderBehaviorOptions.filter(o => o.indexOf("Combine") === -1);
+			},
+			proxyHeaderName()
+			{
+				switch (this.middleware.Type)
+				{
+					case "XForwardedFor":
+						return "X-Forwarded-For";
+					case "XForwardedHost":
+						return "X-Forwarded-Host";
+					case "XForwardedProto":
+						return "X-Forwarded-Proto";
+					case "XRealIp":
+						return "X-Real-Ip";
+					default:
+						return undefined;
+				}
+			},
+			proxyHeaderBehaviorDescription()
+			{
+				return store.proxyHeaderBehaviorOptionsDescriptions[this.middleware.ProxyHeaderBehavior];
 			}
 		},
 		methods:
@@ -102,10 +155,14 @@
 		}
 	};
 </script>
-
 <style scoped>
 	.middlewareEditor
 	{
 		background-color: #F0FFF0;
 	}
+
+		.middlewareEditor:hover
+		{
+			background-color: #DAFFDA;
+		}
 </style>

@@ -448,7 +448,8 @@ namespace WebProxy
 					throw new Exception("Middleware names are not unique. Duplicate name: \"" + middleware.Id + "\"");
 				nameUniqueness.Add(middleware.Id.ToLower());
 
-				if (middleware.Type == MiddlewareType.IPWhitelist)
+				if (middleware.Type == MiddlewareType.IPWhitelist
+					|| middleware.Type == MiddlewareType.TrustedProxyIPRanges)
 				{
 					foreach (string range in middleware.WhitelistedIpRanges)
 					{
@@ -477,13 +478,18 @@ namespace WebProxy
 				if (middleware.Type == MiddlewareType.AddHttpHeaderToResponse)
 				{
 					HttpHeaderCollection collection = new HttpHeaderCollection();
-					try
+					if (middleware.HttpHeaders == null)
+						middleware.HttpHeaders = new string[0];
+					foreach (string header in middleware.HttpHeaders)
 					{
-						collection.AssignHeaderFromString(middleware.HttpHeader);
-					}
-					catch (Exception ex)
-					{
-						throw new Exception("Middleware \"" + middleware.Id + "\" failed HTTP header validation.", ex);
+						try
+						{
+							collection.AssignHeaderFromString(header);
+						}
+						catch (Exception ex)
+						{
+							throw new Exception("Middleware \"" + middleware.Id + "\" failed HTTP header validation on header \"" + header + "\".", ex);
+						}
 					}
 				}
 			}
@@ -504,16 +510,38 @@ namespace WebProxy
 				r.entrypointName = r.entrypointName.Trim();
 				r.exitpointName = r.exitpointName.Trim();
 
-				if (!s.entrypoints.Any(e => e.name == r.entrypointName))
+				Entrypoint entrypoint = s.entrypoints.FirstOrDefault(e => e.name == r.entrypointName);
+				if (entrypoint == null)
 					throw new Exception("ProxyRoute index " + s.proxyRoutes.IndexOf(r) + " specifies non-existent Entrypoint named \"" + r.entrypointName + "\".");
-				if (!s.exitpoints.Any(e => e.name == r.exitpointName))
+
+				Exitpoint exitpoint = s.exitpoints.FirstOrDefault(e => e.name == r.exitpointName);
+				if (exitpoint == null)
 					throw new Exception("ProxyRoute index " + s.proxyRoutes.IndexOf(r) + " specifies non-existent Exitpoint named \"" + r.exitpointName + "\".");
 
 				string routeId = "[" + r.entrypointName + "] -> [" + r.exitpointName + "]";
 				if (nameUniqueness.Contains(routeId.ToLower()))
 					throw new Exception("ProxyRoutes are not unique. Duplicate ProxyRoutes: \"" + routeId + "\"");
 				nameUniqueness.Add(routeId.ToLower());
+
+				// Validate Middleware Compatibility
+				IEnumerable<Middleware> enabledMiddlewares = entrypoint.middlewares
+					.Union(exitpoint.middlewares)
+					.Distinct()
+					.Select(name => s.middlewares.FirstOrDefault(m => m.Id == name))
+					.Where(m => m != null);
+
+				ThrowIfMultiple(routeId, enabledMiddlewares, MiddlewareType.RedirectHttpToHttps);
+				ThrowIfMultiple(routeId, enabledMiddlewares, MiddlewareType.AddProxyServerTiming);
+				ThrowIfMultiple(routeId, enabledMiddlewares, MiddlewareType.XForwardedFor);
+				ThrowIfMultiple(routeId, enabledMiddlewares, MiddlewareType.XForwardedHost);
+				ThrowIfMultiple(routeId, enabledMiddlewares, MiddlewareType.XForwardedProto);
+				ThrowIfMultiple(routeId, enabledMiddlewares, MiddlewareType.XRealIp);
 			}
+		}
+		private static void ThrowIfMultiple(string proxyRouteId, IEnumerable<Middleware> enabledMiddlewares, MiddlewareType type)
+		{
+			if (enabledMiddlewares.Count(m => m.Type == type) > 1)
+				throw new Exception("ProxyRoute \"" + proxyRouteId + "\" has multiple enabled middlewares of type [" + type + "] but only 0 or 1 are allowed.");
 		}
 		#endregion
 		//#region Acme Account Key

@@ -8,8 +8,14 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<Compile Remove="Libs\**" />
+		<Compile Remove="WebProxy-Admin\dist\**" />
+		<Compile Remove="WebProxy-Admin\node_modules\**" />
 		<EmbeddedResource Remove="Libs\**" />
+		<EmbeddedResource Remove="WebProxy-Admin\dist\**" />
+		<EmbeddedResource Remove="WebProxy-Admin\node_modules\**" />
 		<None Remove="Libs\**" />
+		<None Remove="WebProxy-Admin\dist\**" />
+		<None Remove="WebProxy-Admin\node_modules\**" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\BPUtil\BPUtil\BPUtil6.csproj" />

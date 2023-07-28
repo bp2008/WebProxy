@@ -85,6 +85,11 @@
 		background-color: #F0F0FF;
 	}
 
+		.entrypointEditor:hover
+		{
+			background-color: #DDDDFF;
+		}
+
 	.flexRow input.ipAddressInput
 	{
 		width: 300px;

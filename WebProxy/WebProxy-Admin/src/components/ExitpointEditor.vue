@@ -98,4 +98,9 @@
 	{
 		background-color: #FFF8F0;
 	}
+
+		.exitpointEditor:hover
+		{
+			background-color: #FFE8DD;
+		}
 </style>

@@ -1,6 +1,7 @@
 ﻿using BPUtil;
 using BPUtil.MVC;
 using BPUtil.SimpleHttp;
+using BPUtil.SimpleHttp.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -130,15 +131,22 @@ namespace WebProxy
 				}
 
 				// MiddlewareType.HttpDigestAuth
-				foreach (Middleware m in allApplicableMiddlewares.Where(m => m.Type == MiddlewareType.HttpDigestAuth))
 				{
+					NetworkCredential userCredential = null;
+					bool authRequired = false;
 					string realm = p.hostName == null ? "WebProxy" : p.hostName;
-					IEnumerable<NetworkCredential> credentials = m.AuthCredentials.Select(a => new NetworkCredential(a.User, a.Pass));
-					NetworkCredential userCredential = p.ValidateDigestAuth(realm, credentials);
-					if (userCredential == null)
+					foreach (Middleware m in allApplicableMiddlewares.Where(m => m.Type == MiddlewareType.HttpDigestAuth))
 					{
-						List<KeyValuePair<string, string>> headers = new List<KeyValuePair<string, string>>();
-						headers.Add(new KeyValuePair<string, string>("WWW-Authenticate", p.GetDigestAuthWWWAuthenticateHeaderValue(realm)));
+						authRequired = true;
+						IEnumerable<NetworkCredential> credentials = m.AuthCredentials.Select(a => new NetworkCredential(a.User, a.Pass));
+						userCredential = p.ValidateDigestAuth(realm, credentials);
+						if (userCredential != null)
+							break;
+					}
+					if (authRequired && userCredential == null)
+					{
+						HttpHeaderCollection headers = new HttpHeaderCollection();
+						headers.Add("WWW-Authenticate", p.GetDigestAuthWWWAuthenticateHeaderValue(realm));
 						p.writeFailure("401 Unauthorized", additionalHeaders: headers);
 						return;
 					}
@@ -151,21 +159,38 @@ namespace WebProxy
 				HttpHeaderCollection overrideResponseHeaders = new HttpHeaderCollection();
 				foreach (Middleware m in allApplicableMiddlewares.Where(m => m.Type == MiddlewareType.AddHttpHeaderToResponse))
 				{
-					if (string.IsNullOrWhiteSpace(m.HttpHeader))
-						continue;
+					foreach (string header in m.HttpHeaders)
+					{
+						if (string.IsNullOrWhiteSpace(header))
+							continue;
 
-					int separator = m.HttpHeader.IndexOf(':');
-					if (separator == -1)
-						throw new ApplicationException("invalid http header line in middleware of type AddHttpHeaderToResponse: " + m.HttpHeader);
+						int separator = header.IndexOf(':');
+						if (separator == -1)
+							throw new ApplicationException("Invalid http header line in middleware \"" + m.Id + "\": " + header);
 
-					string name = m.HttpHeader.Substring(0, separator);
-					int pos = separator + 1;
-					while (pos < m.HttpHeader.Length && m.HttpHeader[pos] == ' ')
-						pos++; // strip any spaces
+						string name = header.Substring(0, separator);
+						int pos = separator + 1;
+						while (pos < header.Length && header[pos] == ' ')
+							pos++; // strip any spaces
 
-					string value = m.HttpHeader.Substring(pos);
-					overrideResponseHeaders[name] = value;
+						string value = header.Substring(pos);
+						overrideResponseHeaders[name] = value;
+					}
 				}
+
+				// Proxy Header Middlewares
+				Middleware xff = allApplicableMiddlewares.FirstOrDefault(m => m.Type == MiddlewareType.XForwardedFor);
+				Middleware xfh = allApplicableMiddlewares.FirstOrDefault(m => m.Type == MiddlewareType.XForwardedHost);
+				Middleware xfp = allApplicableMiddlewares.FirstOrDefault(m => m.Type == MiddlewareType.XForwardedProto);
+				Middleware xri = allApplicableMiddlewares.FirstOrDefault(m => m.Type == MiddlewareType.XRealIp);
+
+				List<string> trustedProxyIPRanges = new List<string>();
+				foreach (Middleware m in allApplicableMiddlewares.Where(m => m.Type == MiddlewareType.TrustedProxyIPRanges))
+				{
+					if (m.WhitelistedIpRanges != null)
+						trustedProxyIPRanges.AddRange(m.WhitelistedIpRanges);
+				}
+
 
 				// Process the request in the context of the chosen Exitpoint.
 				if (myExitpoint.type == ExitpointType.AdminConsole)
@@ -226,11 +251,17 @@ namespace WebProxy
 					builder.Host = destinationOrigin.DnsSafeHost;
 					builder.Port = destinationOrigin.Port;
 
-					HttpProcessor.ProxyOptions options = new HttpProcessor.ProxyOptions();
+					ProxyOptions options = new ProxyOptions();
 					options.networkTimeoutMs = 15000;
 					options.bet = bet;
 					options.host = myExitpoint.destinationHostHeader;
 					options.includeServerTimingHeader = AddProxyServerTiming;
+					options.xForwardedFor = xff?.ProxyHeaderBehavior ?? ProxyHeaderBehavior.Drop;
+					options.xForwardedHost = xfh?.ProxyHeaderBehavior ?? ProxyHeaderBehavior.Drop;
+					options.xForwardedProto = xfp?.ProxyHeaderBehavior ?? ProxyHeaderBehavior.Drop;
+					options.xRealIp = xri?.ProxyHeaderBehavior ?? ProxyHeaderBehavior.Drop;
+					options.proxyHeaderTrustedIpRanges = trustedProxyIPRanges.ToArray();
+
 					if (overrideResponseHeaders.Count > 0)
 					{
 						options.BeforeResponseHeadersSent += (sender, e) =>
@@ -256,11 +287,11 @@ namespace WebProxy
 			}
 		}
 
-		private List<KeyValuePair<string, string>> GetCacheLastModifiedHeaders(TimeSpan maxAge, DateTime lastModifiedUTC)
+		private HttpHeaderCollection GetCacheLastModifiedHeaders(TimeSpan maxAge, DateTime lastModifiedUTC)
 		{
-			List<KeyValuePair<string, string>> additionalHeaders = new List<KeyValuePair<string, string>>();
-			additionalHeaders.Add(new KeyValuePair<string, string>("Cache-Control", "max-age=" + (long)maxAge.TotalSeconds + ", public"));
-			additionalHeaders.Add(new KeyValuePair<string, string>("Last-Modified", lastModifiedUTC.ToString("R")));
+			HttpHeaderCollection additionalHeaders = new HttpHeaderCollection();
+			additionalHeaders.Add("Cache-Control", "max-age=" + (long)maxAge.TotalSeconds + ", public");
+			additionalHeaders.Add("Last-Modified", lastModifiedUTC.ToString("R"));
 			return additionalHeaders;
 		}
 

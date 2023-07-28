@@ -56,4 +56,9 @@
 	{
 		background-color: #FFFFD0;
 	}
+
+		.proxyRouteEditor:hover
+		{
+			background-color: #FFEF70;
+		}
 </style>

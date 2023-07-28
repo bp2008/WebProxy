@@ -59,7 +59,7 @@ namespace WebProxy.LetsEncrypt
 
 				if (string.IsNullOrWhiteSpace(settings.acmeAccountKey))
 				{
-					Logger.Info("CertMgr.Initialize: Create LetsEncrypt Staging Account (" + settings.acmeAccountEmail + ")");
+					Logger.Info("CertMgr.Initialize: Create LetsEncrypt" + (acmeServerUri == WellKnownServers.LetsEncryptStagingV2 ? " Staging" : "") + " Account (" + settings.acmeAccountEmail + ")");
 					acme = new AcmeContext(acmeServerUri);
 					IAccountContext account = await acme.NewAccount(settings.acmeAccountEmail, true);
 
@@ -70,7 +70,7 @@ namespace WebProxy.LetsEncrypt
 				}
 				else
 				{
-					Logger.Info("CertMgr.Initialize: Use existing LetsEncrypt Staging Account (" + settings.acmeAccountEmail + ")");
+					Logger.Info("CertMgr.Initialize: Use existing LetsEncrypt" + (acmeServerUri == WellKnownServers.LetsEncryptStagingV2 ? " Staging" : "") + " Account (" + settings.acmeAccountEmail + ")");
 					IKey accountKey = KeyFactory.FromPem(settings.acmeAccountKey);
 					acme = new AcmeContext(acmeServerUri, accountKey);
 					IAccountContext accountContext = await acme.Account();
@@ -106,8 +106,6 @@ namespace WebProxy.LetsEncrypt
 		/// <returns></returns>
 		public static async Task<X509Certificate> GetCertificate(string host, Entrypoint entrypoint, Exitpoint exitpoint)
 		{
-			Initialize();
-
 			string[] domains = ValidateRequest(entrypoint, exitpoint);
 
 			host = domains.FirstOrDefault(d => d.IEquals(host));
@@ -138,7 +136,6 @@ namespace WebProxy.LetsEncrypt
 					Logger.Info("CertMgr: Renew async " + host + " (" + string.Join(" ", domains) + ")");
 					_ = CreateCertificateForDomains(entrypoint.httpPort == 80, entrypoint.httpsPort == 443, domains);
 				}
-				Logger.Info("CertMgr: Return cert " + host);
 				return cert;
 			}
 		}
@@ -153,8 +150,6 @@ namespace WebProxy.LetsEncrypt
 		{
 			try
 			{
-				Initialize();
-
 				string[] domains = ValidateRequest(entrypoint, exitpoint);
 
 				lock (renewCheckLock)
@@ -237,6 +232,8 @@ namespace WebProxy.LetsEncrypt
 		{
 			try
 			{
+				Initialize();
+
 				if (!standardHttpSupported && !standardHttpsSupported)
 					throw new ArgumentException("standardHttpSupported and standardHttpsSupported are both false. Certificate validation is not possible.");
 
@@ -447,7 +444,7 @@ namespace WebProxy.LetsEncrypt
 		}
 		#endregion
 		#region CertCache
-		private static Dictionary<string, CachedObject<X509Certificate2>> certCache = new Dictionary<string, CachedObject<X509Certificate2>>();
+		private static ConcurrentDictionary<string, CachedObject<X509Certificate2>> certCache = new ConcurrentDictionary<string, CachedObject<X509Certificate2>>();
 		private static CachedObject<X509Certificate2> GetCertCache(string host)
 		{
 			string fileName = DomainToFileName(host) + ".pfx";
