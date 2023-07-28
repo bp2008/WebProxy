@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebProxyLinux", "WebProxy\W
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BPUtil6Linux", "..\BPUtil\BPUtil\BPUtil6Linux.csproj", "{0218C03F-131B-4DE0-9B73-830DFDD48073}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReleaseArchiver", "ReleaseArchiver\ReleaseArchiver.csproj", "{83D51ACD-A4F7-4E43-82AC-AB3100DFDA61}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +43,10 @@ Global
 		{0218C03F-131B-4DE0-9B73-830DFDD48073}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0218C03F-131B-4DE0-9B73-830DFDD48073}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0218C03F-131B-4DE0-9B73-830DFDD48073}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83D51ACD-A4F7-4E43-82AC-AB3100DFDA61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83D51ACD-A4F7-4E43-82AC-AB3100DFDA61}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83D51ACD-A4F7-4E43-82AC-AB3100DFDA61}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83D51ACD-A4F7-4E43-82AC-AB3100DFDA61}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
