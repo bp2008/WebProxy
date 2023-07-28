@@ -3,10 +3,21 @@ An HTTP(S) reverse proxy server with web-based configuration.
 
 ## Features
 * Web-based configuration GUI
-* (optional) Automatic certificates from LetsEncrypt
+* Automatic certificates from LetsEncrypt (optional)
+  * Usage of this feature indicates acceptance of [LetsEncrypt's Terms of Service](https://community.letsencrypt.org/tos)
+  * Supported validation methods include `HTTP-01` and `TLS-ALPN-01`.  WebProxy will automatically select between validation methods `HTTP-01` or `TLS-ALPN-01` with a preference for `HTTP-01` if both ports are available.
+  * `HTTP-01` validation requires the domain to be reachable via the internet using HTTP on port 80.
+  * `TLS-ALPN-01` validation requires the domain to be reachable via the internet using HTTPS on port 443.
 * WebSocket support
 * TLS 1.2 support
 * TLS 1.3 support on operating systems that provide it via SslStream interface (Windows 11, Server 2022, maybe others).
+* Middleware system to manipulate proxy requests or add usage constraints.  Middlewares can be enabled individually for each proxied website.  Available middleware types:
+  * `IPWhitelist` - Provides IP whitelisting of client connections.
+  * `HttpDigestAuth` - This middleware causes requests to require HTTP Digest Authentication.
+  * `RedirectHttpToHttps` - Requests coming in using plain HTTP are redirected to HTTPS. Requires the Entrypoint to support both HTTP and HTTPS.
+  * `AddHttpHeaderToResponse` - Adds a user-defined static HTTP header to proxied responses.
+  * `AddProxyServerTiming` - Adds a `Server-Timing` HTTP header to proxied responses which includes timing details for the proxied connection.  This information appears in a web browser's developer console when you inspect a network request's timing.
+
 
 ### Windows Installation
 
@@ -36,3 +47,26 @@ Within the interactive command line interface, use the command `admin` to see th
 
 
 If you prefer, you can manage the webproxy service via standard `systemctl` commands (the service name is `webproxy`).
+
+### Building From Source
+
+Requirements:
+* [Visual Studio 2022 or newer](https://visualstudio.microsoft.com/downloads/)
+* [.NET 6.0 SDK](https://dotnet.microsoft.com/en-us/download/visual-studio-sdks)
+* [BPUtil utility library source](https://github.com/bp2008/BPUtil)
+* [Node.js (tested with version 18)](https://nodejs.org/en/download) to build the Admin Console website
+
+WebProxy and BPUtil repositories must be downloaded/cloned separately.  To avoid needing to repair Project references, it is recommended to place both repositories in the same parent directory, e.g.
+* `~/Repos/bp2008/BPUtil/BPUtil.sln`
+* `~/Repos/bp2008/WebProxy/WebProxy.sln`
+
+To build WebProxy:
+1. Go to `~/Repos/bp2008/WebProxy/WebProxy/WebProxy-Admin` in a command line terminal and run `npm install`.  This will download all JavaScript dependencies.  This only needs to be done once initially, and then again after you modify dependencies in package.json.
+2. In Visual Studio, Build > Build Solution.
+
+Notes:
+* Output will be in the `bin/Debug` or `bin/Release` folders.
+  * The cross-platform build (WebProxyLinux) will be located in a subfolder called `net6.0`.
+  * The Windows build (WebProxy) will be located in a subfolder called `net6.0-windows`.
+* In order for WebProxyLinux's post-build event to complete successfully, it must be built last, after WebProxy has finished.  This serial ordering was set up by right clicking the WebProxyLinux project in Solution Explorer and choosing Build Dependencies > Project Dependencies.  In this dialog, WebProxy was selected as a dependency of WebProxyLinux.
+
