@@ -27,11 +27,7 @@ namespace WebProxy
 		static void Main()
 		{
 			// TODO: Fix issues where browsers want to remember your configuration form submissions as credentials for autofill.
-			// TODO: HttpHeader middleware should support multiple headers per middleware.
-			// TODO: Add middleware for X-Forwarded-For. A many-option select should be available to configure behavior: Replace, Append, AppendIfTrusted, Passthrough, PassthroughIfTrusted.
-			// TODO: Add middleware for X-Forwarded-Host. A 3-option select should configure behavior: Replace, Passthrough, PassthroughIfTrusted.
-			// TODO: Add middleware for X-Forwarded-Proto. A 3-option select should configure behavior: Replace, Passthrough, PassthroughIfTrusted.
-			// TODO: Add middleware for X-Real-Ip. A 3-option select should configure behavior: Replace, Passthrough, PassthroughIfTrusted.
+			// TODO: Show the current app version in the Admin Console header.
 			// CONSIDER: Add middleware for "Forwarded" header which combines the effects of the previous 3 headers: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Forwarded
 			// CONSIDER: Add a middleware that implements a JavaScript-based login form.  Consider supporting WebAuthn or passwordless.id, but the main goal here is to support password manager browser extensions.
 			WindowsServiceInitOptions options = new WindowsServiceInitOptions();

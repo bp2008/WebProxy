@@ -165,8 +165,8 @@ echo Step 5/5: Configure program to start automatically.
 echo Creating $AppName service: sudo /usr/bin/dotnet \"$(pwd)/$AppName/$ExeName\" install
 sudo /usr/bin/dotnet "$(pwd)/$AppName/$ExeName" install
 
-echo Starting $AppName service: sudo /usr/bin/dotnet \"$(pwd)/$AppName/$ExeName\" start
-sudo /usr/bin/dotnet "$(pwd)/$AppName/$ExeName" start
+echo Starting $AppName service: sudo /usr/bin/dotnet \"$(pwd)/$AppName/$ExeName\" restart
+sudo /usr/bin/dotnet "$(pwd)/$AppName/$ExeName" restart
 
 
 }
