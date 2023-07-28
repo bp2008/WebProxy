@@ -17,6 +17,11 @@ An HTTP(S) reverse proxy server with web-based configuration.
   * `RedirectHttpToHttps` - Requests coming in using plain HTTP are redirected to HTTPS. Requires the Entrypoint to support both HTTP and HTTPS.
   * `AddHttpHeaderToResponse` - Adds a user-defined static HTTP header to proxied responses.
   * `AddProxyServerTiming` - Adds a `Server-Timing` HTTP header to proxied responses which includes timing details for the proxied connection.  This information appears in a web browser's developer console when you inspect a network request's timing.
+  * `XForwardedFor` - Adds an `X-Forwarded-For` header according to rules you specify.
+  * `XForwardedHost` - Adds an `X-Forwarded-Host` header according to rules you specify.
+  * `XForwardedProto` - Adds an `X-Forwarded-Proto` header according to rules you specify.
+  * `XRealIp` - Adds an `X-Real-Ip` header according to rules you specify.
+  * `TrustedProxyIPRanges` - Allows you to specify which client IP addresses are trusted to provide proxy-related headers such as `X-Forwarded-For`.
 
 
 ### Windows Installation
