@@ -122,7 +122,7 @@ namespace WebProxy
 				}
 
 				// MiddlewareType.IPWhitelist
-				if (!IPWhitelistCheck(p.RemoteIPAddress, allApplicableMiddlewares))
+				if (!IPWhitelistCheck(p.TrueRemoteIPAddress, allApplicableMiddlewares))
 				{
 					// IP whitelisting is in effect, but the client is not communicating from a whitelisted IP.  Close the connection without writing a response.
 					p.responseWritten = true;
@@ -267,7 +267,7 @@ namespace WebProxy
 		protected override void stopServer()
 		{
 		}
-		
+
 		/// <summary>
 		/// If this method returns true, socket bind events will be logged normally.  If false, they will use the LogVerbose call.
 		/// </summary>
@@ -330,24 +330,14 @@ namespace WebProxy
 		/// <returns></returns>
 		public static bool IPWhitelistCheck(IPAddress remoteIPAddress, IEnumerable<Middleware> middlewares)
 		{
-			bool ipIsWhitelisted = false;
 			bool ipNeedsWhitelisted = false;
 			foreach (Middleware m in middlewares.Where(m => m.Type == MiddlewareType.IPWhitelist))
 			{
-				if (ipIsWhitelisted)
-					break;
 				ipNeedsWhitelisted = true;
-				foreach (string ipRangeStr in m.WhitelistedIpRanges)
-				{
-					IPAddressRange range = new IPAddressRange(ipRangeStr);
-					if (range.IsInRange(remoteIPAddress))
-					{
-						ipIsWhitelisted = true;
-						break;
-					}
-				}
+				if (IPAddressRange.WhitelistCheck(remoteIPAddress, m.WhitelistedIpRanges))
+					return true;
 			}
-			return !ipNeedsWhitelisted || ipIsWhitelisted;
+			return !ipNeedsWhitelisted;
 		}
 	}
 }

@@ -19,6 +19,7 @@
 					<li>If the client IP is not on the whitelist, their connection is dropped.</li>
 					<li>Multiple IPWhitelist middlewares can apply to the same client connection, in which case the client IP only needs to be on one of the whitelists.</li>
 					<li>IP Whitelists are optional: If no IPWhitelist middleware is enabled for the client connection, the connection is allowed regardless of IP address.</li>
+					<li>The client IP tested against whitelist(s) is the true remote IP address.  Headers such as <span class="icode">X-Forwarded-For</span> are ignored.</li>
 				</ul>
 			</div>
 			<div v-if="!middleware.WhitelistedIpRanges || !middleware.WhitelistedIpRanges.length">

@@ -59,7 +59,7 @@ namespace WebProxy.LetsEncrypt
 				.Where(m => myEntrypoint.middlewares?.Contains(m.Id) == true
 							|| myExitpoint.middlewares?.Contains(m.Id) == true);
 
-			if (!WebServer.IPWhitelistCheck(p.RemoteIPAddress, allApplicableMiddlewares))
+			if (!WebServer.IPWhitelistCheck(p.TrueRemoteIPAddress, allApplicableMiddlewares))
 				return null;
 
 			if (myExitpoint.autoCertificate)

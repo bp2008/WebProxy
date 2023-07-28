@@ -36,6 +36,22 @@ namespace WebProxy
 		/// All proxied responses will include a Server-Timing header for debugging purposes, showing time taken to connect, send the request, and read the response.
 		/// </summary>
 		AddProxyServerTiming = 4,
+		/// <summary>
+		/// Allows configuration of the X-Forwarded-For header.  Default behavior (if middleware is not enabled) is to drop the header when proxying a request.
+		/// </summary>
+		AddXForwardedFor = 5,
+		/// <summary>
+		/// Allows configuration of the X-Forwarded-Host header.  Default behavior (if middleware is not enabled) is to drop the header when proxying a request.
+		/// </summary>
+		AddXForwardedHost = 6,
+		/// <summary>
+		/// Allows configuration of the X-Forwarded-Proto header.  Default behavior (if middleware is not enabled) is to drop the header when proxying a request.
+		/// </summary>
+		AddXForwardedProto = 7,
+		/// <summary>
+		/// Allows configuration of the X-Real-Ip header.  Default behavior (if middleware is not enabled) is to drop the header when proxying a request.
+		/// </summary>
+		AddXRealIp = 8,
 	}
 	/// <summary>
 	/// Applies additional logic to an Entrypoint or Exitpoint.  Constraints may be applied to an Entrypoint or an Exitpoint or both.

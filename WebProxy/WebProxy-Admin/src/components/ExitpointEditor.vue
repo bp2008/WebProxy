@@ -43,7 +43,7 @@
 				<div class="flexRow">
 					<label>Destination Host Header</label>
 					<input type="text" v-model="exitpoint.destinationHostHeader" />
-					<div class="comment">If you need to override the host string used in outgoing proxy requests (for the Host header and TLS Server Name Indication), provide the host string here.  Otherwise leave this empty and the host from the Destination Origin will be used. DO NOT include a port number.</div>
+					<div class="comment">If you need to override the host string used in outgoing proxy requests (for the Host header and TLS Server Name Indication), provide the host string here.  Otherwise leave this empty and the host from the Destination Origin will be used. DO NOT include a port number, even if using a non-standard port.  The port number will be added automatically where appropriate.</div>
 				</div>
 			</template>
 			<div class="middlewares">

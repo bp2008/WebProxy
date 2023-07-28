@@ -84,9 +84,6 @@ namespace WebProxy.Controllers
 
 			return Empty();
 		}
-		private static object logReaderLock = new object();
-		private static StreamingLogReader reader;
-		private static string logFile;
 	}
 	public class GetLogDataResponse : ApiResponseBase
 	{
