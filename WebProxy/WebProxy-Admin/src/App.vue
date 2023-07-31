@@ -2,7 +2,13 @@
 	<div class="sidebarUnsavedChanges left" v-if="configurationChanged"></div>
 	<div class="sidebarUnsavedChanges right" v-if="configurationChanged"></div>
 	<div :class="{ topBar: true, configurationChanged: configurationChanged }">
-		<h1>WebProxy Admin Console</h1>
+		<h1>
+			WebProxy
+			<template v-if="store.windowWidth > 600">
+				Admin Console
+			</template>
+			{{appVersion}}
+		</h1>
 		<button v-if="configurationChanged" class="saveChanges" @click="saveChanges">Save Changes</button>
 	</div>
 	<div v-if="loading">Loading...</div>
@@ -112,6 +118,10 @@
 			configurationChanged()
 			{
 				return this.originalJson && this.currentJson !== this.originalJson;
+			},
+			appVersion()
+			{
+				return store ? store.appVersion : "";
 			}
 		},
 		methods:
@@ -211,6 +221,7 @@
 				store.acmeAccountEmail = response.acmeAccountEmail;
 				store.errorTrackerSubmitUrl = response.errorTrackerSubmitUrl;
 				store.logFiles = response.logFiles;
+				store.appVersion = response.appVersion;
 
 				for (let i = 0; i < response.entrypoints.length; i++)
 					FixEntrypoint(response.entrypoints[i]);
@@ -368,17 +379,21 @@
 		background-color: #FFFFFF;
 		border-bottom: 1px solid #AAAAAA;
 		display: flex;
-		flex-wrap: wrap;
 		align-items: center;
 		min-height: 44px;
 		box-sizing: border-box;
 	}
 
-	h1
-	{
-		display: inline;
-		margin: 0px;
-	}
+		.topBar h1
+		{
+			display: inline;
+			margin: 0px;
+			font-size: 1.20em;
+			flex: 0 1 auto;
+			/*white-space: nowrap;
+			text-overflow: ellipsis;
+			overflow-x: hidden;*/
+		}
 
 	button.saveChanges
 	{
@@ -391,6 +406,7 @@
 		padding: 0px 12px;
 		border-radius: 0px;
 		border: none;
+		flex: 0 0 auto;
 	}
 
 		button.saveChanges:hover
@@ -443,4 +459,20 @@
 		{
 			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='200' viewBox='0 0 30 200'%3E%3Ctext x='0' y='-16' transform='rotate(90)' fill='%23FFAAAA' style='font-family: sans-serif; font-size: 16px;'%3EUnsaved Changes%3C/text%3E%3C/svg%3E");
 		}
+
+	@media (min-width: 700px)
+	{
+		.topBar h1
+		{
+			font-size: 1.5em;
+		}
+	}
+
+	@media (min-width: 800px)
+	{
+		.topBar h1
+		{
+			font-size: 2em;
+		}
+	}
 </style>

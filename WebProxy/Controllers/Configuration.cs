@@ -111,6 +111,7 @@ namespace WebProxy.Controllers
 	}
 	public class GetConfigurationResponse : ApiResponseBase
 	{
+		public string appVersion = Globals.AssemblyVersion;
 		public string acmeAccountEmail;
 		public Entrypoint[] entrypoints;
 		public Exitpoint[] exitpoints;
