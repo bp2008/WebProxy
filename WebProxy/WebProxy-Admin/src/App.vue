@@ -12,66 +12,87 @@
 		<button v-if="configurationChanged" class="saveChanges" @click="saveChanges">Save Changes</button>
 	</div>
 	<div v-if="loading">Loading...</div>
-	<template v-else>
+	<div class="adminBody" v-else>
 		<loading v-model:active="showFullscreenLoader"
 				 :can-cancel="false"
 				 :is-full-page="true" />
-		<h2>Global Settings</h2>
-		<div class="primaryContainer">
-			<div class="flexRow">
-				<label>LetsEncrypt Account Email</label>
-				<input type="text" v-model="store.acmeAccountEmail" autocomplete="off" />
-				<div class="comment">Required for automatic certificate management.  Account will be created upon first use.  You may change the email address after creating the account.</div>
-			</div>
-			<div class="flexRow">
-				<label>ErrorTracker Submission URL</label>
-				<input type="text" v-model="store.errorTrackerSubmitUrl" autocomplete="off" />
-				<div class="comment">Optional submit URL for an ErrorTracker instance.</div>
+		<div class="tabBar">
+			<div v-for="tab in tabs" :class="{ tab: true, selectedTab: selectedTab === tab }" role="button" @click="selectedTab = tab">
+				{{tab.Name}}
 			</div>
 		</div>
-		<h2>Entrypoints</h2>
-		<p>Entrypoints define how the web server listens for incoming network requests.</p>
-		<draggable v-model="store.entrypoints" handle=".dragHandle">
-			<EntrypointEditor v-for="entrypoint in store.entrypoints" :key="entrypoint.uniqueId" :entrypoint="entrypoint" @delete="deleteEntrypoint(entrypoint)" />
-		</draggable>
-		<div class="buttonBar">
-			<button @click="addEntrypoint()">Add New Entrypoint</button>
+		<div class="adminContent">
+			<div v-if="selectedTab.Name === 'All' || selectedTab.Name === 'Settings'">
+				<h2>Global Settings</h2>
+				<div class="primaryContainer">
+					<div class="flexRow">
+						<label>LetsEncrypt Account Email</label>
+						<input type="text" v-model="store.acmeAccountEmail" autocomplete="off" />
+						<div class="comment">Required for automatic certificate management.  Account will be created upon first use.  You may change the email address after creating the account.</div>
+					</div>
+					<div class="flexRow">
+						<label>ErrorTracker Submission URL</label>
+						<input type="text" v-model="store.errorTrackerSubmitUrl" autocomplete="off" />
+						<div class="comment">Optional submit URL for an ErrorTracker instance.</div>
+					</div>
+				</div>
+			</div>
+			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Entrypoints'">
+				<h2>Entrypoints</h2>
+				<p>Entrypoints define how the web server listens for incoming network requests.</p>
+				<draggable v-model="store.entrypoints" handle=".dragHandle">
+					<EntrypointEditor v-for="entrypoint in store.entrypoints" :key="entrypoint.uniqueId" :entrypoint="entrypoint" @delete="deleteEntrypoint(entrypoint)" />
+				</draggable>
+				<div class="buttonBar">
+					<button @click="addEntrypoint()">Add New Entrypoint</button>
+				</div>
+			</div>
+			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Exitpoints'">
+				<h2>Exitpoints</h2>
+				<p>An Exitpoint is a web destination which a client wants to reach.  This Admin Console is an Exitpoint, but an Exitpoint could also be another web server.</p>
+				<draggable v-model="store.exitpoints" handle=".dragHandle">
+					<ExitpointEditor v-for="exitpoint in store.exitpoints" :key="exitpoint.uniqueId" :exitpoint="exitpoint" @delete="deleteExitpoint(exitpoint)" @renew="renewCertificate(exitpoint)" />
+				</draggable>
+				<div class="buttonBar">
+					<button @click="addExitpoint()">Add New Exitpoint</button>
+				</div>
+			</div>
+			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Middlewares'">
+				<h2>Middlewares</h2>
+				<p>A Middleware is a module which applies additional logic to Entrypoints or Exitpoints.  A Middleware is typically used for access control or to manipulate default WebProxy behavior in some way, such as by adding an HTTP header to all responses.</p>
+				<draggable v-model="store.middlewares" handle=".dragHandle">
+					<MiddlewareEditor v-for="middleware in store.middlewares" :key="middleware.uniqueId" :middleware="middleware" @delete="deleteMiddleware(middleware)" />
+				</draggable>
+				<div class="buttonBar">
+					<button @click="addMiddleware()">Add New Middleware</button>
+				</div>
+			</div>
+			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Routes'">
+				<h2>Proxy Routes</h2>
+				<p>The Proxy Routes list defines which Exitpoints are reachable from which Entrypoints.  In order for an Exitpoint to be reachable by clients, it must be bound to at least one Entrypoint via a Proxy Route.</p>
+				<draggable v-model="store.proxyRoutes" handle=".dragHandle">
+					<ProxyRouteEditor v-for="proxyRoute in store.proxyRoutes" :key="proxyRoute.uniqueId" :proxyRoute="proxyRoute" @delete="deleteProxyRoute(proxyRoute)" />
+				</draggable>
+				<div class="buttonBar">
+					<button @click="addProxyRoute()">Add New Proxy Route</button>
+				</div>
+			</div>
+			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Dashboard'">
+				<h2>Hosted URL Summary</h2>
+				<HostedUrlSummary />
+			</div>
+			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Log'">
+				<h2>Raw Settings.json</h2>
+				<a href="/Configuration/GetRaw" target="_blank">Settings.json</a>
+				<h2>Log Files</h2>
+				<div v-for="logFile in store.logFiles">
+					<a :href="'/Log/' + logFile.fileName" target="_blank">{{logFile.fileName}}</a> ({{logFile.size}})
+				</div>
+				<h2>Live Log File</h2>
+				<LogReader />
+			</div>
 		</div>
-		<h2>Exitpoints</h2>
-		<p>An Exitpoint is a web destination which a client wants to reach.  This Admin Console is an Exitpoint, but an Exitpoint could also be another web server.</p>
-		<draggable v-model="store.exitpoints" handle=".dragHandle">
-			<ExitpointEditor v-for="exitpoint in store.exitpoints" :key="exitpoint.uniqueId" :exitpoint="exitpoint" @delete="deleteExitpoint(exitpoint)" @renew="renewCertificate(exitpoint)" />
-		</draggable>
-		<div class="buttonBar">
-			<button @click="addExitpoint()">Add New Exitpoint</button>
-		</div>
-		<h2>Middlewares</h2>
-		<p>A Middleware is a module which applies additional logic to Entrypoints or Exitpoints.  A Middleware is typically used for access control or to manipulate default WebProxy behavior in some way, such as by adding an HTTP header to all responses.</p>
-		<draggable v-model="store.middlewares" handle=".dragHandle">
-			<MiddlewareEditor v-for="middleware in store.middlewares" :key="middleware.uniqueId" :middleware="middleware" @delete="deleteMiddleware(middleware)" />
-		</draggable>
-		<div class="buttonBar">
-			<button @click="addMiddleware()">Add New Middleware</button>
-		</div>
-		<h2>Proxy Routes</h2>
-		<p>The Proxy Routes list defines which Exitpoints are reachable from which Entrypoints.  In order for an Exitpoint to be reachable by clients, it must be bound to at least one Entrypoint via a Proxy Route.</p>
-		<draggable v-model="store.proxyRoutes" handle=".dragHandle">
-			<ProxyRouteEditor v-for="proxyRoute in store.proxyRoutes" :key="proxyRoute.uniqueId" :proxyRoute="proxyRoute" @delete="deleteProxyRoute(proxyRoute)" />
-		</draggable>
-		<div class="buttonBar">
-			<button @click="addProxyRoute()">Add New Proxy Route</button>
-		</div>
-		<h2>Hosted URL Summary</h2>
-		<HostedUrlSummary />
-		<h2>Raw Settings.json</h2>
-		<a href="/Configuration/GetRaw" target="_blank">Settings.json</a>
-		<h2>Log Files</h2>
-		<div v-for="logFile in store.logFiles">
-			<a :href="'/Log/' + logFile.fileName" target="_blank">{{logFile.fileName}}</a> ({{logFile.size}})
-		</div>
-		<h2>Live Log File</h2>
-		<LogReader />
-	</template>
+	</div>
 </template>
 
 <script>
@@ -94,12 +115,24 @@
 				store: store,
 				loading: false,
 				showFullscreenLoader: false,
-				originalJson: null
+				originalJson: null,
+				selectedTab: {},
+				tabs: [
+					{ Name: "All" },
+					{ Name: "Dashboard" },
+					{ Name: "Settings" },
+					{ Name: "Entrypoints" },
+					{ Name: "Exitpoints" },
+					{ Name: "Middlewares" },
+					{ Name: "Routes" },
+					{ Name: "Log" }
+				]
 			};
 		},
 		created()
 		{
 			window.appRoot = this;
+			this.selectedTab = this.tabs[1];
 			this.getConfiguration();
 		},
 		computed:
@@ -382,6 +415,7 @@
 		align-items: center;
 		min-height: 44px;
 		box-sizing: border-box;
+		padding: 0px 1em;
 	}
 
 		.topBar h1
@@ -459,6 +493,68 @@
 		{
 			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='200' viewBox='0 0 30 200'%3E%3Ctext x='0' y='-16' transform='rotate(90)' fill='%23FFAAAA' style='font-family: sans-serif; font-size: 16px;'%3EUnsaved Changes%3C/text%3E%3C/svg%3E");
 		}
+
+	.tabBar
+	{
+		background-color: #003388;
+		display: flex;
+		flex-wrap: wrap;
+	}
+
+		.tabBar .tab
+		{
+			color: #FFFFFF;
+			height: 44px;
+			line-height: 44px;
+			padding: 0px 1em;
+			cursor: pointer;
+			user-select: none;
+		}
+
+			.tabBar .tab:hover
+			{
+				background-color: rgba(255,255,255,0.35);
+			}
+
+			.tabBar .tab.selectedTab
+			{
+				text-decoration: underline;
+				background-color: rgba(255,255,255,0.25);
+			}
+
+				.tabBar .tab.selectedTab:hover
+				{
+					background-color: rgba(255,255,255,0.5);
+				}
+
+	.adminContent
+	{
+		margin: 0px 1em;
+	}
+
+	@media (min-width: 600px)
+	{
+		.adminBody
+		{
+		}
+
+		.tabBar
+		{
+			position: fixed;
+			top: 44px;
+			z-index: 1;
+			flex-direction: column;
+			flex-wrap: nowrap;
+			width: 125px;
+			height: calc(100vh - 44px);
+			overflow-y: auto;
+		}
+
+		.adminContent
+		{
+			padding-left: 125px;
+		}
+	}
 
 	@media (min-width: 700px)
 	{

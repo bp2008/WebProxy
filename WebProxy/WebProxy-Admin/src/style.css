@@ -53,9 +53,6 @@ button
 
 #app
 {
-	max-width: 1280px;
-	margin: 0 auto;
-	padding: 0px 32px;
 	position: relative;
 }
 
@@ -152,6 +149,39 @@ button
 		width: 100%;
 		box-sizing: border-box;
 	}
+
+/* For WebKit (Safari, Chrome, etc.) */
+::-webkit-scrollbar
+{
+	width: 12px;
+	height: 12px;
+}
+
+::-webkit-scrollbar-track
+{
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb
+{
+	background-color: #888888;
+	border-radius: 20px;
+	border: 4px solid transparent;
+	background-clip: padding-box;
+}
+
+/* For Firefox */
+*
+{
+	scrollbar-width: thin;
+	scrollbar-color: #888888 transparent;
+}
+
+/* For Internet Explorer and Edge */
+body
+{
+	-ms-overflow-style: -ms-autohiding-scrollbar;
+}
 
 @media (max-width: 600px)
 {
