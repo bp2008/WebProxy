@@ -3,7 +3,7 @@
 		<FloatingButtons @delete="$emit('delete')" />
 		<div class="flexRow">
 			<label>Middleware Name</label>
-			<input type="text" v-model="middleware.Id" />
+			<input type="text" v-model="middleware.Id" autocomplete="off" />
 			<div class="comment">You can change the Middleware Name after creation, but you must manually update all Entrypoints and Exitpoints that used it.</div>
 		</div>
 		<div class="flexRow">

@@ -14,12 +14,12 @@
 		<div class="primaryContainer">
 			<div class="flexRow">
 				<label>LetsEncrypt Account Email</label>
-				<input type="text" v-model="store.acmeAccountEmail" />
+				<input type="text" v-model="store.acmeAccountEmail" autocomplete="off" />
 				<div class="comment">Required for automatic certificate management.  Account will be created upon first use.  You may change the email address after creating the account.</div>
 			</div>
 			<div class="flexRow">
 				<label>ErrorTracker Submission URL</label>
-				<input type="text" v-model="store.errorTrackerSubmitUrl" />
+				<input type="text" v-model="store.errorTrackerSubmitUrl" autocomplete="off" />
 				<div class="comment">Optional submit URL for an ErrorTracker instance.</div>
 			</div>
 		</div>

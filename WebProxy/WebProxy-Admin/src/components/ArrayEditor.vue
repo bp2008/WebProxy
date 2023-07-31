@@ -1,11 +1,11 @@
 <template>
 	<div class="arrayEditor">
 		<div class="arrayElement" v-for="(item, index) in modelValue" :key="index">
-			<select v-if="allowedValues" v-model="modelValue[index]">
+			<select v-if="allowedValues" v-model="modelValue[index]" autocomplete="off">
 				<option v-for="v in allowedValues" :key="v">{{v}}</option>
 			</select>
 			<UNPWEditor v-else-if="arrayType === 'credentials'" v-model="modelValue[index]" />
-			<input v-else :type="arrayType" v-model="modelValue[index]" />
+			<input v-else :type="arrayType" v-model="modelValue[index]" autocomplete="off" />
 			<input class="removeButton" type="button" value="-" @click="removeArrayItem(index)" />
 		</div>
 		<div>
