@@ -26,6 +26,8 @@ namespace WebProxy
 		/// </summary>
 		static void Main()
 		{
+			// Change color of top bar in admin console.
+			// Scroll to top when changing tabs in admin console, unless changing to "All" (browsers tend to retain scroll position rather well when navigating to "All").
 			// CONSIDER: Add middleware for "Forwarded" header which combines the effects of the previous 3 headers: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Forwarded
 			// CONSIDER: Add a middleware that implements a JavaScript-based login form.  Consider supporting WebAuthn or passwordless.id, but the main goal here is to support password manager browser extensions.
 			WindowsServiceInitOptions options = new WindowsServiceInitOptions();
