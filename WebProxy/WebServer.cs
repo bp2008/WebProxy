@@ -116,6 +116,7 @@ namespace WebProxy
 					{
 						UriBuilder builder = new UriBuilder(p.request_url);
 						builder.Port = myEntrypoint.httpsPort;
+						builder.Host = p.hostName;
 						builder.Scheme = "https";
 						p.writeRedirect(builder.Uri.ToString());
 						return;
