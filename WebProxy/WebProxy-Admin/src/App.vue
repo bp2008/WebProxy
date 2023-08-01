@@ -468,7 +468,7 @@
 
 	.sidebarUnsavedChanges
 	{
-		position: absolute;
+		position: fixed;
 		top: 0;
 		bottom: 0;
 		width: 30px;
@@ -494,7 +494,7 @@
 		.sidebarUnsavedChanges.right
 		{
 			background: linear-gradient(90deg, rgba(255,0,0,0.00) 33%, rgba(255,0,0,0.0333) 66%, rgba(255,0,0,0.00) 100%);
-			right: -3px;
+			right: 10px;
 		}
 
 		.sidebarUnsavedChanges.left:before
