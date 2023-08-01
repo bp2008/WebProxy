@@ -22,7 +22,8 @@
 		data()
 		{
 			return {
-				allMiddlewareRows: []
+				allMiddlewareRows: [],
+				store
 			};
 		},
 		created()
@@ -111,8 +112,8 @@
 <style scoped>
 	.middlewareSelector
 	{
-		border: 1px dashed #000000;
-		border-radius: 5px;
+		/*border-top: 1px dashed #888888;*/
+		/*border-radius: 5px;*/
 		padding: 8px;
 	}
 

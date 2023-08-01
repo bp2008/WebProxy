@@ -1,6 +1,7 @@
 ﻿import { reactive } from 'vue';
 
 const store = reactive({
+	showHelp: false,
 	exitpointTypes: [],
 	middlewareTypes: [],
 	proxyHeaderBehaviorOptions: [],

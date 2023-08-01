@@ -1,18 +1,21 @@
-:root
+#app
 {
 	font-family: Helvetica, Arial, sans-serif;
-	color: #000000;
-	background-color: #ffffff;
+	color: rgba(255,255,255,0.6);
+	background-color: #121212;
+	height: 100vh;
+	overflow-y: scroll;
 }
+
 
 a
 {
-	color: #646cff;
+	color: #1fdeff;
 }
 
 	a:hover
 	{
-		color: #747bff;
+		color: #4fe5ff;
 	}
 
 body
@@ -20,12 +23,26 @@ body
 	margin: 0px;
 }
 
-h1
+h1, h2, h3, h4, h5, h6, .primaryContainerHeading
 {
-	color: #213547;
+	color: rgba(255,255,255,0.87);
 }
 
-button
+.primaryContainerHeading
+{
+	position: relative;
+	top: -10px;
+	left: -5px;
+	font-size: 1.5em;
+	font-style: italic;
+	font-weight: bold;
+	/*text-decoration: underline;*/
+	font-family: Verdana;
+	display: inline-block;
+}
+
+button,
+input[type="button"]
 {
 	border-radius: 8px;
 	border: 1px solid transparent;
@@ -33,22 +50,30 @@ button
 	font-size: 1em;
 	font-weight: 500;
 	font-family: inherit;
-	background-color: #1a1a1a;
 	cursor: pointer;
 	transition: border-color 0.25s;
-	background-color: #f9f9f9;
+	background-color: #204761;
+	color: #ffffff;
 }
 
-	button:hover
+	button:hover,
+	input[type="button"]:hover
 	{
 		border-color: #646cff;
 	}
 
 	button:focus,
-	button:focus-visible
+	button:focus-visible,
+	input[type="button"]:focus,
+	input[type="button"]:focus-visible
 	{
 		outline: 4px auto -webkit-focus-ring-color;
 	}
+
+input[type="button"]
+{
+	padding: 0.3em 0.6em;
+}
 
 
 #app
@@ -62,16 +87,16 @@ button
 	margin-bottom: 1em;
 	border: 1px solid #9999BB;
 	padding: 1em;
-	background-color: #F6F6F6;
 	white-space: pre-wrap;
-	color: #650833;
+	background-color: rgba(255,255,255,0.14);
+	color: rgba(255,255,255,0.82);
 }
 
 .icode
 {
 	display: inline;
-	background-color: #EFF1F2;
-	color: rgb(31, 35, 40);
+	background-color: rgba(255,255,255,0.14);
+	color: rgba(255,255,255,0.82);
 	font-weight: normal;
 	font-style: normal;
 	padding: 0.2em 0.4em;
@@ -86,12 +111,94 @@ button
 	border: 1px solid #999999;
 	border-radius: 5px;
 	padding: 1em;
-	margin-bottom: 0.5em;
+	margin-bottom: 2em;
+	background-color: rgba(255,255,255,0.05);
+	/*background: #13112E;*/
+	/*background: radial-gradient(ellipse at bottom, #34437A33 0%, #13112E33 80%);*/
+}
+
+	.primaryContainer:last-of-type
+	{
+		margin-bottom: 1em;
+	}
+
+.dp00
+{
+	background-color: rgba(255,255,255,0.0);
+}
+
+.dp01
+{
+	background-color: rgba(255,255,255,0.05);
+}
+
+.dp02
+{
+	background-color: rgba(255,255,255,0.07);
+}
+
+.dp03
+{
+	background-color: rgba(255,255,255,0.08);
+}
+
+.dp04
+{
+	background-color: rgba(255,255,255,0.09);
+}
+
+.dp06
+{
+	background-color: rgba(255,255,255,0.11);
+}
+
+.dp08
+{
+	background-color: rgba(255,255,255,0.12);
+}
+
+.dp12
+{
+	background-color: rgba(255,255,255,0.14);
+}
+
+.dp16
+{
+	background-color: rgba(255,255,255,0.15);
+}
+
+.dp24
+{
+	background-color: rgba(255,255,255,0.16);
+}
+
+input[type="text"],
+input[type="number"],
+select
+{
+	background-color: rgba(255,255,255,0.07);
+	color: rgba(255,255,255,0.87);
+	padding: 8px 12px;
+	font-size: 1em;
+	border: 1px solid #666666;
+	border-radius: 4px;
+}
+
+select
+{
+	font-size: 0.9em;
+}
+
+option
+{
+	font-size: 1em;
+	color: #000000;
+	background-color: #FFFFFF;
 }
 
 .dashedBorder
 {
-	border: 1px dashed #000000;
+	border: 1px dashed #888888;
 	border-radius: 5px;
 	padding: 8px;
 }
@@ -115,7 +222,7 @@ button
 {
 	padding-left: 1em;
 	padding-top: 0px;
-	color: #008800;
+	color: #00D600;
 	/*font-weight: bold;
 		font-style: italic;*/
 }
@@ -159,7 +266,7 @@ button
 
 ::-webkit-scrollbar-track
 {
-	background: transparent;
+	background: rgba(255,255,255,0.11);
 }
 
 ::-webkit-scrollbar-thumb

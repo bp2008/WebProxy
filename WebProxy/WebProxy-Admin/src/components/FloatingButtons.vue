@@ -18,6 +18,9 @@
 	.floatingButtons
 	{
 		float: right;
+		position: relative;
+		top: -10px;
+		right: -5px;
 	}
 
 		.floatingButtons > span > *
@@ -34,7 +37,7 @@
 			border: 1px solid #CCCCCC;
 			border-radius: 7px;
 			background-color: rgba(0,0,0,0.1);
-			fill: #000000;
+			fill: rgba(255,255,255,0.77);
 			box-shadow: 1px 1px 3px rgba(0,0,0,0.5);
 		}
 

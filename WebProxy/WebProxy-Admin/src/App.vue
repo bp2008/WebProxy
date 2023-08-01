@@ -17,29 +17,31 @@
 				 :can-cancel="false"
 				 :is-full-page="true" />
 		<div class="tabBar">
-			<div v-for="tab in tabs" :class="{ tab: true, selectedTab: selectedTab === tab }" role="button" @click="selectedTab = tab">
+			<div v-for="tab in tabs" :class="{ tab: true, selectedTab: selectedTab === tab }" role="button" @click="selectTab(tab)">
 				{{tab.Name}}
 			</div>
 		</div>
 		<div class="adminContent">
+			<div class="invisibleLine"></div>
+			<div :class="{ helpToggle: true, enabled: store.showHelp }" @click="store.showHelp = !store.showHelp" title="toggle help text">?</div>
 			<div v-if="selectedTab.Name === 'All' || selectedTab.Name === 'Settings'">
 				<h2>Global Settings</h2>
 				<div class="primaryContainer">
 					<div class="flexRow">
 						<label>LetsEncrypt Account Email</label>
 						<input type="text" v-model="store.acmeAccountEmail" autocomplete="off" />
-						<div class="comment">Required for automatic certificate management.  Account will be created upon first use.  You may change the email address after creating the account.</div>
+						<div class="comment" v-if="store.showHelp">Required for automatic certificate management.  Account will be created upon first use.  You may change the email address after creating the account.</div>
 					</div>
 					<div class="flexRow">
 						<label>ErrorTracker Submission URL</label>
 						<input type="text" v-model="store.errorTrackerSubmitUrl" autocomplete="off" />
-						<div class="comment">Optional submit URL for an ErrorTracker instance.</div>
+						<div class="comment" v-if="store.showHelp">Optional submit URL for an ErrorTracker instance.</div>
 					</div>
 				</div>
 			</div>
 			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Entrypoints'">
 				<h2>Entrypoints</h2>
-				<p>Entrypoints define how the web server listens for incoming network requests.</p>
+				<p v-if="store.showHelp">Entrypoints define how the web server listens for incoming network requests.</p>
 				<draggable v-model="store.entrypoints" handle=".dragHandle">
 					<EntrypointEditor v-for="entrypoint in store.entrypoints" :key="entrypoint.uniqueId" :entrypoint="entrypoint" @delete="deleteEntrypoint(entrypoint)" />
 				</draggable>
@@ -49,7 +51,7 @@
 			</div>
 			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Exitpoints'">
 				<h2>Exitpoints</h2>
-				<p>An Exitpoint is a web destination which a client wants to reach.  This Admin Console is an Exitpoint, but an Exitpoint could also be another web server.</p>
+				<p v-if="store.showHelp">An Exitpoint is a web destination which a client wants to reach.  This Admin Console is an Exitpoint, but an Exitpoint could also be another web server.</p>
 				<draggable v-model="store.exitpoints" handle=".dragHandle">
 					<ExitpointEditor v-for="exitpoint in store.exitpoints" :key="exitpoint.uniqueId" :exitpoint="exitpoint" @delete="deleteExitpoint(exitpoint)" @renew="renewCertificate(exitpoint)" />
 				</draggable>
@@ -59,7 +61,7 @@
 			</div>
 			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Middlewares'">
 				<h2>Middlewares</h2>
-				<p>A Middleware is a module which applies additional logic to Entrypoints or Exitpoints.  A Middleware is typically used for access control or to manipulate default WebProxy behavior in some way, such as by adding an HTTP header to all responses.</p>
+				<p v-if="store.showHelp">A Middleware is a module which applies additional logic to Entrypoints or Exitpoints.  A Middleware is typically used for access control or to manipulate default WebProxy behavior in some way, such as by adding an HTTP header to all responses.</p>
 				<draggable v-model="store.middlewares" handle=".dragHandle">
 					<MiddlewareEditor v-for="middleware in store.middlewares" :key="middleware.uniqueId" :middleware="middleware" @delete="deleteMiddleware(middleware)" />
 				</draggable>
@@ -69,7 +71,7 @@
 			</div>
 			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Routes'">
 				<h2>Proxy Routes</h2>
-				<p>The Proxy Routes list defines which Exitpoints are reachable from which Entrypoints.  In order for an Exitpoint to be reachable by clients, it must be bound to at least one Entrypoint via a Proxy Route.</p>
+				<p v-if="store.showHelp">The Proxy Routes list defines which Exitpoints are reachable from which Entrypoints.  In order for an Exitpoint to be reachable by clients, it must be bound to at least one Entrypoint via a Proxy Route.</p>
 				<draggable v-model="store.proxyRoutes" handle=".dragHandle">
 					<ProxyRouteEditor v-for="proxyRoute in store.proxyRoutes" :key="proxyRoute.uniqueId" :proxyRoute="proxyRoute" @delete="deleteProxyRoute(proxyRoute)" />
 				</draggable>
@@ -118,14 +120,14 @@
 				originalJson: null,
 				selectedTab: {},
 				tabs: [
-					{ Name: "All" },
-					{ Name: "Dashboard" },
-					{ Name: "Settings" },
-					{ Name: "Entrypoints" },
-					{ Name: "Exitpoints" },
-					{ Name: "Middlewares" },
-					{ Name: "Routes" },
-					{ Name: "Log" }
+					{ Name: "All", scrollTop: false },
+					{ Name: "Dashboard", scrollTop: true },
+					{ Name: "Settings", scrollTop: true },
+					{ Name: "Entrypoints", scrollTop: true },
+					{ Name: "Exitpoints", scrollTop: true },
+					{ Name: "Middlewares", scrollTop: true },
+					{ Name: "Routes", scrollTop: true },
+					{ Name: "Log", scrollTop: true }
 				]
 			};
 		},
@@ -342,6 +344,12 @@
 				}
 				else
 					toaster.info("Force renewal was cancelled");
+			},
+			selectTab(tab)
+			{
+				this.selectedTab = tab;
+				if (tab.scrollTop)
+					document.querySelector("html").scrollTop = 0;
 			}
 		},
 		watch:
@@ -407,15 +415,17 @@
 	.topBar
 	{
 		position: sticky;
-		z-index: 1;
+		z-index: 2;
 		top: 0px;
-		background-color: #FFFFFF;
-		border-bottom: 1px solid #AAAAAA;
+		border-bottom: 1px solid #888888;
 		display: flex;
 		align-items: center;
 		min-height: 44px;
 		box-sizing: border-box;
 		padding: 0px 1em;
+		/*background-color: #030839;*/
+		background: #121212;
+		background: radial-gradient(ellipse at left bottom, #121233 0%, #121212 100%);
 	}
 
 		.topBar h1
@@ -475,13 +485,13 @@
 		.sidebarUnsavedChanges.left
 		{
 			background: linear-gradient(-90deg, rgba(255,0,0,0.00) 33%, rgba(255,0,0,0.0333) 66%, rgba(255,0,0,0.00) 100%);
-			left: 0;
+			left: -3px;
 		}
 
 		.sidebarUnsavedChanges.right
 		{
 			background: linear-gradient(90deg, rgba(255,0,0,0.00) 33%, rgba(255,0,0,0.0333) 66%, rgba(255,0,0,0.00) 100%);
-			right: 0;
+			right: -3px;
 		}
 
 		.sidebarUnsavedChanges.left:before
@@ -496,9 +506,13 @@
 
 	.tabBar
 	{
-		background-color: #003388;
+		background-color: #121212;
+		background: radial-gradient(ellipse at top right, #12122b 0%, #000000 100%);
 		display: flex;
 		flex-wrap: wrap;
+		position: relative;
+		z-index: 1;
+		border-bottom: 1px solid #888888;
 	}
 
 		.tabBar .tab
@@ -513,24 +527,71 @@
 
 			.tabBar .tab:hover
 			{
-				background-color: rgba(255,255,255,0.35);
+				background-color: rgba(255,255,255,0.25);
 			}
 
 			.tabBar .tab.selectedTab
 			{
 				text-decoration: underline;
-				background-color: rgba(255,255,255,0.25);
+				background-color: rgba(255,255,255,0.15);
 			}
 
 				.tabBar .tab.selectedTab:hover
 				{
-					background-color: rgba(255,255,255,0.5);
+					background-color: rgba(255,255,255,0.4);
 				}
 
 	.adminContent
 	{
 		margin: 0px 1em;
+		padding-bottom: 1em;
 	}
+
+	.invisibleLine
+	{
+		height: 1px;
+	}
+
+	.helpToggle
+	{
+		position: sticky;
+		top: 50px;
+		z-index: 1;
+		background: #2E2E2E;
+		color: rgba(255,255,255,0.77);
+		font-size: 1.8em;
+		display: inline-block;
+		float: right;
+		width: 44px;
+		height: 44px;
+		margin-top: 5px;
+		margin-right: 5px;
+		line-height: 42px;
+		text-align: center;
+		box-sizing: border-box;
+		border: 1px solid #666666;
+		border-radius: 4px;
+		box-shadow: 0px 1px 4px 4px rgba(0,0,0,0.6);
+		cursor: pointer;
+	}
+
+		.helpToggle:hover
+		{
+			background-color: #353535;
+		}
+
+		.helpToggle.enabled
+		{
+			background-color: #383838;
+			color: rgba(0,255,0,1);
+			border-color: rgba(0,255,0,0.66);
+			font-weight: bold;
+		}
+
+			.helpToggle.enabled:hover
+			{
+				background-color: #404040;
+			}
 
 	@media (min-width: 600px)
 	{
@@ -553,6 +614,16 @@
 		.adminContent
 		{
 			padding-left: 125px;
+		}
+
+		.sidebarUnsavedChanges.left
+		{
+			left: 122px;
+		}
+
+		.tabBar
+		{
+			border-bottom: none;
 		}
 	}
 

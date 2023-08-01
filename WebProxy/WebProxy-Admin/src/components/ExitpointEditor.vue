@@ -1,10 +1,11 @@
 <template>
 	<div class="exitpointEditor primaryContainer">
 		<FloatingButtons @delete="$emit('delete')" />
+		<div class="primaryContainerHeading">Exitpoint</div>
 		<div class="flexRow">
-			<label><b>Exitpoint Name</b></label>
+			<label><b>Name</b></label>
 			<input type="text" v-model="exitpoint.name" class="nameInput" autocomplete="off" />
-			<div class="comment">You can change the Exitpoint Name after creation, but you must manually update all affected ProxyRoutes.</div>
+			<div class="comment" v-if="store.showHelp">You can change the Exitpoint Name after creation, but you must manually update all affected ProxyRoutes.</div>
 		</div>
 		<div class="flexRow">
 			<label>Exitpoint Type</label>
@@ -16,26 +17,26 @@
 			<div class="flexRow" :title="hostTitle">
 				<label>Host</label>
 				<input type="text" v-model="exitpoint.host" class="hostInput" autocomplete="off" />
-				<div class="exampleText">Multiple hosts? Use comma and/or space to separate: <span class="icode">example.com www.example.com</span>.</div>
-				<div class="exampleText">Using wildcards will disable automatic certificate creation: <span class="icode">*.example.com</span>.</div>
+				<div class="exampleText" v-if="store.showHelp">Multiple hosts? Use comma and/or space to separate: <span class="icode">example.com www.example.com</span>.</div>
+				<div class="exampleText" v-if="store.showHelp">Using wildcards will disable automatic certificate creation: <span class="icode">*.example.com</span>.</div>
 			</div>
 			<div class="dashedBorder">
 				<div>
 					<label><input type="checkbox" v-model="exitpoint.autoCertificate" /> Automatic Certificate from LetsEncrypt</label>
-					<div class="comment">If enabled, certificates for this host will be obtained and managed automatically via LetsEncrypt.  Automatic certificate management will only work if this exitpoint is mapped to an entrypoint that is reachable on the internet at 'http://host:80/' or 'https://host:443/'.  Wildcards are not allowed in [Host] when using this option.</div>
+					<div class="comment" v-if="store.showHelp">If enabled, certificates for this host will be obtained and managed automatically via LetsEncrypt.  Automatic certificate management will only work if this exitpoint is mapped to an entrypoint that is reachable on the internet at 'http://host:80/' or 'https://host:443/'.  Wildcards are not allowed in [Host] when using this option.</div>
 				</div>
 				<div><input type="button" v-if="exitpoint.autoCertificate" value="Force Renew Certificate" @click="$emit('renew')" /></div>
 				<div class="flexRow" v-if="!exitpoint.autoCertificate">
 					<label>Certificate Path</label>
 					<input type="text" v-model="exitpoint.certificatePath" class="certificatePathInput" placeholder="Path to the certificate file (pfx)" title="Path to the certificate file (pfx)" autocomplete="off" />
-					<div class="comment">Path to the certificate file (pfx). If omitted, a path will be automatically filled in upon first use.</div>
+					<div class="comment" v-if="store.showHelp">Path to the certificate file (pfx). If omitted, a path will be automatically filled in upon first use.</div>
 				</div>
 			</div>
 			<template v-if="exitpoint.type === 'WebProxy'">
 				<div class="flexRow">
 					<label>Destination Origin</label>
 					<input type="text" v-model="exitpoint.destinationOrigin" class="destinationOriginInput" autocomplete="off" />
-					<div class="comment">Requests shall be proxied to this origin, e.g. <span class="icode">https://example.com:8000</span></div>
+					<div class="comment" v-if="store.showHelp">Requests shall be proxied to this origin, e.g. <span class="icode">https://example.com:8000</span></div>
 				</div>
 				<div class="flexRow" v-if="destinationOriginIsHttps">
 					<label><input type="checkbox" v-model="exitpoint.proxyAcceptAnyCertificate" /> Skip Certificate Validation for Destination Origin</label>
@@ -43,7 +44,7 @@
 				<div class="flexRow">
 					<label>Destination Host Header</label>
 					<input type="text" v-model="exitpoint.destinationHostHeader" autocomplete="off" />
-					<div class="comment">If you need to override the host string used in outgoing proxy requests (for the Host header and TLS Server Name Indication), provide the host string here.  Otherwise leave this empty and the host from the Destination Origin will be used. DO NOT include a port number, even if using a non-standard port.  The port number will be added automatically where appropriate.</div>
+					<div class="comment" v-if="store.showHelp">If you need to override the host string used in outgoing proxy requests (for the Host header and TLS Server Name Indication), provide the host string here.  Otherwise leave this empty and the host from the Destination Origin will be used. DO NOT include a port number, even if using a non-standard port.  The port number will be added automatically where appropriate.</div>
 				</div>
 			</template>
 			<div class="middlewares">
@@ -70,6 +71,7 @@
 		data()
 		{
 			return {
+				store,
 				hostTitle: "DNS hostname template.\n\nIn order to access this Exitpoint, a client must request a host which matches this template.\n\nNull or empty string will make this Exitpoint be unreachable by a standard HTTP client.\n\nAny number of '*' characters can be used as wildcards where each '*' means 0 or more characters.  Wildcard matches are lower priority than exact host matches."
 			};
 		},
@@ -96,11 +98,17 @@
 <style scoped>
 	.exitpointEditor
 	{
-		background-color: #FFF8F0;
+		box-shadow: inset 0px 0px 4px 1px rgba(255,0,0,0.8);
+		border-color: rgba(255,255,255,0.35);
 	}
 
 		.exitpointEditor:hover
 		{
-			background-color: #FFE8DD;
+			border-color: rgba(255,100,100,0.6);
 		}
+
+	.primaryContainerHeading
+	{
+		color: rgba(255,50,50,0.87);
+	}
 </style>

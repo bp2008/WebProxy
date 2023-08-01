@@ -1,6 +1,6 @@
 ﻿<template>
 	<div>
-		<div class="log-box">
+		<div class="log-box dp06">
 			<div class="connection-status" :class="{connected: isConnected}" :title="isConnected?'Connected and streaming text from the log.':'Not connected. Attempting to reconnect.'"></div>
 			<pre ref="logBox">{{ logText }}</pre>
 		</div>
@@ -133,6 +133,7 @@
 	{
 		position: relative;
 		margin-bottom: 1em;
+		color: rgba(255,255,255,0.77);
 	}
 
 		.log-box pre

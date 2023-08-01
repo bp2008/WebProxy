@@ -1,10 +1,11 @@
 <template>
 	<div class="middlewareEditor primaryContainer">
 		<FloatingButtons @delete="$emit('delete')" />
+		<div class="primaryContainerHeading">Middleware</div>
 		<div class="flexRow">
-			<label>Middleware Name</label>
+			<label>Name</label>
 			<input type="text" v-model="middleware.Id" autocomplete="off" />
-			<div class="comment">You can change the Middleware Name after creation, but you must manually update all Entrypoints and Exitpoints that used it.</div>
+			<div class="comment" v-if="store.showHelp">You can change the Middleware Name after creation, but you must manually update all Entrypoints and Exitpoints that used it.</div>
 		</div>
 		<div class="flexRow">
 			<label>Type</label>
@@ -25,14 +26,16 @@
 			<div v-if="!middleware.WhitelistedIpRanges || !middleware.WhitelistedIpRanges.length">
 				Click the <b>+</b> button below to add an IP range.
 			</div>
-			<div>
+			<div class="ipRangeList">
 				<label>Whitelisted IP Ranges</label>
 				<ArrayEditor v-model="middleware.WhitelistedIpRanges" arrayType="text" />
 			</div>
-			<div class="exampleText">Examples:</div>
-			<div class="exampleText"><span class="icode">192.168.0.100</span> (single IP address)</div>
-			<div class="exampleText"><span class="icode">192.168.0.90 - 192.168.0.110</span> (IP range)</div>
-			<div class="exampleText"><span class="icode">192.168.0.100/30</span> (subnet prefix notation)</div>
+			<template v-if="store.showHelp">
+				<div class="exampleText">Examples:</div>
+				<div class="exampleText"><span class="icode">192.168.0.100</span> (single IP address)</div>
+				<div class="exampleText"><span class="icode">192.168.0.90 - 192.168.0.110</span> (IP range)</div>
+				<div class="exampleText"><span class="icode">192.168.0.100/30</span> (subnet prefix notation)</div>
+			</template>
 		</template>
 		<template v-if="middleware.Type === 'HttpDigestAuth'">
 			<div>
@@ -55,10 +58,10 @@
 			<div>
 				This middleware adds static HTTP headers to all responses.  Only affects Exitpoints of type WebProxy.
 			</div>
-			<div>
+			<div class="httpHeaderList">
 				<label>Http Headers</label>
 				<ArrayEditor v-model="middleware.HttpHeaders" arrayType="text" />
-				<div class="exampleText">e.g. <span class="icode">Strict-Transport-Security: max-age=31536000; includeSubDomains</span></div>
+				<div class="exampleText" v-if="store.showHelp">e.g. <span class="icode">Strict-Transport-Security: max-age=31536000; includeSubDomains</span></div>
 			</div>
 		</template>
 		<template v-if="middleware.Type === 'AddProxyServerTiming'">
@@ -85,14 +88,16 @@
 				This middleware allows you to provide a list of trusted proxy IP Ranges as a requirement to properly use some proxy header behaviors.
 			</div>
 
-			<div>
+			<div class="ipRangeList">
 				<label>Trusted Proxy IP Ranges</label>
 				<ArrayEditor v-model="middleware.WhitelistedIpRanges" arrayType="text" />
 			</div>
-			<div class="exampleText">Examples:</div>
-			<div class="exampleText"><span class="icode">192.168.0.100</span> (single IP address)</div>
-			<div class="exampleText"><span class="icode">192.168.0.90 - 192.168.0.110</span> (IP range)</div>
-			<div class="exampleText"><span class="icode">192.168.0.100/30</span> (subnet prefix notation)</div>
+			<template v-if="store.showHelp">
+				<div class="exampleText">Examples:</div>
+				<div class="exampleText"><span class="icode">192.168.0.100</span> (single IP address)</div>
+				<div class="exampleText"><span class="icode">192.168.0.90 - 192.168.0.110</span> (IP range)</div>
+				<div class="exampleText"><span class="icode">192.168.0.100/30</span> (subnet prefix notation)</div>
+			</template>
 		</template>
 	</div>
 </template>
@@ -100,6 +105,7 @@
 	import store from '/src/library/store';
 	import ArrayEditor from '/src/components/ArrayEditor.vue';
 	import FloatingButtons from '/src/components/FloatingButtons.vue'
+
 	export default {
 		components: { ArrayEditor, FloatingButtons },
 		props: {
@@ -108,6 +114,7 @@
 		data()
 		{
 			return {
+				store
 			};
 		},
 		created()
@@ -155,14 +162,29 @@
 		}
 	};
 </script>
+<style>
+	/* unscoped */
+	.ipRangeList input[type="text"],
+	.httpHeaderList input[type="text"]
+	{
+		width: 550px;
+		max-width: 100%;
+		box-sizing: border-box;
+	}
+</style>
 <style scoped>
 	.middlewareEditor
 	{
-		background-color: #F0FFF0;
+		box-shadow: inset 0px 0px 4px 1px rgba(0,255,0,0.8);
 	}
 
 		.middlewareEditor:hover
 		{
-			background-color: #DAFFDA;
+			border-color: rgba(0,255,0,0.6);
 		}
+
+	.primaryContainerHeading
+	{
+		color: rgba(70,255,70,0.87);
+	}
 </style>

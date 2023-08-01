@@ -1,15 +1,16 @@
 <template>
 	<div class="entrypointEditor primaryContainer">
 		<FloatingButtons @delete="$emit('delete')" />
+		<div class="primaryContainerHeading">Entrypoint</div>
 		<div class="flexRow">
-			<label>Entrypoint Name</label>
+			<label>Name</label>
 			<input type="text" v-model="entrypoint.name" autocomplete="off" />
-			<div class="comment">You can change the Entrypoint Name after creation, but you must manually update all affected ProxyRoutes.</div>
+			<div class="comment" v-if="store.showHelp">You can change the Entrypoint Name after creation, but you must manually update all affected ProxyRoutes.</div>
 		</div>
 		<div class="flexRow">
 			<label>IP Address Binding</label>
 			<input type="text" v-model="entrypoint.ipAddress" class="ipAddressInput" placeholder="(when empty) listen on all interfaces" title="(when empty) listen on all interfaces" autocomplete="off" />
-			<div class="comment">IP Address to listen on.  Leave empty to listen on all interfaces.</div>
+			<div class="comment" v-if="store.showHelp">IP Address to listen on.  Leave empty to listen on all interfaces.</div>
 		</div>
 		<div>
 			<label><input type="checkbox" v-model="httpPortEnabled" /> HTTP Port: </label>
@@ -20,7 +21,7 @@
 			<input type="number" min="1" max="65535" v-model="entrypoint.httpsPort" :disabled="!httpsPortEnabled" autocomplete="off" />
 		</div>
 		<div>
-			<div class="comment">HTTP and HTTPS can share the same port, if you like.</div>
+			<div class="comment" v-if="store.showHelp">HTTP and HTTPS can share the same port, if you like.</div>
 		</div>
 		<div class="middlewares">
 			<MiddlewareSelector v-model="entrypoint.middlewares"></MiddlewareSelector>
@@ -31,6 +32,7 @@
 <script>
 	import MiddlewareSelector from './MiddlewareSelector.vue';
 	import FloatingButtons from '/src/components/FloatingButtons.vue'
+	import store from '/src/library/store';
 
 	export default {
 		components: { MiddlewareSelector, FloatingButtons },
@@ -40,6 +42,7 @@
 		data()
 		{
 			return {
+				store
 			};
 		},
 		created()
@@ -82,14 +85,19 @@
 <style scoped>
 	.entrypointEditor
 	{
-		background-color: #F0F0FF;
+		box-shadow: inset 0px 0px 4px 1px rgba(0,0,255,0.8);
+		border-color: rgba(255,255,255,0.35);
 	}
 
 		.entrypointEditor:hover
 		{
-			background-color: #DDDDFF;
+			border-color: rgba(100,100,255,0.6);
 		}
 
+	.primaryContainerHeading
+	{
+		color: rgba(160,160,255,1);
+	}
 	.flexRow input.ipAddressInput
 	{
 		width: 300px;

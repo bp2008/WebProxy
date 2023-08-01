@@ -54,11 +54,11 @@
 <style scoped>
 	.proxyRouteEditor
 	{
-		background-color: #FFFFD0;
+		box-shadow: inset 0px 0px 4px 1px rgba(255,255,0,0.8);
 	}
 
 		.proxyRouteEditor:hover
 		{
-			background-color: #FFEF70;
+			border-color: rgba(255,255,0,0.6);
 		}
 </style>
