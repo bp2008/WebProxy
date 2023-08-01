@@ -96,19 +96,4 @@
 </script>
 
 <style scoped>
-	.exitpointEditor
-	{
-		box-shadow: inset 0px 0px 4px 1px rgba(255,0,0,0.8);
-		border-color: rgba(255,255,255,0.35);
-	}
-
-		.exitpointEditor:hover
-		{
-			border-color: rgba(255,100,100,0.6);
-		}
-
-	.primaryContainerHeading
-	{
-		color: rgba(255,50,50,0.87);
-	}
 </style>

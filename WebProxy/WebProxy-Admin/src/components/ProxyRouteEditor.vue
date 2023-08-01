@@ -52,13 +52,4 @@
 </script>
 
 <style scoped>
-	.proxyRouteEditor
-	{
-		box-shadow: inset 0px 0px 4px 1px rgba(255,255,0,0.8);
-	}
-
-		.proxyRouteEditor:hover
-		{
-			border-color: rgba(255,255,0,0.6);
-		}
 </style>

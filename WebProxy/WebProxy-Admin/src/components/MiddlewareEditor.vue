@@ -173,18 +173,4 @@
 	}
 </style>
 <style scoped>
-	.middlewareEditor
-	{
-		box-shadow: inset 0px 0px 4px 1px rgba(0,255,0,0.8);
-	}
-
-		.middlewareEditor:hover
-		{
-			border-color: rgba(0,255,0,0.6);
-		}
-
-	.primaryContainerHeading
-	{
-		color: rgba(70,255,70,0.87);
-	}
 </style>

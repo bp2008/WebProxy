@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import 'vue-loading-overlay/dist/css/index.css';
-import './style.css'
+import './style.scss'
+import './themes.scss'
 import App from './App.vue'
 import 'vue3-toastify/dist/index.css';
 import ToasterHelper from './library/ToasterHelper'

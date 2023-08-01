@@ -429,9 +429,6 @@
 		min-height: 44px;
 		box-sizing: border-box;
 		padding: 0px 1em;
-		/*background-color: #030839;*/
-		background: #121212;
-		background: radial-gradient(ellipse at left bottom, #121233 0%, #121212 100%);
 	}
 
 		.topBar h1
@@ -512,18 +509,16 @@
 
 	.tabBar
 	{
-		background-color: #121212;
-		background: radial-gradient(ellipse at top right, #12122b 0%, #000000 100%);
 		display: flex;
 		flex-wrap: wrap;
 		position: relative;
 		z-index: 1;
 		border-bottom: 1px solid #888888;
+		box-sizing:border-box;
 	}
 
 		.tabBar .tab
 		{
-			color: #FFFFFF;
 			height: 44px;
 			line-height: 44px;
 			padding: 0px 1em;
@@ -558,47 +553,6 @@
 		height: 1px;
 	}
 
-	.helpToggle
-	{
-		position: sticky;
-		top: 50px;
-		z-index: 1;
-		background: #2E2E2E;
-		color: rgba(255,255,255,0.77);
-		font-size: 1.8em;
-		display: inline-block;
-		float: right;
-		width: 44px;
-		height: 44px;
-		margin-top: 5px;
-		margin-right: 5px;
-		line-height: 42px;
-		text-align: center;
-		box-sizing: border-box;
-		border: 1px solid #666666;
-		border-radius: 4px;
-		box-shadow: 0px 1px 4px 4px rgba(0,0,0,0.6);
-		cursor: pointer;
-	}
-
-		.helpToggle:hover
-		{
-			background-color: #353535;
-		}
-
-		.helpToggle.enabled
-		{
-			background-color: #383838;
-			color: rgba(0,255,0,1);
-			border-color: rgba(0,255,0,0.66);
-			font-weight: bold;
-		}
-
-			.helpToggle.enabled:hover
-			{
-				background-color: #404040;
-			}
-
 	@media (min-width: 600px)
 	{
 		.adminBody
@@ -615,6 +569,7 @@
 			width: 125px;
 			height: calc(100vh - 44px);
 			overflow-y: auto;
+			border-bottom: none;
 		}
 
 		.adminContent
@@ -625,11 +580,6 @@
 		.sidebarUnsavedChanges.left
 		{
 			left: 122px;
-		}
-
-		.tabBar
-		{
-			border-bottom: none;
 		}
 	}
 

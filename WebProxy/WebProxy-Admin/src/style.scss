@@ -1,31 +1,13 @@
 #app
 {
 	font-family: Helvetica, Arial, sans-serif;
-	color: rgba(255,255,255,0.6);
-	background-color: #121212;
 	height: 100vh;
 	overflow-y: scroll;
 }
 
-
-a
-{
-	color: #1fdeff;
-}
-
-	a:hover
-	{
-		color: #4fe5ff;
-	}
-
 body
 {
 	margin: 0px;
-}
-
-h1, h2, h3, h4, h5, h6, .primaryContainerHeading
-{
-	color: rgba(255,255,255,0.87);
 }
 
 .primaryContainerHeading
@@ -52,15 +34,7 @@ input[type="button"]
 	font-family: inherit;
 	cursor: pointer;
 	transition: border-color 0.25s;
-	background-color: #204761;
-	color: #ffffff;
 }
-
-	button:hover,
-	input[type="button"]:hover
-	{
-		border-color: #646cff;
-	}
 
 	button:focus,
 	button:focus-visible,
@@ -88,15 +62,11 @@ input[type="button"]
 	border: 1px solid #9999BB;
 	padding: 1em;
 	white-space: pre-wrap;
-	background-color: rgba(255,255,255,0.14);
-	color: rgba(255,255,255,0.82);
 }
 
 .icode
 {
 	display: inline;
-	background-color: rgba(255,255,255,0.14);
-	color: rgba(255,255,255,0.82);
 	font-weight: normal;
 	font-style: normal;
 	padding: 0.2em 0.4em;
@@ -230,8 +200,6 @@ option
 	padding-left: 1em;
 	padding-top: 0px;
 	color: #00D600;
-	/*font-weight: bold;
-		font-style: italic;*/
 }
 
 .flexRow .exampleText,
@@ -263,7 +231,7 @@ option
 		width: 100%;
 		box-sizing: border-box;
 	}
-
+/* Scroll Bars */
 /* For WebKit (Safari, Chrome, etc.) */
 ::-webkit-scrollbar
 {
@@ -283,19 +251,77 @@ option
 	border: 4px solid transparent;
 	background-clip: padding-box;
 }
-
 /* For Firefox */
 *
 {
 	scrollbar-width: thin;
 	scrollbar-color: #888888 transparent;
 }
-
 /* For Internet Explorer and Edge */
 body
 {
 	-ms-overflow-style: -ms-autohiding-scrollbar;
 }
+/* End Scroll Bars */
+
+.helpToggle
+{
+	position: sticky;
+	top: 50px;
+	z-index: 1;
+	background: #2E2E2E;
+	color: rgba(255,255,255,0.77);
+	font-size: 1.8em;
+	display: inline-block;
+	float: right;
+	width: 44px;
+	height: 44px;
+	margin-top: 5px;
+	margin-right: 5px;
+	line-height: 42px;
+	text-align: center;
+	box-sizing: border-box;
+	border: 1px solid #666666;
+	border-radius: 4px;
+	box-shadow: 0px 1px 4px 4px rgba(0,0,0,0.6);
+	cursor: pointer;
+}
+
+	.helpToggle:hover
+	{
+		background-color: #353535;
+	}
+
+	.helpToggle.enabled
+	{
+		background-color: #383838;
+		color: rgba(0,255,0,1);
+		border-color: rgba(0,255,0,0.66);
+		font-weight: bold;
+	}
+
+		.helpToggle.enabled:hover
+		{
+			background-color: #404040;
+		}
+
+.floatingButtons > span > *
+{
+	border-color: #CCCCCC;
+	background-color: rgba(0,0,0,0.1);
+	fill: rgba(255,255,255,0.77);
+	box-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+}
+
+	.floatingButtons > span > *:hover
+	{
+		background-color: rgba(0,0,0,0.05);
+	}
+
+	.floatingButtons > span > *:active
+	{
+		background-color: #FFFFFF;
+	}
 
 @media (max-width: 600px)
 {

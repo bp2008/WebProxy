@@ -36,20 +36,7 @@
 			margin-left: 5px;
 			border: 1px solid #CCCCCC;
 			border-radius: 7px;
-			background-color: rgba(0,0,0,0.1);
-			fill: rgba(255,255,255,0.77);
-			box-shadow: 1px 1px 3px rgba(0,0,0,0.5);
 		}
-
-			.floatingButtons > span > *:hover
-			{
-				background-color: rgba(0,0,0,0.05);
-			}
-
-			.floatingButtons > span > *:active
-			{
-				background-color: #FFFFFF;
-			}
 
 	.dragHandle
 	{

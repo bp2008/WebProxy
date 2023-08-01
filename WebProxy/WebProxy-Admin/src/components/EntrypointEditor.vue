@@ -83,21 +83,6 @@
 </script>
 
 <style scoped>
-	.entrypointEditor
-	{
-		box-shadow: inset 0px 0px 4px 1px rgba(0,0,255,0.8);
-		border-color: rgba(255,255,255,0.35);
-	}
-
-		.entrypointEditor:hover
-		{
-			border-color: rgba(100,100,255,0.6);
-		}
-
-	.primaryContainerHeading
-	{
-		color: rgba(160,160,255,1);
-	}
 	.flexRow input.ipAddressInput
 	{
 		width: 300px;

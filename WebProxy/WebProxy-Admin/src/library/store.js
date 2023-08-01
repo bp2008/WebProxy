@@ -2,7 +2,7 @@
 
 const store = reactive({
 	currentTheme: "",
-	themeList: ["dark", "light"],
+	themeList: ["dark", "dark2", "light"],
 	showHelp: false,
 	exitpointTypes: [],
 	middlewareTypes: [],

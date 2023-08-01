@@ -133,7 +133,6 @@
 	{
 		position: relative;
 		margin-bottom: 1em;
-		color: rgba(255,255,255,0.77);
 	}
 
 		.log-box pre
