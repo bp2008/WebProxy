@@ -25,7 +25,7 @@ export default function ExecAPI(method, args)
 				return response.json();
 			else if (response.status === 403)
 			{
-				if (!GetRouteMatched(window.myApp.$route, route=>route.name === "loginLayout"))
+				if (!GetRouteMatched(window.myApp.$route, route => route.name === "loginLayout"))
 				{
 					toaster.error("Your session was lost.");
 					CloseAllDialogs();
@@ -36,7 +36,7 @@ export default function ExecAPI(method, args)
 			}
 			else if (response.status === 418)
 			{
-				if (!GetRouteMatched(window.myApp.$route, route=>route.name === "loginLayout"))
+				if (!GetRouteMatched(window.myApp.$route, route => route.name === "loginLayout"))
 				{
 					toaster.error("Your session does not have sufficient privilege to access the requested resource.");
 					CloseAllDialogs();
@@ -89,5 +89,5 @@ export class ApiError extends Error
  */
 export function splitExitpointHostList(str)
 {
-    return str.split(/,| /).filter(Boolean);
+	return str.split(/,| /).filter(Boolean);
 }

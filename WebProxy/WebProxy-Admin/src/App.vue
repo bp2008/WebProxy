@@ -37,6 +37,12 @@
 						<input type="text" v-model="store.errorTrackerSubmitUrl" autocomplete="off" />
 						<div class="comment" v-if="store.showHelp">Optional submit URL for an ErrorTracker instance.</div>
 					</div>
+					<div class="flexRow">
+						<label>Admin Console Theme</label>
+						<select v-model="store.currentTheme">
+							<option v-for="t in store.themeList">{{t}}</option>
+						</select>
+					</div>
 				</div>
 			</div>
 			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Entrypoints'">

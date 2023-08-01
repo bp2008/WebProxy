@@ -184,6 +184,13 @@ select
 	border-radius: 4px;
 }
 
+	input[type="text"]:disabled,
+	input[type="number"]:disabled,
+	select:disabled
+	{
+		color: rgba(255,255,255,0.38);
+	}
+
 select
 {
 	font-size: 0.9em;
@@ -209,10 +216,10 @@ option
 		margin-bottom: 0.5em;
 	}
 
-		.primaryContainer > *:first-child,
-		.dashedBorder > *:first-child
+		.primaryContainer > *:last-child,
+		.dashedBorder > *:last-child
 		{
-			margin-top: 0em;
+			margin-bottom: 0em;
 		}
 
 .primaryContainer .exampleText,
