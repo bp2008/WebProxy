@@ -108,6 +108,45 @@ namespace WebProxy.Controllers
 		{
 			return PlainText(JsonConvert.SerializeObject(WebProxyService.MakeLocalSettingsReference(), Formatting.Indented));
 		}
+		public ActionResult UploadCertificate()
+		{
+			UploadCertificateRequest request = ParseRequest<UploadCertificateRequest>();
+
+			Settings s = WebProxyService.MakeLocalSettingsReference();
+			Exitpoint exitpoint = s.exitpoints.FirstOrDefault(e => e.name == request.exitpointName);
+
+			if (exitpoint == null)
+				return ApiError("Unable to find the chosen exitpoint.");
+
+			byte[] certBytes = null;
+			try
+			{
+				certBytes = Base64UrlMod.FromBase64UrlMod(request.certificateBase64);
+			}
+			catch (Exception ex)
+			{
+				return ApiError("Invalid data was uploaded: " + ex.Message);
+			}
+
+			string certPath = exitpoint.certificatePath;
+			if (string.IsNullOrWhiteSpace(certPath))
+			{
+				string[] domains = exitpoint.getAllDomains();
+				if (domains.Length == 0)
+					return ApiError("This exitpoint does not have any domains configured, so a certificate path can't be automatically generated yet.");
+				Settings newSettings = WebProxyService.CloneSettingsObjectSlow();
+				exitpoint = newSettings.exitpoints.First(e => e.name == exitpoint.name);
+				exitpoint.certificatePath = certPath = CertMgr.GetDefaultCertificatePath(domains[0]);
+				WebProxyService.SaveNewSettings(newSettings);
+			}
+
+			Robust.RetryPeriodic(() =>
+			{
+				File.WriteAllBytes(certPath, certBytes);
+			}, 50, 6);
+
+			return Get();
+		}
 	}
 	public class GetConfigurationResponse : ApiResponseBase
 	{
@@ -121,7 +160,7 @@ namespace WebProxy.Controllers
 		public string[] exitpointTypes = Enum.GetNames(typeof(ExitpointType));
 		public string[] middlewareTypes = Enum.GetNames(typeof(MiddlewareType));
 		public string[] proxyHeaderBehaviorOptions = Enum.GetNames(typeof(BPUtil.SimpleHttp.Client.ProxyHeaderBehavior));
-		public Dictionary<string,string> proxyHeaderBehaviorOptionsDescriptions = DescriptionAttribute.GetDescriptions< BPUtil.SimpleHttp.Client.ProxyHeaderBehavior>();
+		public Dictionary<string, string> proxyHeaderBehaviorOptionsDescriptions = DescriptionAttribute.GetDescriptions<BPUtil.SimpleHttp.Client.ProxyHeaderBehavior>();
 		public LogFile[] logFiles = GetLogFiles();
 
 		[JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
@@ -161,5 +200,10 @@ namespace WebProxy.Controllers
 	public class ForceRenewRequest
 	{
 		public string forceRenewExitpointName;
+	}
+	public class UploadCertificateRequest
+	{
+		public string exitpointName;
+		public string certificateBase64;
 	}
 }

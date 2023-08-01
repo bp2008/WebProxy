@@ -59,7 +59,7 @@
 				<h2>Exitpoints</h2>
 				<p v-if="store.showHelp">An Exitpoint is a web destination which a client wants to reach.  This Admin Console is an Exitpoint, but an Exitpoint could also be another web server.</p>
 				<draggable v-model="store.exitpoints" handle=".dragHandle">
-					<ExitpointEditor v-for="exitpoint in store.exitpoints" :key="exitpoint.uniqueId" :exitpoint="exitpoint" @delete="deleteExitpoint(exitpoint)" @renew="renewCertificate(exitpoint)" />
+					<ExitpointEditor v-for="exitpoint in store.exitpoints" :key="exitpoint.uniqueId" :exitpoint="exitpoint" @delete="deleteExitpoint(exitpoint)" @renew="renewCertificate(exitpoint)" @uploadCert="uploadCertificate" />
 				</draggable>
 				<div class="buttonBar">
 					<button @click="addExitpoint()">Add New Exitpoint</button>
@@ -351,6 +351,36 @@
 				else
 					toaster.info("Force renewal was cancelled");
 			},
+			async uploadCertificate(e)
+			{
+				if (this.configurationChanged)
+				{
+					toaster.info("Please save the changes on this page, then try again to upload the certificate.");
+					return;
+				}
+
+				try
+				{
+					this.showFullscreenLoader = true;
+					const response = await ExecAPI("Configuration/UploadCertificate", { exitpointName: e.exitpoint.name, certificateBase64: e.certificateBase64 });
+					if (response.success)
+					{
+						toaster.success("Upload completed.");
+						this.consumeConfigurationResponse(response);
+					}
+					else
+						toaster.error(response.error);
+				}
+				catch (ex)
+				{
+					console.log(ex);
+					toaster.error(ex);
+				}
+				finally
+				{
+					this.showFullscreenLoader = false;
+				}
+			},
 			selectTab(tab)
 			{
 				this.selectedTab = tab;
@@ -514,7 +544,7 @@
 		position: relative;
 		z-index: 1;
 		border-bottom: 1px solid #888888;
-		box-sizing:border-box;
+		box-sizing: border-box;
 	}
 
 		.tabBar .tab

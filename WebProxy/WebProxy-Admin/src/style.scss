@@ -24,7 +24,8 @@ body
 }
 
 button,
-input[type="button"]
+input[type="button"],
+.button
 {
 	border-radius: 8px;
 	border: 1px solid transparent;
@@ -39,12 +40,15 @@ input[type="button"]
 	button:focus,
 	button:focus-visible,
 	input[type="button"]:focus,
-	input[type="button"]:focus-visible
+	input[type="button"]:focus-visible,
+	.button:focus,
+	.button:focus-visible
 	{
 		outline: 4px auto -webkit-focus-ring-color;
 	}
 
-input[type="button"]
+input[type="button"],
+.button
 {
 	padding: 0.3em 0.6em;
 }

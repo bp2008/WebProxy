@@ -38,14 +38,15 @@
 		color: rgba(255,255,255,0.87);
 	}
 
-	button, input[type="button"]
+	button, input[type="button"], .button
 	{
 		background-color: #204761;
 		color: #ffffff;
 	}
 
 		button:hover,
-		input[type="button"]:hover
+		input[type="button"]:hover,
+		.button:hover
 		{
 			border-color: #646cff;
 		}
@@ -218,14 +219,15 @@
 		color: rgba(255,255,255,0.87);
 	}
 
-	button, input[type="button"]
+	button, input[type="button"], .button
 	{
 		background-color: #005893;
 		color: #ffffff;
 	}
 
 		button:hover,
-		input[type="button"]:hover
+		input[type="button"]:hover,
+		.button:hover
 		{
 			border-color: #646cff;
 		}
@@ -356,14 +358,15 @@
 		color: rgba(0,0,0,0.87);
 	}
 
-	button, input[type="button"]
+	button, input[type="button"], .button
 	{
 		background-color: #0079c9;
 		color: #ffffff;
 	}
 
 		button:hover,
-		input[type="button"]:hover
+		input[type="button"]:hover,
+		.button:hover
 		{
 			border-color: #0088ff;
 		}

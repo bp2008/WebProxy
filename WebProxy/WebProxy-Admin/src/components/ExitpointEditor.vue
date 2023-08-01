@@ -29,6 +29,13 @@
 				<div class="flexRow" v-if="!exitpoint.autoCertificate">
 					<label>Certificate Path</label>
 					<input type="text" v-model="exitpoint.certificatePath" class="certificatePathInput" placeholder="Path to the certificate file (pfx)" title="Path to the certificate file (pfx)" autocomplete="off" />
+					<div>
+						<div class="uploadCertInput button">
+							Upload Certificate <input ref="fileInput" type="file" accept=".pfx" @change="fileInputChangeCounter++" />
+						</div>
+						<span v-if="selectedFile" class="selectedFileName">{{selectedFile.name}}</span>
+						<div v-if="selectedFile" class="uploadCertBtn button" @click="uploadCertClicked()">Upload <UploadIcon /></div>
+					</div>
 					<div class="comment" v-if="store.showHelp">Path to the certificate file (pfx). If omitted, a path will be automatically filled in upon first use.</div>
 				</div>
 			</div>
@@ -58,9 +65,10 @@
 	import MiddlewareSelector from './MiddlewareSelector.vue';
 	import store from '/src/library/store';
 	import FloatingButtons from '/src/components/FloatingButtons.vue'
+	import UploadIcon from '/src/assets/upload.svg?component'
 
 	export default {
-		components: { MiddlewareSelector, FloatingButtons },
+		components: { MiddlewareSelector, FloatingButtons, UploadIcon },
 		props: {
 			exitpoint: Object,
 			allMiddlewares: {
@@ -72,6 +80,7 @@
 		{
 			return {
 				store,
+				fileInputChangeCounter: 0,
 				hostTitle: "DNS hostname template.\n\nIn order to access this Exitpoint, a client must request a host which matches this template.\n\nNull or empty string will make this Exitpoint be unreachable by a standard HTTP client.\n\nAny number of '*' characters can be used as wildcards where each '*' means 0 or more characters.  Wildcard matches are lower priority than exact host matches."
 			};
 		},
@@ -87,13 +96,83 @@
 			destinationOriginIsHttps()
 			{
 				return this.exitpoint && this.exitpoint.destinationOrigin && this.exitpoint.destinationOrigin.toLowerCase().indexOf("https:") === 0;
+			},
+			selectedFile()
+			{
+				if (this.fileInputChangeCounter > 0 && this.$refs.fileInput.files.length > 0)
+					return this.$refs.fileInput.files[0];
+				return null;
+			},
+		},
+		methods:
+		{
+			async uploadCertClicked()
+			{
+				if (this.selectedFile)
+				{
+					if (!this.selectedFile.name.match(/\.pfx$/i))
+					{
+						toaster.error('File extension is not ".pfx"');
+						return;
+					}
+					let certificateArrayBuffer = await this.selectedFile.arrayBuffer();
+					let certificateBase64 = _arrayBufferToBase64(certificateArrayBuffer);
+					this.$emit('uploadCert', { exitpoint: this.exitpoint, certificateBase64 });
+				}
+				else
+					toaster.error('No file is selected');
 			}
 		},
 		watch:
 		{
 		}
 	};
+	function _arrayBufferToBase64(buffer)
+	{
+		var binary = '';
+		var bytes = new Uint8Array(buffer);
+		var len = bytes.byteLength;
+		for (var i = 0; i < len; i++)
+			binary += String.fromCharCode(bytes[i]);
+		return window.btoa(binary);
+	}
 </script>
 
 <style scoped>
+	.uploadCertInput
+	{
+		position: relative;
+		display: inline-block;
+	}
+
+	.selectedFileName
+	{
+		padding: 0px 10px;
+	}
+
+	.uploadCertBtn
+	{
+		position: relative;
+		fill: currentColor;
+		display: inline-flex;
+		align-items: center;
+	}
+
+		.uploadCertBtn svg
+		{
+			width: 20px;
+			height: 20px;
+			margin-left: 5px;
+		}
+
+	input[type="file"]
+	{
+		position: absolute;
+		left: 0;
+		opacity: 0;
+		top: 0;
+		bottom: 0;
+		width: 100%;
+		cursor: pointer;
+	}
 </style>
