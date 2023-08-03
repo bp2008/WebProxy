@@ -1,6 +1,14 @@
 # WebProxy
 An HTTP(S) reverse proxy server with web-based configuration.
 
+See the [Admin Console Tour](https://github.com/bp2008/WebProxy/wiki/Admin-Console-Tour) for more screenshots.
+
+![screencapture-localhost-8080-2023-08-03-10_41_54](https://github.com/bp2008/WebProxy/assets/5639911/35ec868b-7036-4923-bc8b-69eba3ba515b)
+
+
+
+
+
 ## Features
 * Web-based configuration GUI
 * Automatic certificates from LetsEncrypt (optional)
@@ -24,15 +32,35 @@ An HTTP(S) reverse proxy server with web-based configuration.
   * `TrustedProxyIPRanges` - Allows you to specify which client IP addresses are trusted to provide proxy-related headers such as `X-Forwarded-For`.
 
 
+
+
+
+## Installation
+Installation is simple but different between Windows and Linux.  Just follow the appropriate instructions for your platform below and make sure any TCP ports you want to use for incoming traffic are not blocked by any firewalls.
+
+
+
+
+
 ### Windows Installation
 
-Download the Windows release and run WebProxy.exe.  Click "Install", then "Start".  Click the "Admin Console" button to open a panel containing the admin credentials and links to the Admin Console website.
+Download a Windows release from the [Releases Section](https://github.com/bp2008/WebProxy/releases), extract to a location of your choice, and run WebProxy.exe.  
+Click "Install", then "Start".  
+Click the "Admin Console" button to open a panel containing the admin credentials and links to the Admin Console website.
 
 ![image](https://github.com/bp2008/WebProxy/assets/5639911/bba6804d-4d80-4349-b560-b2171245a53d)
 
+To update, just download a new release, stop the service, overwrite it, and start the service again.
+
+
+
+
+
 ### Linux Installation Script
 
-Run these commands on your linux machine:
+So far, the Linux release of WebProxy is only tested on Ubuntu Server 22.04, but should work on any operating system that supports the .NET 6.0 Runtime.
+
+On supported operating systems, run these commands to download and start the installation script:
 
 ```
 wget https://raw.githubusercontent.com/bp2008/WebProxy/master/WebProxy/webproxy_install.sh
@@ -40,25 +68,28 @@ chmod u+x webproxy_install.sh
 ./webproxy_install.sh
 ```
 
-The installation script will ask if you wish to install or uninstall.  Once installed, WebProxy will start automatically.
+The installation script will ask if you wish to install or uninstall.  Once installed, WebProxy will start automatically as a background service.
 
 Access the interactive command line interface by running WebProxy with the argument "cmd":
 
 ```
 sudo /usr/bin/dotnet ~/webproxy/WebProxyLinux.dll cmd
 ```
+*(the above command assumes you installed in your home directory)*
 
 Within the interactive command line interface, use the command `admin` to see the URLs and credentials for the Admin Console website.
 
+The command line interface offers service management commands for install, uninstall, start, stop, etc.  If you prefer, you can manage the webproxy service directly via standard `systemctl` commands (the service name is `webproxy`).
 
-If you prefer, you can manage the webproxy service via standard `systemctl` commands (the service name is `webproxy`).
 
-### Building From Source
+
+
+## Building From Source
 
 Requirements:
 * [Visual Studio 2022 or newer](https://visualstudio.microsoft.com/downloads/)
 * [.NET 6.0 SDK](https://dotnet.microsoft.com/en-us/download/visual-studio-sdks)
-* [BPUtil utility library source](https://github.com/bp2008/BPUtil)
+* [BPUtil utility library source](https://github.com/bp2008/BPUtil) (frequently updated; not published on Nuget)
 * [Node.js (tested with version 18)](https://nodejs.org/en/download) to build the Admin Console website
 
 WebProxy and BPUtil repositories must be downloaded/cloned separately.  To avoid needing to repair Project references, it is recommended to place both repositories in the same parent directory, e.g.
