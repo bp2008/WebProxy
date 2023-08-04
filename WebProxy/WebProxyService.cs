@@ -138,8 +138,8 @@ namespace WebProxy
 #endif
 		protected void DoStart(string[] args)
 		{
-			Logger.Info(Globals.AssemblyName + " Starting Up");
-			BasicErrorTracker.GenericInfo(Globals.AssemblyName + Globals.AssemblyVersion + " Starting Up");
+			Logger.Info(Globals.AssemblyName + " " + Globals.AssemblyVersion + " Starting Up");
+			BasicErrorTracker.GenericInfo(Globals.AssemblyName + " " + Globals.AssemblyVersion + " Starting Up");
 			UpdateWebServerBindings();
 		}
 
@@ -147,8 +147,8 @@ namespace WebProxy
 		{
 			abort = true;
 			webServer.Stop();
-			Logger.Info(Globals.AssemblyName + " Shutting Down");
-			BasicErrorTracker.GenericInfo(Globals.AssemblyName + Globals.AssemblyVersion + " Shutting Down");
+			Logger.Info(Globals.AssemblyName + " " + Globals.AssemblyVersion + " Shutting Down");
+			BasicErrorTracker.GenericInfo(Globals.AssemblyName + " " + Globals.AssemblyVersion + " Shutting Down");
 		}
 
 		/// <summary>

@@ -24,11 +24,6 @@
             Gets a value indicating if this ErrorClient will allow the server to use an untrusted certificate.
             </summary>
         </member>
-        <member name="F:ErrorTrackerClient.ErrorClient.prevCertificateValidationCallback">
-            <summary>
-            Stores the previously attached ServicePointManager.ServerCertificateValidationCallback.
-            </summary>
-        </member>
         <member name="M:ErrorTrackerClient.ErrorClient.#ctor(System.Func{System.Object,System.String},System.Func{System.String},System.Func{System.String},System.Boolean)">
             <summary>
             <para>Initializes the ErrorClient. Create only one of these per application.</para>
