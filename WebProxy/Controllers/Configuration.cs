@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using WebProxy.LetsEncrypt;
@@ -119,14 +120,17 @@ namespace WebProxy.Controllers
 				return ApiError("Unable to find the chosen exitpoint.");
 
 			byte[] certBytes = null;
+			X509Certificate2 cert;
 			try
 			{
 				certBytes = Base64UrlMod.FromBase64UrlMod(request.certificateBase64);
+				cert = new X509Certificate2(certBytes);
 			}
 			catch (Exception ex)
 			{
 				return ApiError("Invalid data was uploaded: " + ex.Message);
 			}
+
 
 			string certPath = exitpoint.certificatePath;
 			if (string.IsNullOrWhiteSpace(certPath))
@@ -138,6 +142,15 @@ namespace WebProxy.Controllers
 				exitpoint = newSettings.exitpoints.First(e => e.name == exitpoint.name);
 				exitpoint.certificatePath = certPath = CertMgr.GetDefaultCertificatePath(domains[0]);
 				WebProxyService.SaveNewSettings(newSettings);
+			}
+
+			DirectoryInfo diCertDir = new FileInfo(certPath).Directory;
+			if (!diCertDir.Exists)
+			{
+				Robust.RetryPeriodic(() =>
+				{
+					Directory.CreateDirectory(diCertDir.FullName);
+				}, 50, 6);
 			}
 
 			Robust.RetryPeriodic(() =>
