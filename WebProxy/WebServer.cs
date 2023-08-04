@@ -25,6 +25,7 @@ namespace WebProxy
 		public WebServer() : base(CreateCertificateSelector())
 		{
 			SimpleHttpLogger.RegisterLogger(Logger.httpLogger, WebProxyService.MakeLocalSettingsReference().verboseWebServerLogs);
+			MVCGlobals.RemoteClientsMaySeeExceptionDetails = true;
 			MvcJson.DeserializeObject = JsonConvert.DeserializeObject;
 			MvcJson.SerializeObject = JsonConvert.SerializeObject;
 			mvcAdminConsole = new MVCMain(Assembly.GetExecutingAssembly(), typeof(AdminConsoleControllerBase).Namespace, (Context, ex) => WebProxyService.ReportError(ex, "AdminConsole: " + Context.OriginalRequestPath));

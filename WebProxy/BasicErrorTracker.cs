@@ -84,6 +84,7 @@ namespace WebProxy
 			e.SetTag("Server", Environment.MachineName);
 			e.SetTag("Server Time", DateTime.Now.ToString());
 			e.SetTag("Uptime", uptime.ToString());
+			e.SetTag("Version", Globals.AssemblyVersion.ToString());
 			errorSubmissionThreadPool.Enqueue(() => client.SubmitEvent(e));
 		}
 	}

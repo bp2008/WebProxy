@@ -85,7 +85,7 @@ namespace WebProxy
 			}
 		}
 		/// <summary>
-		/// Logs the Exception.
+		/// Logs the Exception to file and the Error Tracker, if configured.
 		/// </summary>
 		/// <param name="ex">Exception to log.</param>
 		public static void ReportError(Exception ex)
@@ -95,7 +95,7 @@ namespace WebProxy
 		}
 
 		/// <summary>
-		/// Logs the Exception.
+		/// Logs the Exception to file and the Error Tracker, if configured.
 		/// </summary>
 		/// <param name="ex">Exception to log.</param>
 		/// <param name="additionalInformation">Optional additional information to log with the exception.</param>
@@ -106,7 +106,7 @@ namespace WebProxy
 			BasicErrorTracker.GenericError(msg);
 		}
 		/// <summary>
-		/// Logs the Exception.
+		/// Logs the message to file and the Error Tracker, if configured.
 		/// </summary>
 		/// <param name="message">Message to log.</param>
 		public static void ReportError(string message)
@@ -138,7 +138,8 @@ namespace WebProxy
 #endif
 		protected void DoStart(string[] args)
 		{
-			Logger.Info(Globals.AssemblyName + " Starting Up ");
+			Logger.Info(Globals.AssemblyName + " Starting Up");
+			BasicErrorTracker.GenericInfo(Globals.AssemblyName + Globals.AssemblyVersion + " Starting Up");
 			UpdateWebServerBindings();
 		}
 
@@ -147,6 +148,7 @@ namespace WebProxy
 			abort = true;
 			webServer.Stop();
 			Logger.Info(Globals.AssemblyName + " Shutting Down");
+			BasicErrorTracker.GenericInfo(Globals.AssemblyName + Globals.AssemblyVersion + " Shutting Down");
 		}
 
 		/// <summary>
