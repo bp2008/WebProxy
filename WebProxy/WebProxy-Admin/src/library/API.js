@@ -1,4 +1,5 @@
-﻿/**
+﻿import { HTMLToText } from '/src/library/Util';
+/**
  * Executes an API call to the specified method, using the specified arguments.  Returns a promise which resolves with any graceful response from the server.  Rejects if an error occurred that prevents the normal functioning of the API (e.g. the server was unreachable or returned an entirely unexpected response such as HTTP 500).
  * @param {String} method Server route, e.g. "Auth/Login"
  * @param {Object} args arguments
