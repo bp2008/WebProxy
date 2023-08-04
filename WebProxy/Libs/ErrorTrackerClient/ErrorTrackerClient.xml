@@ -19,7 +19,17 @@
             Gets the HttpClientHandler in use by this class.
             </summary>
         </member>
-        <member name="M:ErrorTrackerClient.ErrorClient.#ctor(System.Func{System.Object,System.String},System.Func{System.String},System.Func{System.String})">
+        <member name="P:ErrorTrackerClient.ErrorClient.acceptAnyCertificate">
+            <summary>
+            Gets a value indicating if this ErrorClient will allow the server to use an untrusted certificate.
+            </summary>
+        </member>
+        <member name="F:ErrorTrackerClient.ErrorClient.prevCertificateValidationCallback">
+            <summary>
+            Stores the previously attached ServicePointManager.ServerCertificateValidationCallback.
+            </summary>
+        </member>
+        <member name="M:ErrorTrackerClient.ErrorClient.#ctor(System.Func{System.Object,System.String},System.Func{System.String},System.Func{System.String},System.Boolean)">
             <summary>
             <para>Initializes the ErrorClient. Create only one of these per application.</para>
             <para>This class maintains a background thread for retrying failed event submissions that were saved to disk.
@@ -33,6 +43,7 @@
             <para>If this path ever changes, items previously saved in it may not ever be successfully submitted to the server.</para>
             <para>If you use multiple Error Tracker services or multiple ErrorClient instances for any reason, this path must be unique for each one.</para>
             </param>
+            <param name="acceptAnyCertificate">If true, this ErrorClient will allow the server to use an untrusted certificate.  Has no effect when [submitUrl] does not use "https://".</param>
         </member>
         <member name="M:ErrorTrackerClient.ErrorClient.SubmitEvent(ErrorTrackerClient.Event)">
             <summary>

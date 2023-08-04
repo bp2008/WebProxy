@@ -20,7 +20,7 @@ namespace WebProxy
 			client.SubmitEvent(e);
 		});
 
-		private static ErrorClient client = new ErrorClient(JsonConvert.SerializeObject, () => WebProxyService.MakeLocalSettingsReference().errorTrackerSubmitUrl, () => Path.Combine(Globals.WritableDirectoryBase, "ErrorTrackerSave"));
+		private static ErrorClient client = new ErrorClient(JsonConvert.SerializeObject, () => WebProxyService.MakeLocalSettingsReference().errorTrackerSubmitUrl, () => Path.Combine(Globals.WritableDirectoryBase, "ErrorTrackerSave"), true);
 		public static bool initialized = false;
 		/// <summary>
 		/// Call this just to ensure that the ErrorClient is constructed so it can begin sending cached events.
