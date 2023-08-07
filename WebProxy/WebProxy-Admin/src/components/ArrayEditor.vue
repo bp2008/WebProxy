@@ -66,5 +66,17 @@
 	.arrayElement
 	{
 		margin-bottom: 5px;
+		display: flex;
+		/*align-items: flex-start;*/
 	}
+
+		.arrayElement > *:first-child
+		{
+			flex: 1 1 auto;
+		}
+
+		.arrayElement > *:last-child
+		{
+			flex: 0 0 auto;
+		}
 </style>

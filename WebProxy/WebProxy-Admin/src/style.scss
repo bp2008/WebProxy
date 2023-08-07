@@ -147,6 +147,7 @@ input[type="button"],
 }
 
 input[type="text"],
+input[type="password"],
 input[type="number"],
 select
 {
@@ -159,6 +160,7 @@ select
 }
 
 	input[type="text"]:disabled,
+	input[type="password"]:disabled,
 	input[type="number"]:disabled,
 	select:disabled
 	{
