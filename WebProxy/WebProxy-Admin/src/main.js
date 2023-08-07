@@ -1,10 +1,11 @@
-import { createApp } from 'vue'
+import { createApp } from 'vue';
 import 'vue-loading-overlay/dist/css/index.css';
 import './style.scss'
 import './themes.scss'
 import App from './App.vue'
 import 'vue3-toastify/dist/index.css';
 import ToasterHelper from './library/ToasterHelper'
+import VueObserveVisibility from 'vue-observe-visibility'
 
 window.toaster = new ToasterHelper();
 
@@ -69,4 +70,6 @@ window.addEventListener('unhandledrejection', function (event)
 	}
 });
 
-createApp(App).mount('#app')
+createApp(App)
+	.use(VueObserveVisibility)
+	.mount('#app');

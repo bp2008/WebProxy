@@ -1,5 +1,5 @@
 ﻿<template>
-	<div>
+	<div v-observe-visibility="{ callback: visibilityChanged, once: true }">
 		<div class="log-box dp06">
 			<div class="connection-status" :class="{connected: isConnected}" :title="isConnected?'Connected and streaming text from the log.':'Not connected. Attempting to reconnect.'"></div>
 			<pre ref="logBox">{{ logText }}</pre>
@@ -15,14 +15,17 @@
 				logText: '',
 				isConnected: false,
 				socket: null,
-				isScrolledToBottom: false
+				isScrolledToBottom: false,
+				isUnloading: false
 			};
 		},
 		methods:
 		{
 			connect()
 			{
-				console.debug("LogReader.connect");
+				if (this.isUnloading)
+					return;
+				console.log("LogReader.connect");
 
 				let URL = location.origin + '/Log/GetLogData';
 				if (URL.toLowerCase().indexOf("http:") === 0)
@@ -68,6 +71,14 @@
 					if (this.$refs.logBox)
 						this.$refs.logBox.scrollTop = this.$refs.logBox.scrollHeight;
 				});
+			},
+			visibilityChanged(isVisible, entry)
+			{
+				if (isVisible)
+				{
+					console.log("Log became visible. Scrolling to bottom.");
+					this.scrollToBottom();
+				}
 			}
 		},
 		watch:
@@ -84,7 +95,9 @@
 		},
 		beforeUnmount()
 		{
-			this.socket.close();
+			this.isUnloading = true;
+			if (this.socket)
+				this.socket.close();
 		},
 	};
 
@@ -138,7 +151,7 @@
 		.log-box pre
 		{
 			border: 1px solid black;
-			height: 90vh;
+			height: calc(100vh - 150px);
 			white-space: pre-wrap;
 			overflow-x: hidden;
 			overflow-y: scroll;

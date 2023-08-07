@@ -89,13 +89,15 @@
 				<h2>Hosted URL Summary</h2>
 				<HostedUrlSummary />
 			</div>
-			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Log'">
+			<div v-if="selectedTab.Name === 'All' || selectedTab.Name === 'Settings'">
 				<h2>Raw Settings.json</h2>
 				<a href="/Configuration/GetRaw" target="_blank">Settings.json</a>
 				<h2>Log Files</h2>
 				<div v-for="logFile in store.logFiles">
 					<a :href="'/Log/' + logFile.fileName" target="_blank">{{logFile.fileName}}</a> ({{logFile.size}})
 				</div>
+			</div>
+			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Log'">
 				<h2>Live Log File</h2>
 				<LogReader />
 			</div>
