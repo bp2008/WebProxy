@@ -38,6 +38,7 @@ namespace WebProxy.LetsEncrypt
 					int matchQuality = (recordName.IEquals(nameTrimmed) || recordName.IEndsWith("." + nameTrimmed)) ? nameTrimmed.Split('.').Length : 0;
 					return new { zone, matchQuality };
 				})
+				.Where(o => o.matchQuality > 0)
 				.OrderByDescending(o => o.matchQuality)
 				.FirstOrDefault()?.zone;
 			if (best == null)
