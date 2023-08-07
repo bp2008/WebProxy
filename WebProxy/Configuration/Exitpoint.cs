@@ -31,6 +31,10 @@ namespace WebProxy
 		/// </summary>
 		public bool autoCertificate;
 		/// <summary>
+		/// [Requires autoCertificate == true] If enabled, DNS validation will prefer to use the DNS-01 method via your Cloudflare API Token.  All of the domains in [host] much be editable via your Cloudflare API Token or else validation will fail.
+		/// </summary>
+		public bool cloudflareDnsValidation;
+		/// <summary>
 		/// [Requires autoCertificate == false] Path to the certificate file (pfx). If omitted, a path will be automatically filled in upon first use.
 		/// </summary>
 		public string certificatePath;

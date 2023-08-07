@@ -23,9 +23,17 @@
 			<div class="dashedBorder">
 				<div>
 					<label><input type="checkbox" v-model="exitpoint.autoCertificate" /> Automatic Certificate from LetsEncrypt</label>
-					<div class="comment" v-if="store.showHelp">If enabled, certificates for this host will be obtained and managed automatically via LetsEncrypt.  Automatic certificate management will only work if this exitpoint is mapped to an entrypoint that is reachable on the internet at 'http://host:80/' or 'https://host:443/'.  Wildcards are not allowed in [Host] when using this option.</div>
+					<div class="comment" v-if="store.showHelp">If enabled, certificates for this host will be obtained and managed automatically via LetsEncrypt.  Automatic certificate management will only work if this exitpoint is mapped to an entrypoint that is reachable on the internet at 'http://host:80/' or 'https://host:443/' or can be validated via a configured DNS service.  Wildcards are not allowed in [Host] when using this option.</div>
 				</div>
-				<div><input type="button" v-if="exitpoint.autoCertificate" value="Force Renew Certificate" @click="$emit('renew')" /></div>
+				<template v-if="exitpoint.autoCertificate">
+					<div v-if="store.cloudflareApiToken">
+						<label><input type="checkbox" v-model="exitpoint.cloudflareDnsValidation" />Use DNS-01 Validation (via Cloudflare)</label>
+						<div class="comment" v-if="store.showHelp">If enabled, domain validation will be performed if possible via the <span class="icode">DNS-01</span> method using your configured Cloudflare API Token.  <span class="icode">DNS-01</span> validation does not require the WebProxy service to be accessible on any public port.</div>
+					</div>
+					<div>
+						<input type="button" value="Force Renew Certificate" @click="$emit('renew')" />
+					</div>
+				</template>
 				<div class="flexRow" v-if="!exitpoint.autoCertificate">
 					<label>Certificate Path</label>
 					<input type="text" v-model="exitpoint.certificatePath" class="certificatePathInput" placeholder="Path to the certificate file (pfx)" title="Path to the certificate file (pfx)" autocomplete="off" />

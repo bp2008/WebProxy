@@ -125,7 +125,7 @@ namespace WebProxy.LetsEncrypt
 					Logger.Info("CertMgr: Create now " + host + " (" + string.Join(" ", domains) + ")");
 				// Create new certificate
 				if (shouldRenew)
-					await CreateCertificateForDomains(entrypoint.httpPort == 80, entrypoint.httpsPort == 443, domains);
+					await CreateCertificateForDomains(entrypoint, exitpoint);
 				return cache.Reload();
 			}
 			else
@@ -134,7 +134,7 @@ namespace WebProxy.LetsEncrypt
 				{
 					// Create new certificate in background
 					Logger.Info("CertMgr: Renew async " + host + " (" + string.Join(" ", domains) + ")");
-					_ = CreateCertificateForDomains(entrypoint.httpPort == 80, entrypoint.httpsPort == 443, domains);
+					_ = CreateCertificateForDomains(entrypoint, exitpoint);
 				}
 				return cert;
 			}
@@ -157,7 +157,7 @@ namespace WebProxy.LetsEncrypt
 
 				Logger.Info("CertMgr: Force renew " + string.Join(" ", domains));
 
-				bool success = await CreateCertificateForDomains(entrypoint.httpPort == 80, entrypoint.httpsPort == 443, domains);
+				bool success = await CreateCertificateForDomains(entrypoint, exitpoint);
 				if (!success)
 				{
 					string err = LastError;
@@ -224,18 +224,29 @@ namespace WebProxy.LetsEncrypt
 		/// <summary>
 		/// Creates a new certificate which will include all of the specified domains, then returns true. If this method fails, it will log an exception and return false.
 		/// </summary>
-		/// <param name="standardHttpSupported">If true, the server is expected to be listening on standard HTTP port 80.  HTTP-01 validation is supported.</param>
-		/// <param name="standardHttpsSupported">If true, the server is expected to be listening on standard HTTPS port 443.  TLS-ALPN-01 validation is supported.</param>
-		/// <param name="domains">Domains to include in the certificate.</param>
 		/// <returns></returns>
-		private static async Task<bool> CreateCertificateForDomains(bool standardHttpSupported, bool standardHttpsSupported, string[] domains)
+		private static async Task<bool> CreateCertificateForDomains(Entrypoint entrypoint, Exitpoint exitpoint)
 		{
 			try
 			{
+				// If true, the server is expected to be listening on standard HTTP port 80.  HTTP-01 validation is supported.
+				bool standardHttpSupported = entrypoint.httpPort == 80;
+				// If true, the server is expected to be listening on standard HTTPS port 443.  TLS-ALPN-01 validation is supported.
+				bool standardHttpsSupported = entrypoint.httpsPort == 443;
+				// If true, and DNS-01 validation is given as a validation choice, we will attempt to use it.
+				bool dns01Cloudflare = exitpoint.cloudflareDnsValidation;
+				// Domains to include in the certificate.
+				string[] domains = exitpoint.getAllDomains();
+
+				Settings settings = WebProxyService.MakeLocalSettingsReference();
+				string cloudflareApiToken = null;
+				if (dns01Cloudflare)
+					cloudflareApiToken = settings.cloudflareApiToken;
+				if (!standardHttpSupported && !standardHttpsSupported && !dns01Cloudflare)
+					throw new ArgumentException("Certificate creation will not be attempted because no ACME validation method is currently possible. Ensure that this server is listening on public port 80 (http), 443 (https), or that DNS validation is properly configured.");
+
 				Initialize();
 
-				if (!standardHttpSupported && !standardHttpsSupported)
-					throw new ArgumentException("standardHttpSupported and standardHttpsSupported are both false. Certificate validation is not possible.");
 
 				await myLock.WaitAsync();
 				try
@@ -259,6 +270,36 @@ namespace WebProxy.LetsEncrypt
 						Logger.Info("CertMgr.Create: " + domain + " can be validated via: " + string.Join(", ", allChallenges.Select(cc => cc.Type)));
 
 						// Validate domain ownership.
+						if (dns01Cloudflare)
+						{
+							IChallengeContext challengeContext = await authz.Dns();
+							if (challengeContext != null)
+							{
+								Logger.Info("CertMgr.Create: " + domain + " starting validation via " + challengeContext.Type);
+								string dnsKey = "_acme-challenge." + domain;
+								string dnsValue = acme.AccountKey.DnsTxt(challengeContext.Token);
+								try
+								{
+									await CloudflareDnsValidator.CreateDNSRecord(dnsKey, dnsValue);
+									Logger.Info("CertMgr.Create Cloudflare-DNS-01: " + dnsKey + " TXT record created");
+
+									Certes.Acme.Resource.Challenge challenge = await ValidateAndWait(challengeContext);
+									continue;
+								}
+								finally
+								{
+									try
+									{
+										await CloudflareDnsValidator.DeleteDNSRecord(dnsKey);
+										Logger.Info("CertMgr.Create Cloudflare-DNS-01: " + dnsKey + " TXT record deleted");
+									}
+									catch (Exception ex)
+									{
+										Logger.Info("CertMgr.Create Cloudflare-DNS-01: " + dnsKey + " TXT record failed to delete: " + ex.ToHierarchicalString());
+									}
+								}
+							}
+						}
 						if (standardHttpSupported)
 						{
 							IChallengeContext challengeContext = await authz.Http();
@@ -270,6 +311,7 @@ namespace WebProxy.LetsEncrypt
 									SetupHttpChallenge(domain, challengeContext.Token, challengeContext.KeyAuthz);
 
 									Certes.Acme.Resource.Challenge challenge = await ValidateAndWait(challengeContext);
+									continue;
 								}
 								finally
 								{
@@ -277,7 +319,7 @@ namespace WebProxy.LetsEncrypt
 								}
 							}
 						}
-						else if (standardHttpsSupported)
+						if (standardHttpsSupported)
 						{
 							IChallengeContext challengeContext = await authz.TlsAlpn();
 							if (challengeContext != null)
@@ -290,6 +332,7 @@ namespace WebProxy.LetsEncrypt
 									SetupTlsAlpn01Challenge(challengeContext.Token, domain, alpnCertKey);
 
 									Certes.Acme.Resource.Challenge challenge = await ValidateAndWait(challengeContext);
+									continue;
 								}
 								finally
 								{
@@ -297,8 +340,6 @@ namespace WebProxy.LetsEncrypt
 								}
 							}
 						}
-						else
-							throw new Exception("CertMgr.Create: The given entrypoint does not listen on default http (80) or https (443) ports, and cannot use automatic certificate management.");
 					}
 
 					// Generate new certificate.
