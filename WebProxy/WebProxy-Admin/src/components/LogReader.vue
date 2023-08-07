@@ -1,13 +1,15 @@
 ﻿<template>
-	<div v-observe-visibility="{ callback: visibilityChanged, once: true }">
+	<div v-observe-visibility="{ callback: visibilityChanged }">
 		<div class="log-box dp06">
 			<div class="connection-status" :class="{connected: isConnected}" :title="isConnected?'Connected and streaming text from the log.':'Not connected. Attempting to reconnect.'"></div>
-			<pre ref="logBox">{{ logText }}</pre>
+			<pre ref="logBox" :style="logBoxStyle" @scroll="onScroll">{{ logText }}</pre>
 		</div>
 	</div>
 </template>
 
 <script>
+	import store from '/src/library/store';
+
 	export default {
 		data()
 		{
@@ -15,9 +17,26 @@
 				logText: '',
 				isConnected: false,
 				socket: null,
-				isScrolledToBottom: false,
-				isUnloading: false
+				isScrolledToBottom: true,
+				isUnloading: false,
+				didScrollToBottomOnVisibilityChange: false,
+				isVisible: false
 			};
+		},
+		computed:
+		{
+			logBoxStyle()
+			{
+				// Window Height - top bar height - tab bar height - heading height - reasonable bottom padding
+				let h = store.windowHeight - 44 - store.tabBarHeight - 68 - 35;
+				return {
+					height: h + "px"
+				};
+			},
+			windowHeight()
+			{
+				return store.windowHeight;
+			}
 		},
 		methods:
 		{
@@ -49,7 +68,7 @@
 
 				this.socket.onmessage = (event) =>
 				{
-					if (this.$refs.logBox)
+					if (this.$refs.logBox && this.isVisible)
 					{
 						// Check if within 20px of bottom
 						this.isScrolledToBottom = this.$refs.logBox.scrollHeight - (this.$refs.logBox.scrollTop + this.$refs.logBox.clientHeight) < 20;
@@ -74,16 +93,33 @@
 			},
 			visibilityChanged(isVisible, entry)
 			{
-				if (isVisible)
+				this.isVisible = isVisible;
+				if (isVisible && (this.isScrolledToBottom || !this.didScrollToBottomOnVisibilityChange))
 				{
-					console.log("Log became visible. Scrolling to bottom.");
+					if (!this.didScrollToBottomOnVisibilityChange)
+					{
+						this.didScrollToBottomOnVisibilityChange = true;
+						console.log("Log became visible for the first time. Scrolling to bottom.");
+					}
 					this.scrollToBottom();
+				}
+			},
+			onScroll(event)
+			{
+				if (this.$refs.logBox && this.isVisible)
+				{
+					this.isScrolledToBottom = this.$refs.logBox.scrollHeight - (this.$refs.logBox.scrollTop + this.$refs.logBox.clientHeight) < 20;
 				}
 			}
 		},
 		watch:
 		{
 			logText(newVal, oldVal)
+			{
+				if (this.$refs.logBox && this.isScrolledToBottom)
+					this.scrollToBottom();
+			},
+			windowHeight()
 			{
 				if (this.$refs.logBox && this.isScrolledToBottom)
 					this.scrollToBottom();
@@ -151,7 +187,6 @@
 		.log-box pre
 		{
 			border: 1px solid black;
-			height: calc(100vh - 150px);
 			white-space: pre-wrap;
 			overflow-x: hidden;
 			overflow-y: scroll;

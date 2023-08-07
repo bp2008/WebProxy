@@ -16,7 +16,7 @@
 		<loading v-model:active="showFullscreenLoader"
 				 :can-cancel="false"
 				 :is-full-page="true" />
-		<div class="tabBar">
+		<div class="tabBar" id="tabBar">
 			<div v-for="tab in tabs" :class="{ tab: true, selectedTab: selectedTab === tab }" role="button" @click="selectTab(tab)">
 				{{tab.Name}}
 			</div>
@@ -98,7 +98,7 @@
 				</div>
 			</div>
 			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Log'">
-				<h2>Live Log File</h2>
+				<h2>Live Log</h2>
 				<LogReader />
 			</div>
 		</div>
@@ -392,6 +392,16 @@
 		},
 		watch:
 		{
+			loading()
+			{
+				if (!this.loading)
+				{
+					this.$nextTick(() =>
+					{
+						store.recalcTabBarHeight();
+					});
+				}
+			}
 		}
 	};
 	let idCounter = 1;

@@ -17,8 +17,25 @@ const store = reactive({
 	logFiles: [],
 	appVersion: "",
 	windowWidth: -1,
-	windowHeight: -1
+	windowHeight: -1,
+	mobileLayout: false,
+	tabBarHeight: 0,
+	recalcTabBarHeight: recalcTabBarHeight
 });
+
+// Mobile Layout
+watch(() => store.mobileLayout, () =>
+{
+	recalcTabBarHeight();
+})
+
+let mediaQuery_w600px = window.matchMedia('(min-width: 600px)');
+store.mobileLayout = !mediaQuery_w600px.matches;
+
+mediaQuery_w600px.addEventListener('change', e =>
+{
+	store.mobileLayout = !mediaQuery_w600px.matches;
+})
 
 // Window Size
 store.windowWidth = window.innerWidth;
@@ -27,7 +44,22 @@ window.addEventListener('resize', () =>
 {
 	store.windowWidth = window.innerWidth;
 	store.windowHeight = window.innerHeight;
+	recalcTabBarHeight();
 });
+
+function recalcTabBarHeight()
+{
+	if (store.mobileLayout)
+	{
+		let tabBar = document.getElementById('tabBar');
+		if (tabBar)
+			store.tabBarHeight = tabBar.clientHeight;
+		else
+			store.tabBarHeight = 0;
+	}
+	else
+		store.tabBarHeight = 0;
+}
 
 // Theme
 watch(() => store.currentTheme, () =>
@@ -38,7 +70,7 @@ watch(() => store.currentTheme, () =>
 
 const themeSettingKey = "theme-preference";
 
-let mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+let mediaQuery_theme = window.matchMedia('(prefers-color-scheme: dark)');
 if (localStorage.getItem(themeSettingKey))
 {
 	let t = localStorage.getItem(themeSettingKey);
@@ -47,12 +79,12 @@ if (localStorage.getItem(themeSettingKey))
 			store.currentTheme = t;
 }
 else
-	store.currentTheme = mediaQuery.matches ? 'dark' : 'light';
+	store.currentTheme = mediaQuery_theme.matches ? 'dark' : 'light';
 
 if (!store.currentTheme)
 	store.currentTheme = 'dark';
 
-mediaQuery.addEventListener('change', e =>
+mediaQuery_theme.addEventListener('change', e =>
 {
 	store.currentTheme = e.matches ? 'dark' : 'light';
 })
