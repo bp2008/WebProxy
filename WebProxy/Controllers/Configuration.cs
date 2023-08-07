@@ -24,6 +24,7 @@ namespace WebProxy.Controllers
 			response.middlewares = s.middlewares.ToArray();
 			response.proxyRoutes = s.proxyRoutes.ToArray();
 			response.errorTrackerSubmitUrl = s.errorTrackerSubmitUrl;
+			response.cloudflareApiToken = s.cloudflareApiToken;
 			return Json(response);
 		}
 		public ActionResult Set()
@@ -37,6 +38,7 @@ namespace WebProxy.Controllers
 			s.middlewares = request.middlewares.ToList();
 			s.proxyRoutes = request.proxyRoutes.ToList();
 			s.errorTrackerSubmitUrl = request.errorTrackerSubmitUrl;
+			s.cloudflareApiToken = request.cloudflareApiToken;
 			try
 			{
 				WebProxyService.SaveNewSettings(s);
@@ -61,6 +63,7 @@ namespace WebProxy.Controllers
 			response.middlewares = s.middlewares.ToArray();
 			response.proxyRoutes = s.proxyRoutes.ToArray();
 			response.errorTrackerSubmitUrl = s.errorTrackerSubmitUrl;
+			response.cloudflareApiToken = s.cloudflareApiToken;
 
 			{
 				string adminHost = adminExit.host;
@@ -160,16 +163,54 @@ namespace WebProxy.Controllers
 
 			return Get();
 		}
+		public ActionResult TestCloudflareDNS()
+		{
+			BasicEventTimer bet = new BasicEventTimer();
+			bet.Start("Get domain name");
+			try
+			{
+				string anyDomainName = CloudflareDnsValidator.GetAnyConfiguredDomain().Result;
+				if (string.IsNullOrWhiteSpace(anyDomainName))
+					return ApiError("Test failed: Found null or whitespace domain name in Cloudflare account.");
+
+				bet.Start("Create DNS record");
+				string key = "_test-access-token." + anyDomainName;
+				string value = TimeUtil.GetTimeInMsSinceEpoch().ToString();
+
+				Task t = CloudflareDnsValidator.CreateDNSRecord(key, value);
+				t.Wait();
+
+				bet.Start("Delete DNS record");
+				int deleted = CloudflareDnsValidator.DeleteDNSRecord(key).Result;
+
+				bet.Stop();
+
+				if (deleted > 0)
+					return Json(new ApiResponseBase(true));
+				else
+					return ApiError("Unable to delete test DNS record because it did not exist after successful creation.");
+			}
+			catch (Exception ex)
+			{
+				bet.Stop();
+				return ApiError(ex.ToHierarchicalString());
+			}
+			finally
+			{
+				Context.ResponseHeaders["Server-Timing"] = bet.ToServerTimingHeader();
+			}
+		}
 	}
 	public class GetConfigurationResponse : ApiResponseBase
 	{
 		public string appVersion = Globals.AssemblyVersion;
 		public string acmeAccountEmail;
+		public string errorTrackerSubmitUrl;
+		public string cloudflareApiToken;
 		public Entrypoint[] entrypoints;
 		public Exitpoint[] exitpoints;
 		public Middleware[] middlewares;
 		public ProxyRoute[] proxyRoutes;
-		public string errorTrackerSubmitUrl;
 		public string[] exitpointTypes = Enum.GetNames(typeof(ExitpointType));
 		public string[] middlewareTypes = Enum.GetNames(typeof(MiddlewareType));
 		public string[] proxyHeaderBehaviorOptions = Enum.GetNames(typeof(BPUtil.SimpleHttp.Client.ProxyHeaderBehavior));
@@ -204,11 +245,12 @@ namespace WebProxy.Controllers
 	public class SetConfigurationRequest
 	{
 		public string acmeAccountEmail;
+		public string errorTrackerSubmitUrl;
+		public string cloudflareApiToken;
 		public Entrypoint[] entrypoints;
 		public Exitpoint[] exitpoints;
 		public Middleware[] middlewares;
 		public ProxyRoute[] proxyRoutes;
-		public string errorTrackerSubmitUrl;
 	}
 	public class ForceRenewRequest
 	{

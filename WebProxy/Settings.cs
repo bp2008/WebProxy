@@ -43,6 +43,10 @@ namespace WebProxy
 		/// If assigned, errors will be submitted to this ErrorTracker submission URL.
 		/// </summary>
 		public string errorTrackerSubmitUrl = null;
+		/// <summary>
+		/// If assigned, this is the Cloudflare API key which can be used for DNS configuration.
+		/// </summary>
+		public string cloudflareApiToken = null;
 
 		protected override object DeserializeFromJson(string str)
 		{

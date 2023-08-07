@@ -38,6 +38,14 @@
 						<div class="comment" v-if="store.showHelp">Optional submit URL for an ErrorTracker instance.</div>
 					</div>
 					<div class="flexRow">
+						<label>Cloudflare API Token</label>
+						<input type="text" v-model="store.cloudflareApiToken" autocomplete="off" />
+						<div class="comment" v-if="store.showHelp">
+							Optional.  If set, automatic certificate validation via Cloudflare DNS will be an option for Exitpoints.  DNS validation means your WebProxy server does not need to be accessible on any public port (but outgoing internet access is still required).<br /><br />This must be a <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank">Cloudflare API Token</a>, not a Global API Key, and the token needs permissions <span class="icode">Zone &gt; Zone &gt; Read</span> and <span class="icode">Zone &gt; DNS &gt; Edit</span>.  Under Zone Resources, <span class="icode">Include &gt All zones</span>.
+						</div>
+						<div><input type="button" v-if="store.cloudflareApiToken" value="Test Cloudflare DNS" @click="testCloudflareDNS" title="Tests the Cloudflare API Token by attempting to add and remove a DNS TXT record from the account."/></div>
+					</div>
+					<div class="flexRow">
 						<label>Admin Console Theme</label>
 						<select v-model="store.currentTheme">
 							<option v-for="t in store.themeList">{{t}}</option>
@@ -151,11 +159,12 @@
 			{
 				return JSON.stringify({
 					acmeAccountEmail: store.acmeAccountEmail,
+					errorTrackerSubmitUrl: store.errorTrackerSubmitUrl,
+					cloudflareApiToken: store.cloudflareApiToken,
 					entrypoints: store.entrypoints,
 					exitpoints: store.exitpoints,
 					middlewares: store.middlewares,
-					proxyRoutes: store.proxyRoutes,
-					errorTrackerSubmitUrl: store.errorTrackerSubmitUrl
+					proxyRoutes: store.proxyRoutes
 				});
 			},
 			configurationChanged()
@@ -201,11 +210,12 @@
 					this.showFullscreenLoader = true;
 					const response = await ExecAPI("Configuration/Set", {
 						acmeAccountEmail: store.acmeAccountEmail,
+						errorTrackerSubmitUrl: store.errorTrackerSubmitUrl,
+						cloudflareApiToken: store.cloudflareApiToken,
 						entrypoints: store.entrypoints,
 						exitpoints: store.exitpoints,
 						middlewares: store.middlewares,
-						proxyRoutes: store.proxyRoutes,
-						errorTrackerSubmitUrl: store.errorTrackerSubmitUrl
+						proxyRoutes: store.proxyRoutes
 					});
 
 					this.consumeConfigurationResponse(response);
@@ -263,6 +273,7 @@
 				store.proxyHeaderBehaviorOptionsDescriptions = response.proxyHeaderBehaviorOptionsDescriptions;
 				store.acmeAccountEmail = response.acmeAccountEmail;
 				store.errorTrackerSubmitUrl = response.errorTrackerSubmitUrl;
+				store.cloudflareApiToken = response.cloudflareApiToken;
 				store.logFiles = response.logFiles;
 				store.appVersion = response.appVersion;
 
@@ -388,7 +399,26 @@
 				this.selectedTab = tab;
 				if (tab.scrollTop)
 					document.querySelector("html").scrollTop = 0;
-			}
+			},
+			async testCloudflareDNS()
+			{
+				try
+				{
+					this.showFullscreenLoader = true;
+					const response = await ExecAPI("Configuration/TestCloudflareDNS");
+					this.showFullscreenLoader = false;
+
+					if (response.success)
+						toaster.success("Test success.");
+					else
+						toaster.error(response.error);
+				}
+				catch (ex)
+				{
+					console.log(ex);
+					toaster.error(ex);
+				}
+			},
 		},
 		watch:
 		{

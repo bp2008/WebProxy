@@ -14,6 +14,7 @@ const store = reactive({
 	proxyRoutes: [],
 	acmeAccountEmail: "",
 	errorTrackerSubmitUrl: "",
+	cloudflareApiToken: "",
 	logFiles: [],
 	appVersion: "",
 	windowWidth: -1,

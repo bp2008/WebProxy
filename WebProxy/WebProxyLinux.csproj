@@ -26,6 +26,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Certes" Version="3.0.4" />
+		<PackageReference Include="FluentCloudflare" Version="0.3.0" />
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
 		<PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
 		<PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
@@ -48,8 +49,8 @@
 	<PropertyGroup>
 		<Nullable>disable</Nullable>
 		<BaseIntermediateOutputPath>objLinux\</BaseIntermediateOutputPath>
-		<AssemblyVersion>1.5.0.0</AssemblyVersion>
-		<FileVersion>1.5.0.0</FileVersion>
+		<AssemblyVersion>1.6.0.0</AssemblyVersion>
+		<FileVersion>1.6.0.0</FileVersion>
 		<NeutralLanguage>en-US</NeutralLanguage>
 		<RootNamespace>WebProxy</RootNamespace>
 	</PropertyGroup>
