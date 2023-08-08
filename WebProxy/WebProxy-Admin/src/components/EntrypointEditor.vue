@@ -24,7 +24,7 @@
 			<div class="comment" v-if="store.showHelp">HTTP and HTTPS can share the same port, if you like.</div>
 		</div>
 		<div v-if="httpsPortEnabled">
-			<template v-if="cipherSuitesPolicySupported">
+			<template v-if="store.tlsCipherSuitesPolicySupported">
 				<label>TLS Cipher Suites: </label>
 				<select v-model="entrypoint.tlsCipherSuiteSet">
 					<option v-for="cipherSet in store.tlsCipherSuiteSets">{{cipherSet}}</option>
@@ -34,7 +34,7 @@
 				Allowed TLS Cipher Suites are determined by the operating system configuration.
 			</template>
 		</div>
-		<div class="comment" v-if="store.showHelp && httpsPortEnabled && cipherSuitesPolicySupported && tlsCipherSuiteSetDescription">
+		<div class="comment" v-if="store.showHelp && httpsPortEnabled && store.tlsCipherSuitesPolicySupported && tlsCipherSuiteSetDescription">
 			{{tlsCipherSuiteSetDescription}}
 		</div>
 		<div class="middlewares">
