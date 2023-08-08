@@ -106,6 +106,14 @@ namespace WebProxy
 		{
 			return host.Split(new string[] { ",", " " }, StringSplitOptions.RemoveEmptyEntries);
 		}
+		/// <summary>
+		/// Returns a string describing the exitpoint.
+		/// </summary>
+		/// <returns>A string describing the exitpoint.</returns>
+		public override string ToString()
+		{
+			return JsonConvert.SerializeObject(this);
+		}
 	}
 	/// <summary>
 	/// Defines the type of an Exitpoint.  Can be Disabled, AdminConsole, or WebProxy.

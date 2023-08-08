@@ -13,6 +13,10 @@
 		/// Name of the exitpoint which is mapped to an entrypoint by this route.
 		/// </summary>
 		public string exitpointName;
+		/// <summary>
+		/// Returns a string concisely describing the route.
+		/// </summary>
+		/// <returns>A concise description of the route.</returns>
 		public override string ToString()
 		{
 			return entrypointName + " -> " + exitpointName;

@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 
 namespace WebProxy
 {
+	/// <summary>
+	/// WebProxy's primary settings file.
+	/// </summary>
 	public class Settings : SerializableObjectJson
 	{
 		/// <summary>

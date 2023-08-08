@@ -67,5 +67,19 @@ namespace WebProxy
 		{
 			return httpsPort >= 1 && httpsPort <= 65535;
 		}
+		/// <summary>
+		/// Returns a string describing the entrypoint.
+		/// </summary>
+		/// <returns>A string describing the entrypoint.</returns>
+		public override string ToString()
+		{
+			string ipStr = (string.IsNullOrEmpty(ipAddress) ? "*" : ipAddress);
+			List<string> ipEndpoints = new List<string>();
+			if (httpPort > 0)
+				ipEndpoints.Add("http://" + ipStr + ":" + httpPort);
+			if (httpsPort > 0)
+				ipEndpoints.Add("https://" + ipStr + ":" + httpsPort);
+			return name + (ipEndpoints.Count > 0 ? (" (" + string.Join(" ", ipEndpoints) + ")") : "") + " [" + middlewares.Length + " middleware" + BPUtil.StringUtil.PluralSuffix(middlewares.Length) + "]" + (httpsPort > 0 ? " [TLS: " + tlsCipherSuiteSet + "]" : "");
+		}
 	}
 }

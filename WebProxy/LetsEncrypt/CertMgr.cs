@@ -103,10 +103,11 @@ namespace WebProxy.LetsEncrypt
 		/// <param name="host">Hostname requested by the client.</param>
 		/// <param name="entrypoint">Entrypoint</param>
 		/// <param name="exitpoint">Exitpoint</param>
+		/// <param name="createNew">If true, this operation will be allowed to create the certificate if it does not already exist.  If false and the certificate does not exist, the task result will be a null certificate.</param>
 		/// <returns></returns>
-		public static async Task<X509Certificate> GetCertificate(string host, Entrypoint entrypoint, Exitpoint exitpoint)
+		public static async Task<X509Certificate> GetCertificate(string host, Entrypoint entrypoint, Exitpoint exitpoint, bool createNew)
 		{
-			string[] domains = ValidateRequest(entrypoint, exitpoint);
+			string[] domains = ValidateRequestOrThrow(entrypoint, exitpoint);
 
 			host = domains.FirstOrDefault(d => d.IEquals(host));
 
@@ -116,7 +117,7 @@ namespace WebProxy.LetsEncrypt
 			// Try to get existing certificate.
 			CachedObject<X509Certificate2> cache = GetCertCache(host);
 
-			bool shouldRenew = ShouldRenew(cache, domains);
+			bool shouldRenew = ShouldRenew(cache, domains, createNew);
 			// ShouldRenew forces a reload of the cache if there's no cert, so it should be called before we try to get the cached instance.
 			X509Certificate2 cert = cache.GetInstance();
 			if (cert == null)
@@ -150,10 +151,10 @@ namespace WebProxy.LetsEncrypt
 		{
 			try
 			{
-				string[] domains = ValidateRequest(entrypoint, exitpoint);
+				string[] domains = ValidateRequestOrThrow(entrypoint, exitpoint);
 
 				lock (renewCheckLock)
-					renewalCooldowns[domains[0]] = Stopwatch.StartNew();
+					WebProxyService.certRenewalDates.StartCooldown(domains);
 
 				Logger.Info("CertMgr: Force renew " + string.Join(" ", domains));
 
@@ -174,15 +175,15 @@ namespace WebProxy.LetsEncrypt
 		}
 		#region Renewal
 		private static object renewCheckLock = new object();
-		private static Dictionary<string, Stopwatch> renewalCooldowns = new Dictionary<string, Stopwatch>();
 		/// <summary>
 		/// Returns true if now is a good time for this thread to renew the certificate.
 		/// If this method returns true, it is important that a renewal is attempted because there's a cooldown before the method will return true again.
 		/// </summary>
 		/// <param name="cache">CachedObject responsible for loading the certificate from disk.</param>
 		/// <param name="domains">The array of domains belonging to this certificate.</param>
+		/// <param name="createNew">True if this operation is allowed to create a certificate that is missing.</param>
 		/// <returns></returns>
-		private static bool ShouldRenew(CachedObject<X509Certificate2> cache, string[] domains)
+		private static bool ShouldRenew(CachedObject<X509Certificate2> cache, string[] domains, bool createNew)
 		{
 			X509Certificate2 cert = cache.GetInstance();
 			if (cert == null)
@@ -190,12 +191,16 @@ namespace WebProxy.LetsEncrypt
 
 			TimeSpan cooldownTime;
 			if (cert == null)
+			{
+				if (!createNew)
+					return false;
 				cooldownTime = TimeSpan.FromHours(4); // Retry every 4 hours until certificate is generated.
+			}
 			else
 			{
 				DateTime expDate = DateTime.Parse(cert.GetExpirationDateString());
 				if (expDate <= DateTime.Now.AddDays(1))
-					cooldownTime = TimeSpan.FromHours(1); // Expiring within 1 day. Attempt to renew every hour.
+					cooldownTime = TimeSpan.FromHours(4); // Expiring within 1 day. Attempt to renew every 4 hours.
 				else if (expDate <= DateTime.Now.AddMonths(1))
 					cooldownTime = TimeSpan.FromDays(1); // Expiring within 1 month. Attempt to renew every day.
 				else
@@ -203,18 +208,9 @@ namespace WebProxy.LetsEncrypt
 			}
 			lock (renewCheckLock)
 			{
-				Settings settings = WebProxyService.MakeLocalSettingsReference();
-				if (renewalCooldowns.TryGetValue(domains[0], out Stopwatch sw))
+				if (WebProxyService.certRenewalDates.AnyOffCooldown(domains, (long)cooldownTime.TotalMilliseconds))
 				{
-					if (sw.Elapsed > cooldownTime)
-					{
-						renewalCooldowns[domains[0]] = Stopwatch.StartNew();
-						return true;
-					}
-				}
-				else
-				{
-					renewalCooldowns[domains[0]] = Stopwatch.StartNew();
+					WebProxyService.certRenewalDates.StartCooldown(domains);
 					return true;
 				}
 			}
@@ -445,7 +441,7 @@ namespace WebProxy.LetsEncrypt
 		/// <returns></returns>
 		public static string GetHttpChallengeResponse(string host, string fileName, Entrypoint entrypoint, Exitpoint exitpoint)
 		{
-			string[] domains = ValidateRequest(entrypoint, exitpoint);
+			string[] domains = ValidateRequestOrThrow(entrypoint, exitpoint);
 
 			host = domains.FirstOrDefault(d => d.IEquals(host));
 
@@ -548,42 +544,67 @@ namespace WebProxy.LetsEncrypt
 		}
 
 		/// <summary>
-		/// Validates that the given entrypoint and exitpoint are eligible for automatic certificate management and returns the array of domain names.
+		/// Validates that the given entrypoint and exitpoint are eligible for automatic certificate management and returns the array of domain names. Throws if validation fails.
 		/// </summary>
-		/// <param name="entrypoint">An entrypoint that is listening for HTTP on port 80 or HTTPS on port 443.</param>
+		/// <param name="entrypoint">An entrypoint that has the exitpoint routed to it.</param>
 		/// <param name="exitpoint">An exitpoint with [autoCertificate] enabled and one or more domains specified.</param>
-		/// <returns></returns>
-		/// <exception cref="ArgumentException"></exception>
-		private static string[] ValidateRequest(Entrypoint entrypoint, Exitpoint exitpoint)
+		/// <returns>The array of domain names</returns>
+		/// <exception cref="ArgumentException">Throws if validation fails.</exception>
+		private static string[] ValidateRequestOrThrow(Entrypoint entrypoint, Exitpoint exitpoint)
 		{
-			if (entrypoint.httpPort != 80 && entrypoint.httpsPort != 443)
-				throw new ArgumentException("CertMgr: entrypoint httpPort must be 80 or httpsPort must be 443.");
+			string err = ValidateRequest(entrypoint, exitpoint, out string[] domains);
+			if (err == null)
+				return domains;
+			else
+				throw new ArgumentException("CertMgr: " + err);
+		}
+		/// <summary>
+		/// Validates that the given entrypoint and exitpoint are eligible for automatic certificate management and returns an error message or null.
+		/// </summary>
+		/// <param name="entrypoint">An entrypoint that has the exitpoint routed to it.</param>
+		/// <param name="exitpoint">An exitpoint with [autoCertificate] enabled and one or more domains specified.</param>
+		/// <param name="domains">(Output) The array of domain names from <see cref="Exitpoint.host"/>.</param>
+		/// <returns>An error message or null.</returns>
+		public static string ValidateRequest(Entrypoint entrypoint, Exitpoint exitpoint, out string[] domains)
+		{
+			domains = null;
+
+			if (entrypoint == null)
+				return "Entrypoint was not provided.";
+
+			Settings settings = WebProxyService.MakeLocalSettingsReference();
+			bool dnsValidationConfigured = !string.IsNullOrWhiteSpace(settings.cloudflareApiToken) && exitpoint.cloudflareDnsValidation;
+			if (!dnsValidationConfigured)
+			{
+				if (entrypoint.httpPort != 80 && entrypoint.httpsPort != 443)
+					return "entrypoint httpPort must be 80 or httpsPort must be 443 or the exitpoint must have DNS validation configured.";
+			}
 
 			if (exitpoint.type == ExitpointType.Disabled)
-				throw new ArgumentException("CertMgr: exitpoint is currently disabled.");
+				return "exitpoint is currently disabled.";
 
 			if (!exitpoint.autoCertificate)
-				throw new ArgumentException("CertMgr: exitpoint does not have autoCertificate enabled.");
+				return "exitpoint does not have autoCertificate enabled.";
 
-			string[] domains = exitpoint.getAllDomains();
+			domains = exitpoint.getAllDomains();
 
 			// Validate domains array
 			if (domains == null || domains.Length == 0)
-				throw new ArgumentException("CertMgr: 1 or more domains must be specified in exitpoint host field.");
+				return "1 or more domains must be specified in exitpoint host field.";
 
 			foreach (string domain in domains)
 			{
 				if (string.IsNullOrWhiteSpace(domain))
-					throw new ArgumentException("CertMgr: domain is not allowed to be null or whitespace");
+					return "domain is not allowed to be null or whitespace";
 				if (IPAddress.TryParse(domain, out IPAddress ignored))
-					throw new ArgumentException("CertMgr: domain is not allowed to be an IP address");
+					return "domain is not allowed to be an IP address";
 				if (domain.IEquals("localhost") || domain.IEndsWith(".localhost"))
-					throw new ArgumentException("CertMgr: domain is not allowed to be localhost");
+					return "domain is not allowed to be localhost";
 				if (domain.Contains("*"))
-					throw new ArgumentException("CertMgr: domain is not allowed to contain wildcards");
+					return "domain is not allowed to contain wildcards";
 			}
 
-			return domains;
+			return null;
 		}
 		private static void SetLastError(Exception ex)
 		{

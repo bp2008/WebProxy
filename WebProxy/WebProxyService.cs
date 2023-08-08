@@ -66,6 +66,10 @@ namespace WebProxy
 		/// </summary>
 		public static void InitializeSettings()
 		{
+			CertRenewalDates crd = new CertRenewalDates();
+			crd.SaveIfNoExist();
+			certRenewalDates = crd;
+
 			Settings s = new Settings();
 			s.Load();
 			string settingsOriginal = JsonConvert.SerializeObject(s);
@@ -138,17 +142,19 @@ namespace WebProxy
 #endif
 		protected void DoStart(string[] args)
 		{
-			Logger.Info(Globals.AssemblyName + " " + Globals.AssemblyVersion + " Starting Up");
 			BasicErrorTracker.GenericInfo(Globals.AssemblyName + " " + Globals.AssemblyVersion + " Starting Up");
+			Logger.Info(Globals.AssemblyName + " " + Globals.AssemblyVersion + " Starting Up");
 			UpdateWebServerBindings();
+			LetsEncrypt.CertRenewalThread.Start();
 		}
 
 		protected void DoStop()
 		{
+			BasicErrorTracker.GenericInfo(Globals.AssemblyName + " " + Globals.AssemblyVersion + " Shutting Down");
+			Logger.Info(Globals.AssemblyName + " " + Globals.AssemblyVersion + " Shutting Down");
 			abort = true;
 			webServer.Stop();
-			Logger.Info(Globals.AssemblyName + " " + Globals.AssemblyVersion + " Shutting Down");
-			BasicErrorTracker.GenericInfo(Globals.AssemblyName + " " + Globals.AssemblyVersion + " Shutting Down");
+			LetsEncrypt.CertRenewalThread.Stop();
 		}
 
 		/// <summary>
@@ -546,26 +552,11 @@ namespace WebProxy
 				throw new Exception("ProxyRoute \"" + proxyRouteId + "\" has multiple enabled middlewares of type [" + type + "] but only 0 or 1 are allowed.");
 		}
 		#endregion
-		//#region Acme Account Key
-		//private static object acmeAccountKeyLock = new object();
-		//private static string acmeAccountKey;
-		//public static string AcmeAccountKeyPersistent
-		//{
-		//	get
-		//	{
-
-		//	}
-		//	set
-		//	{
-		//		lock (acmeAccountKeyLock)
-		//		{
-		//			Robust.Retry(() =>
-		//			{
-		//				File.WriteAllText(Globals.WritableDirectoryBase + "AcmeAccount.pem", acmeAccountKey, ByteUtil.Utf8NoBOM);
-		//			}, 5, 10, 20, 40, 80, 160, 320, 640, 1280, 1280, 1280, 1280, 1280, 1280, 1280, 1280, 1280);
-		//		}
-		//	}
-		//}
-		//#endregion
+		#region Certificate Renewal Dates
+		/// <summary>
+		/// Contains a dictionary of domain to date of last certificate renewal for LetsEncrypt automatic certificates.
+		/// </summary>
+		public static CertRenewalDates certRenewalDates { get; private set; }
+		#endregion
 	}
 }

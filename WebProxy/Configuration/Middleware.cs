@@ -130,6 +130,14 @@ namespace WebProxy
 					account.Pass = pass;
 			}
 		}
+		/// <summary>
+		/// Returns a string describing the middleware.
+		/// </summary>
+		/// <returns>A string describing the middleware.</returns>
+		public override string ToString()
+		{
+			return JsonConvert.SerializeObject(this);
+		}
 	}
 	/// <summary>
 	/// A username and password.
