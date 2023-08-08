@@ -215,6 +215,9 @@ namespace WebProxy.Controllers
 		public string[] middlewareTypes = Enum.GetNames(typeof(MiddlewareType));
 		public string[] proxyHeaderBehaviorOptions = Enum.GetNames(typeof(BPUtil.SimpleHttp.Client.ProxyHeaderBehavior));
 		public Dictionary<string, string> proxyHeaderBehaviorOptionsDescriptions = DescriptionAttribute.GetDescriptions<BPUtil.SimpleHttp.Client.ProxyHeaderBehavior>();
+		public string[] tlsCipherSuiteSets = Enum.GetNames(typeof(TlsCipherSuiteSet));
+		public Dictionary<string, string> tlsCipherSuiteSetDescriptions = DescriptionAttribute.GetDescriptions<TlsCipherSuiteSet>();
+		public bool tlsCipherSuitesPolicySupported = BPUtil.SimpleHttp.HttpServer.IsTlsCipherSuitesPolicySupported();
 		public LogFile[] logFiles = GetLogFiles();
 
 		[JsonProperty(NullValueHandling = NullValueHandling.Ignore)]

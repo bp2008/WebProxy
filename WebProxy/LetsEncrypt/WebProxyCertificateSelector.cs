@@ -50,8 +50,7 @@ namespace WebProxy.LetsEncrypt
 			Exitpoint myExitpoint = settings.identifyThisExitpoint(matchedEntrypoints, p, out Entrypoint myEntrypoint);
 			if (myExitpoint == null || myExitpoint.type == ExitpointType.Disabled)
 			{
-				// Set responseWritten = true to prevent a fallback response.  We want this connection to simply close.
-				//Logger.Info("WebProxyCertificateSelector: No exitpoint for request from client " + p.RemoteIPAddressStr + " to " + p.request_url);
+				// We want this connection to simply close.
 				return null;
 			}
 

@@ -271,6 +271,9 @@
 				store.middlewareTypes = response.middlewareTypes;
 				store.proxyHeaderBehaviorOptions = response.proxyHeaderBehaviorOptions;
 				store.proxyHeaderBehaviorOptionsDescriptions = response.proxyHeaderBehaviorOptionsDescriptions;
+				store.tlsCipherSuiteSets = response.tlsCipherSuiteSets;
+				store.tlsCipherSuiteSetDescriptions = response.tlsCipherSuiteSetDescriptions;
+				store.tlsCipherSuitesPolicySupported = response.tlsCipherSuitesPolicySupported;
 				store.acmeAccountEmail = response.acmeAccountEmail;
 				store.errorTrackerSubmitUrl = response.errorTrackerSubmitUrl;
 				store.cloudflareApiToken = response.cloudflareApiToken;
@@ -439,6 +442,8 @@
 	{
 		if (!o.middlewares)
 			o.middlewares = [];
+		if (!o.tlsCipherSuiteSet)
+			o.tlsCipherSuiteSet = store.tlsCipherSuiteSets[0];
 		o.uniqueId = idCounter++; // uniqueId is a clientside-only field useful as a sticky identifier for each object.  uniqueId is not persisted by the server.
 		return o;
 	}

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Security;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -371,6 +372,30 @@ namespace WebProxy
 					return true;
 			}
 			return !ipNeedsWhitelisted;
+		}
+
+		/// <summary>
+		/// Gets a collection of allowed TLS cipher suites for the given connection.  Returns null if the default set of cipher suites should be allowed (which varies by platform).
+		/// </summary>
+		/// <param name="p">HttpProcessor providing connection information so that the derived class can decide which cipher suites to allow.</param>
+		/// <returns>A collection of allowed TLS cipher suites, or null.</returns>
+		public override IEnumerable<TlsCipherSuite> GetAllowedCipherSuites(HttpProcessor p)
+		{
+			Settings settings = WebProxyService.MakeLocalSettingsReference();
+			Entrypoint[] matchedEntrypoints = settings.identifyThisEntrypoint((IPEndPoint)p.tcpClient.Client.RemoteEndPoint, (IPEndPoint)p.tcpClient.Client.LocalEndPoint, true);
+			if (matchedEntrypoints.Length == 0)
+				return null;
+
+			Exitpoint myExitpoint = settings.identifyThisExitpoint(matchedEntrypoints, p, out Entrypoint myEntrypoint);
+			if (myExitpoint == null || myExitpoint.type == ExitpointType.Disabled)
+				return null;
+
+			if (myEntrypoint.tlsCipherSuiteSet == TlsCipherSuiteSet.DotNet5_Q3_2023)
+				return new BPUtil.SimpleHttp.TLS.TlsCipherSuiteSet_DotNet5_Q3_2023().GetCipherSuites();
+			else if (myEntrypoint.tlsCipherSuiteSet == TlsCipherSuiteSet.IANA_Q3_2023)
+				return new BPUtil.SimpleHttp.TLS.TlsCipherSuiteSet_IANA_Q3_2023().GetCipherSuites();
+			else
+				return null;
 		}
 	}
 }

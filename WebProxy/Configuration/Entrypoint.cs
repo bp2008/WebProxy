@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -25,6 +27,11 @@ namespace WebProxy
 		/// If between 1 and 65535, this endpoint supports TLS / encrypted https traffic on this TCP port.
 		/// </summary>
 		public int httpsPort;
+		/// <summary>
+		/// Enum value indicating which set of TLS cipher suites this entrypoint should allow.
+		/// </summary>
+		[JsonConverter(typeof(StringEnumConverter))]
+		public TlsCipherSuiteSet tlsCipherSuiteSet;
 		/// <summary>
 		/// Array of unique identifiers for middlewares that apply to all requests matching this Entrypoint.
 		/// </summary>

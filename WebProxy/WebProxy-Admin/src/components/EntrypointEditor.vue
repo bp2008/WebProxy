@@ -23,17 +23,29 @@
 		<div>
 			<div class="comment" v-if="store.showHelp">HTTP and HTTPS can share the same port, if you like.</div>
 		</div>
+		<div v-if="httpsPortEnabled">
+			<template v-if="cipherSuitesPolicySupported">
+				<label>TLS Cipher Suites: </label>
+				<select v-model="entrypoint.tlsCipherSuiteSet">
+					<option v-for="cipherSet in store.tlsCipherSuiteSets">{{cipherSet}}</option>
+				</select>
+			</template>
+			<template v-else>
+				Allowed TLS Cipher Suites are determined by the operating system configuration.
+			</template>
+		</div>
+		<div class="comment" v-if="store.showHelp && httpsPortEnabled && cipherSuitesPolicySupported && tlsCipherSuiteSetDescription">
+			{{tlsCipherSuiteSetDescription}}
+		</div>
 		<div class="middlewares">
 			<MiddlewareSelector v-model="entrypoint.middlewares"></MiddlewareSelector>
 		</div>
 	</div>
 </template>
-
 <script>
 	import MiddlewareSelector from './MiddlewareSelector.vue';
 	import FloatingButtons from '/src/components/FloatingButtons.vue'
 	import store from '/src/library/store';
-
 	export default {
 		components: { MiddlewareSelector, FloatingButtons },
 		props: {
@@ -77,11 +89,14 @@
 					if (this.entrypoint.httpsPort > 0 !== newValue)
 						this.entrypoint.httpsPort *= -1;
 				}
+			},
+			tlsCipherSuiteSetDescription()
+			{
+				return store.tlsCipherSuiteSetDescriptions[this.entrypoint.tlsCipherSuiteSet];
 			}
 		}
 	};
 </script>
-
 <style scoped>
 	.flexRow input.ipAddressInput
 	{
