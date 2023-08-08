@@ -232,7 +232,8 @@ option
 		margin-right: 6px;
 	}
 
-	.flexRow input[type="text"]
+	.flexRow input[type="text"],
+	.flexRow input[type="password"]
 	{
 		width: 100%;
 		box-sizing: border-box;

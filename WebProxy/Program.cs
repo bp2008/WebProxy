@@ -26,7 +26,6 @@ namespace WebProxy
 		/// </summary>
 		static void Main()
 		{
-			// TODO: Mask the Cloudflare and ErrorTracker inputs in the Admin Console with the show/hide icon like is used for password inputs.
 			// TODO: Every 24 hours, attempt to renew automatic certificates that will expire within the next 30 days.  Normally this is only triggered by web requests that use the certificate.
 			// CONSIDER: Add middleware for "Forwarded" header which combines the effects of the previous 3 headers: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Forwarded
 			// CONSIDER: Add a middleware that implements a JavaScript-based login form.  Consider supporting WebAuthn or passwordless.id, but the main goal here is to support password manager browser extensions.

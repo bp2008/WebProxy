@@ -4,7 +4,7 @@
 			<select v-if="allowedValues" v-model="modelValue[index]" autocomplete="off">
 				<option v-for="v in allowedValues" :key="v">{{v}}</option>
 			</select>
-			<UNPWEditor v-else-if="arrayType === 'credentials'" v-model="modelValue[index]" />
+			<UNPWEditor v-else-if="arrayType === 'credentials'" v-model="modelValue[index]" class="unpwEditor" />
 			<input v-else :type="arrayType" v-model="modelValue[index]" autocomplete="off" />
 			<input class="removeButton" type="button" value="-" @click="removeArrayItem(index)" />
 		</div>
@@ -78,5 +78,10 @@
 		.arrayElement > *:last-child
 		{
 			flex: 0 0 auto;
+		}
+
+		.arrayElement > .unpwEditor:first-child
+		{
+			flex: 0 1 auto;
 		}
 </style>

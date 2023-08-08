@@ -11,6 +11,10 @@
 		</h1>
 		<button v-if="configurationChanged" class="saveChanges" @click="saveChanges">Save Changes</button>
 	</div>
+	<div class="hiddenFormToPreventAutofill">
+		<input type="text" name="username" value="" />
+		<input type="password" name="password" value="" />
+	</div>
 	<div v-if="loading">Loading...</div>
 	<div class="adminBody" v-else>
 		<loading v-model:active="showFullscreenLoader"
@@ -34,16 +38,16 @@
 					</div>
 					<div class="flexRow">
 						<label>ErrorTracker Submission URL</label>
-						<input type="text" v-model="store.errorTrackerSubmitUrl" autocomplete="off" />
+						<PasswordInput v-model="store.errorTrackerSubmitUrl" class="password-container" />
 						<div class="comment" v-if="store.showHelp">Optional submit URL for an ErrorTracker instance.</div>
 					</div>
 					<div class="flexRow">
 						<label>Cloudflare API Token</label>
-						<input type="text" v-model="store.cloudflareApiToken" autocomplete="off" />
+						<PasswordInput v-model="store.cloudflareApiToken" class="password-container" />
 						<div class="comment" v-if="store.showHelp">
 							Optional.  If set, automatic certificate validation via Cloudflare DNS will be an option for Exitpoints.  DNS validation means your WebProxy server does not need to be accessible on any public port (but outgoing internet access is still required).<br /><br />This must be a <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank">Cloudflare API Token</a>, not a Global API Key, and the token needs permissions <span class="icode">Zone &gt; Zone &gt; Read</span> and <span class="icode">Zone &gt; DNS &gt; Edit</span>.  Under Zone Resources, <span class="icode">Include &gt All zones</span>.
 						</div>
-						<div><input type="button" v-if="store.cloudflareApiToken" value="Test Cloudflare DNS" @click="testCloudflareDNS" title="Tests the Cloudflare API Token by attempting to add and remove a DNS TXT record from the account."/></div>
+						<div><input type="button" v-if="store.cloudflareApiToken" value="Test Cloudflare DNS" @click="testCloudflareDNS" title="Tests the Cloudflare API Token by attempting to add and remove a DNS TXT record from the account." /></div>
 					</div>
 					<div class="flexRow">
 						<label>Admin Console Theme</label>
@@ -119,6 +123,7 @@
 	import MiddlewareEditor from './components/MiddlewareEditor.vue';
 	import ProxyRouteEditor from './components/ProxyRouteEditor.vue';
 	import HostedUrlSummary from './components/HostedUrlSummary.vue';
+	import PasswordInput from './components/PasswordInput.vue';
 	import LogReader from './components/LogReader.vue';
 	import ExecAPI from './library/API';
 	import store from '/src/library/store';
@@ -126,7 +131,7 @@
 	import { VueDraggableNext } from 'vue-draggable-next';
 
 	export default {
-		components: { EntrypointEditor, ExitpointEditor, MiddlewareEditor, ProxyRouteEditor, HostedUrlSummary, LogReader, Loading, draggable: VueDraggableNext },
+		components: { EntrypointEditor, ExitpointEditor, MiddlewareEditor, ProxyRouteEditor, HostedUrlSummary, PasswordInput, LogReader, Loading, draggable: VueDraggableNext },
 		data()
 		{
 			return {
@@ -495,6 +500,11 @@
 </script>
 
 <style scoped>
+	.hiddenFormToPreventAutofill
+	{
+		display: none;
+	}
+
 	.topBar
 	{
 		position: sticky;
@@ -628,6 +638,11 @@
 	.invisibleLine
 	{
 		height: 1px;
+	}
+
+	.password-container
+	{
+		align-self: stretch;
 	}
 
 	@media (min-width: 600px)
