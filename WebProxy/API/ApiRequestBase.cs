@@ -13,6 +13,10 @@ namespace WebProxy
 	public static class ApiRequest
 	{
 		/// <summary>
+		/// Maximum size of a Request Body, in bytes.
+		/// </summary>
+		public const int RequestBodySizeLimit = 20 * 1024 * 1024;
+		/// <summary>
 		/// Parses an API request argument (JSON) from the HTTP POST body.
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
@@ -34,9 +38,17 @@ namespace WebProxy
 			if (httpProcessor.http_method != "POST")
 				throw new Exception("This API method must be called using HTTP POST");
 
-			byte[] data = ByteUtil.ReadToEnd(httpProcessor.RequestBodyStream);
-			string str = ByteUtil.Utf8NoBOM.GetString(data);
-			return JsonConvert.DeserializeObject<T>(str);
+			if (ByteUtil.ReadToEndWithMaxLength(httpProcessor.RequestBodyStream, RequestBodySizeLimit, out byte[] data))
+			{
+				string str = ByteUtil.Utf8NoBOM.GetString(data);
+				return JsonConvert.DeserializeObject<T>(str);
+			}
+			else
+			{
+				if (!httpProcessor.responseWritten)
+					httpProcessor.writeFailure("413 Content Too Large", "This server allows a maximum request body size of " + RequestBodySizeLimit + " bytes.");
+				throw new Exception("413 Content Too Large: This server allows a maximum request body size of " + RequestBodySizeLimit + " bytes.");
+			}
 		}
 	}
 }
