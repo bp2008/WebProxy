@@ -144,12 +144,36 @@ echo Step 4/5: Download and extract the latest release.
 cd ~;
 
 # Get the release information from the GitHub API and extract the download URL for the Linux release zip using jq.
-ReleaseUrl=$(curl -s https://api.github.com/repos/"$GithubRepo"/releases/latest | jq -r '.assets[] | select(.name | contains("Linux")) | .browser_download_url');
+Releases=$(curl -s https://api.github.com/repos/"$GithubRepo"/releases | jq -r '.[] | .tag_name' | head -n 20);
+
+# Display the list of releases to the user.
+echo "Available releases:";
+counter=1;
+while read -r line; do
+    echo "$counter) $line";
+    counter=$((counter+1));
+done <<< "$Releases"
+
+# Prompt the user to choose a release.
+read -p "Enter the number of the release you want to install (default is 1): " ReleaseChoice;
+
+# Set default choice to 1 if no input is given.
+if [ -z "$ReleaseChoice" ]; then
+    ReleaseChoice=1;
+fi
+
+# Get the tag name of the chosen release.
+ReleaseTag=$(echo "$Releases" | sed "${ReleaseChoice}q;d");
+
+echo "Installing Release $ReleaseTag"
+
+# Get the download URL for the chosen release.
+ReleaseUrl=$(curl -s https://api.github.com/repos/"$GithubRepo"/releases/tags/"$ReleaseTag" | jq -r '.assets[] | select(.name | contains("Linux")) | .browser_download_url');
 
 # Set the release file name to the variable "ReleaseFile".
 ReleaseFile=${ReleaseUrl##*/};
 
-# Download the latest release using wget.
+# Download the chosen release using wget.
 wget -q -O "$ReleaseFile" $ReleaseUrl;
 
 # Ensure that the application directory exists.
@@ -157,6 +181,8 @@ mkdir -p "$AppName";
 
 # Unzip the release using unzip.
 unzip -q -o $ReleaseFile -d "$AppName";
+
+
 
 ###########################################################
 echo Step 5/5: Configure program to start automatically.
