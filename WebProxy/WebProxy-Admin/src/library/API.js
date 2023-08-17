@@ -19,7 +19,7 @@ export default function ExecAPI(method, args)
 	})
 		.then(response =>
 		{
-			if (response.status === 200)
+			if (response.status === 200 || response.status === 418) // 418 (I'm a teapot) in our case is a synonym for success in a way that prevents the browser from offering to remember credentials that were submitted.
 				return response.json();
 			else
 			{

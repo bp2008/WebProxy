@@ -42,7 +42,7 @@
 				if (this.allowedValues && this.allowedValues.length > 0)
 					d = this.allowedValues[0];
 				else if (this.arrayType === "credentials")
-					d = {};
+					d = { User: "", Pass: "" };
 				else if (this.arrayType === "number")
 					d = 0;
 				else

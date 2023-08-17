@@ -45,7 +45,7 @@ namespace WebProxy.Controllers
 			}
 			catch (Exception ex)
 			{
-				return ApiError(ex.FlattenMessages());
+				return ApiErrorNoAutocomplete(ex.FlattenMessages());
 			}
 
 			WebProxyService.SettingsValidateAndAdminConsoleSetup(out Entrypoint adminEntry, out Exitpoint adminExit, out Middleware adminLogin);
@@ -80,7 +80,7 @@ namespace WebProxy.Controllers
 				response.adminEntryOrigins = adminEntryOrigins.ToArray();
 			}
 
-			return Json(response);
+			return ApiSuccessNoAutocomplete(response);
 		}
 		public ActionResult ForceRenew()
 		{

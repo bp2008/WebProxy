@@ -223,23 +223,7 @@ namespace WebProxy
 							}
 							if (p.requestedPage.IEquals(""))
 								fi = new FileInfo(wwwDirectoryBase + "index.html");
-							if (!fi.Exists)
-							{
-								p.writeFailure("404 Not Found");
-								return;
-							}
-							if (fi.LastWriteTimeUtc.ToString("R") == p.GetHeaderValue("if-modified-since"))
-							{
-								p.writeSuccess(Mime.GetMimeType(fi.Extension), -1, "304 Not Modified");
-								return;
-							}
-							using (FileStream fs = fi.OpenRead())
-							{
-								p.writeSuccess(Mime.GetMimeType(fi.Extension), fi.Length, additionalHeaders: GetCacheLastModifiedHeaders(TimeSpan.FromHours(1), fi.LastWriteTimeUtc));
-								p.outputStream.Flush();
-								fs.CopyTo(p.tcpStream);
-								p.tcpStream.Flush();
-							}
+							p.writeStaticFile(fi);
 							#endregion
 							bet.Stop();
 						}
@@ -288,14 +272,6 @@ namespace WebProxy
 				bet.Stop();
 				//Logger.Info(p.http_method + " " + p.request_url + "\r\n\r\n" + bet.ToString("\r\n") + "\r\n");
 			}
-		}
-
-		private HttpHeaderCollection GetCacheLastModifiedHeaders(TimeSpan maxAge, DateTime lastModifiedUTC)
-		{
-			HttpHeaderCollection additionalHeaders = new HttpHeaderCollection();
-			additionalHeaders.Add("Cache-Control", "max-age=" + (long)maxAge.TotalSeconds + ", public");
-			additionalHeaders.Add("Last-Modified", lastModifiedUTC.ToString("R"));
-			return additionalHeaders;
 		}
 
 		protected override void stopServer()
