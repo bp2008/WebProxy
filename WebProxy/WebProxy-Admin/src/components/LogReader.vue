@@ -188,8 +188,8 @@
 		{
 			border: 1px solid black;
 			white-space: pre-wrap;
-			overflow-x: hidden;
 			overflow-y: scroll;
+			word-break: break-word;
 		}
 
 	.connection-status

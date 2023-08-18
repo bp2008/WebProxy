@@ -50,6 +50,12 @@
 						<div><input type="button" v-if="store.cloudflareApiToken" value="Test Cloudflare DNS" @click="testCloudflareDNS" title="Tests the Cloudflare API Token by attempting to add and remove a DNS TXT record from the account." /></div>
 					</div>
 					<div class="flexRow">
+						<label><input type="checkbox" v-model="store.verboseWebServerLogs" /> Enable Verbose Web Server Logging</label>
+						<div class="comment" v-if="store.showHelp">
+							For troubleshooting purposes, the web server can be configured to use verbose logging.
+						</div>
+					</div>
+					<div class="flexRow">
 						<label>Admin Console Theme</label>
 						<select v-model="store.currentTheme">
 							<option v-for="t in store.themeList">{{t}}</option>
@@ -166,6 +172,7 @@
 					acmeAccountEmail: store.acmeAccountEmail,
 					errorTrackerSubmitUrl: store.errorTrackerSubmitUrl,
 					cloudflareApiToken: store.cloudflareApiToken,
+					verboseWebServerLogs: store.verboseWebServerLogs,
 					entrypoints: store.entrypoints,
 					exitpoints: store.exitpoints,
 					middlewares: store.middlewares,
@@ -217,6 +224,7 @@
 						acmeAccountEmail: store.acmeAccountEmail,
 						errorTrackerSubmitUrl: store.errorTrackerSubmitUrl,
 						cloudflareApiToken: store.cloudflareApiToken,
+						verboseWebServerLogs: store.verboseWebServerLogs,
 						entrypoints: store.entrypoints,
 						exitpoints: store.exitpoints,
 						middlewares: store.middlewares,
@@ -282,6 +290,7 @@
 				store.acmeAccountEmail = response.acmeAccountEmail;
 				store.errorTrackerSubmitUrl = response.errorTrackerSubmitUrl;
 				store.cloudflareApiToken = response.cloudflareApiToken;
+				store.verboseWebServerLogs = response.verboseWebServerLogs;
 				store.logFiles = response.logFiles;
 				store.appVersion = response.appVersion;
 

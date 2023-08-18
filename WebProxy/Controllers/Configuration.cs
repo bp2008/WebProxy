@@ -25,6 +25,7 @@ namespace WebProxy.Controllers
 			response.proxyRoutes = s.proxyRoutes.ToArray();
 			response.errorTrackerSubmitUrl = s.errorTrackerSubmitUrl;
 			response.cloudflareApiToken = s.cloudflareApiToken;
+			response.verboseWebServerLogs = s.verboseWebServerLogs;
 			return Json(response);
 		}
 		public ActionResult Set()
@@ -39,6 +40,7 @@ namespace WebProxy.Controllers
 			s.proxyRoutes = request.proxyRoutes.ToList();
 			s.errorTrackerSubmitUrl = request.errorTrackerSubmitUrl;
 			s.cloudflareApiToken = request.cloudflareApiToken;
+			s.verboseWebServerLogs = request.verboseWebServerLogs;
 			try
 			{
 				WebProxyService.SaveNewSettings(s);
@@ -49,6 +51,8 @@ namespace WebProxy.Controllers
 			}
 
 			WebProxyService.SettingsValidateAndAdminConsoleSetup(out Entrypoint adminEntry, out Exitpoint adminExit, out Middleware adminLogin);
+
+			BPUtil.SimpleHttp.SimpleHttpLogger.RegisterLogger(Logger.httpLogger, s.verboseWebServerLogs);
 
 			SetTimeout.OnBackground(() =>
 			{
@@ -64,6 +68,7 @@ namespace WebProxy.Controllers
 			response.proxyRoutes = s.proxyRoutes.ToArray();
 			response.errorTrackerSubmitUrl = s.errorTrackerSubmitUrl;
 			response.cloudflareApiToken = s.cloudflareApiToken;
+			response.verboseWebServerLogs = s.verboseWebServerLogs;
 
 			{
 				string adminHost = adminExit.host;
@@ -207,6 +212,7 @@ namespace WebProxy.Controllers
 		public string acmeAccountEmail;
 		public string errorTrackerSubmitUrl;
 		public string cloudflareApiToken;
+		public bool verboseWebServerLogs;
 		public Entrypoint[] entrypoints;
 		public Exitpoint[] exitpoints;
 		public Middleware[] middlewares;
@@ -250,6 +256,7 @@ namespace WebProxy.Controllers
 		public string acmeAccountEmail;
 		public string errorTrackerSubmitUrl;
 		public string cloudflareApiToken;
+		public bool verboseWebServerLogs;
 		public Entrypoint[] entrypoints;
 		public Exitpoint[] exitpoints;
 		public Middleware[] middlewares;

@@ -57,6 +57,10 @@
 					<label><input type="checkbox" v-model="exitpoint.proxyAcceptAnyCertificate" /> Skip Certificate Validation for Destination Origin</label>
 				</div>
 				<div class="flexRow">
+					<label><input type="checkbox" v-model="exitpoint.useConnectionKeepAlive" /> Use <span class="icode">Connection: keep-alive</span></label>
+					<div class="comment" v-if="store.showHelp">Enabled by default for performance reasons, you can disable this to force a new connection to be made to the destination server for every request.</div>
+				</div>
+				<div class="flexRow">
 					<label>Destination Host Header</label>
 					<input type="text" v-model="exitpoint.destinationHostHeader" autocomplete="off" />
 					<div class="comment" v-if="store.showHelp">If you need to override the host string used in outgoing proxy requests (for the Host header and TLS Server Name Indication), provide the host string here.  Otherwise leave this empty and the host from the Destination Origin will be used. DO NOT include a port number, even if using a non-standard port.  The port number will be added automatically where appropriate.</div>

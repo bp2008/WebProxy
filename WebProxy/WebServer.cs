@@ -248,6 +248,7 @@ namespace WebProxy
 					options.xForwardedProto = xfp?.ProxyHeaderBehavior ?? ProxyHeaderBehavior.Drop;
 					options.xRealIp = xri?.ProxyHeaderBehavior ?? ProxyHeaderBehavior.Drop;
 					options.proxyHeaderTrustedIpRanges = trustedProxyIPRanges.ToArray();
+					options.allowConnectionKeepalive = myExitpoint.useConnectionKeepAlive;
 
 					if (overrideResponseHeaders.Count > 0)
 					{
@@ -259,8 +260,20 @@ namespace WebProxy
 					}
 
 					bet.Start("Calling p.ProxyToAsync");
-					p.ProxyToAsync(builder.Uri.ToString(), options).Wait();
-					bet.Stop();
+					try
+					{
+						p.ProxyToAsync(builder.Uri.ToString(), options).Wait();
+						bet.Stop();
+						if (settings.verboseWebServerLogs)
+							Logger.Info("Proxy Completed: " + p.http_method + " " + p.request_url + "\r\n\r\n" + options.log.ToString() + "\r\n");
+					}
+					catch (Exception ex)
+					{
+						bet.Stop();
+						if (settings.verboseWebServerLogs)
+							Logger.Info("Proxy Completed With Error: " + p.http_method + " " + p.request_url + "\r\n\r\n" + options.log.ToString() + "\r\n");
+						ex.Rethrow();
+					}
 				}
 				else
 				{
@@ -273,7 +286,7 @@ namespace WebProxy
 				//Logger.Info(p.http_method + " " + p.request_url + "\r\n\r\n" + bet.ToString("\r\n") + "\r\n");
 			}
 		}
-
+		/// <inheritdoc/>
 		protected override void stopServer()
 		{
 		}
@@ -285,6 +298,15 @@ namespace WebProxy
 		public override bool shouldLogSocketBind()
 		{
 			return true;
+		}
+
+		/// <summary>
+		/// If this method returns true, requests should be logged to a file.
+		/// </summary>
+		/// <returns></returns>
+		public override bool shouldLogRequestsToFile()
+		{
+			return WebProxyService.MakeLocalSettingsReference().verboseWebServerLogs;
 		}
 
 		/// <summary>

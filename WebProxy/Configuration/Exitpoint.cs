@@ -47,9 +47,13 @@ namespace WebProxy
 		/// </summary>
 		public string destinationHostHeader;
 		/// <summary>
-		/// If true, skip certificate validation for destination origin.
+		/// [Requires type == WebProxy] If true, skip certificate validation for destination origin.
 		/// </summary>
 		public bool proxyAcceptAnyCertificate = false;
+		/// <summary>
+		/// [Requires type == WebProxy] If true, regular requests sent to the destination server will use `Connection: keep-alive`, otherwise `Connection: close`.
+		/// </summary>
+		public bool useConnectionKeepAlive = true;
 		/// <summary>
 		/// Defines the type of Exitpoint this is.  Can be Disabled, AdminConsole, or WebProxy.
 		/// </summary>

@@ -18,6 +18,7 @@ const store = reactive({
 	acmeAccountEmail: "",
 	errorTrackerSubmitUrl: "",
 	cloudflareApiToken: "",
+	verboseWebServerLogs: false,
 	logFiles: [],
 	appVersion: "",
 	windowWidth: -1,
