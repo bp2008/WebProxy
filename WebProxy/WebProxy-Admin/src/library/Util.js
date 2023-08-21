@@ -71,3 +71,11 @@ export function HTMLToText(html)
 	htmlToTextConvert.innerHTML = "";
 	return text;
 }
+/**
+ * Escapes a minimal set of characters (\, *, +, ?, |, {, [, (,), ^, $, ., #, and white space) by replacing them with their escape codes. This instructs the regular expression engine to interpret these characters literally rather than as metacharacters.
+ * @param {String} str String to escape.
+ */
+export function escapeRegExp(str)
+{
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}

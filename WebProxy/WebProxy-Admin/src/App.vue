@@ -109,11 +109,15 @@
 			</div>
 			<div v-if="selectedTab.Name === 'All' || selectedTab.Name === 'Settings'">
 				<h2>Raw Settings.json</h2>
-				<a href="/Configuration/GetRaw" target="_blank">Settings.json</a>
+				View <a href="/Configuration/GetRaw" target="_blank">Settings.json</a>
 				<h2>Log Files</h2>
 				<div v-for="logFile in store.logFiles">
 					<a :href="'/Log/' + logFile.fileName" target="_blank">{{logFile.fileName}}</a> ({{logFile.size}})
 				</div>
+				<h2>Export Settings and Certificates</h2>
+				<a href="/Configuration/Export" target="_blank">WebProxy_Export.zip</a>
+				<h2>Import Settings and Certificates</h2>
+				<UploadFileControl label="Upload Zip" acceptFileExtension=".zip" @upload="uploadSettingsAndCertificatesClicked" />
 			</div>
 			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Log'">
 				<h2>Live Log</h2>
@@ -131,13 +135,14 @@
 	import HostedUrlSummary from './components/HostedUrlSummary.vue';
 	import PasswordInput from './components/PasswordInput.vue';
 	import LogReader from './components/LogReader.vue';
+	import UploadFileControl from '/src/components/UploadFileControl.vue';
 	import ExecAPI from './library/API';
 	import store from '/src/library/store';
 	import Loading from 'vue-loading-overlay';
 	import { VueDraggableNext } from 'vue-draggable-next';
 
 	export default {
-		components: { EntrypointEditor, ExitpointEditor, MiddlewareEditor, ProxyRouteEditor, HostedUrlSummary, PasswordInput, LogReader, Loading, draggable: VueDraggableNext },
+		components: { EntrypointEditor, ExitpointEditor, MiddlewareEditor, ProxyRouteEditor, HostedUrlSummary, PasswordInput, LogReader, Loading, draggable: VueDraggableNext, UploadFileControl },
 		data()
 		{
 			return {
@@ -155,13 +160,29 @@
 					{ Name: "Middlewares", scrollTop: true },
 					{ Name: "Routes", scrollTop: true },
 					{ Name: "Log", scrollTop: true }
-				]
+				],
+				fileInputChangeCounter: 0
 			};
 		},
 		created()
 		{
 			window.appRoot = this;
-			this.selectedTab = this.tabs[1];
+			try
+			{
+				let selectedTabName = localStorage.webProxySelectedTabName;
+				for (let i = 0; i < this.tabs.length; i++)
+				{
+					let tab = this.tabs[i];
+					if (tab.Name === selectedTabName)
+					{
+						this.selectedTab = tab;
+						break;
+					}
+				}
+			}
+			catch { }
+			if (!this.selectedTab.Name)
+				this.selectedTab = this.tabs[1];
 			this.getConfiguration();
 		},
 		computed:
@@ -186,6 +207,12 @@
 			appVersion()
 			{
 				return store ? store.appVersion : "";
+			},
+			selectedFile()
+			{
+				if (this.fileInputChangeCounter > 0 && this.$refs.fileInput.files.length > 0)
+					return this.$refs.fileInput.files[0];
+				return null;
 			}
 		},
 		methods:
@@ -414,6 +441,12 @@
 			selectTab(tab)
 			{
 				this.selectedTab = tab;
+				try
+				{
+					if (tab && tab.Name)
+						localStorage.webProxySelectedTabName = tab.Name;
+				}
+				catch { }
 				if (tab.scrollTop)
 					document.querySelector("html").scrollTop = 0;
 			},
@@ -434,6 +467,30 @@
 				{
 					console.log(ex);
 					toaster.error(ex);
+				}
+			},
+			async uploadSettingsAndCertificatesClicked(selectedFileBase64)
+			{
+				try
+				{
+					this.showFullscreenLoader = true;
+					const response = await ExecAPI("Configuration/Import", { base64: selectedFileBase64 });
+					if (response.success)
+					{
+						toaster.success("Import successful.");
+						this.consumeConfigurationResponse(response);
+					}
+					else
+						toaster.error(response.error);
+				}
+				catch (ex)
+				{
+					console.log(ex);
+					toaster.error(ex);
+				}
+				finally
+				{
+					this.showFullscreenLoader = false;
 				}
 			},
 		},

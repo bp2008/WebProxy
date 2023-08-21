@@ -221,7 +221,7 @@ namespace WebProxy
 
 		public const string AdminConsoleLoginId = "WebProxy Admin Console Login";
 		/// <summary>
-		/// Validate setup and create/repair admin console access. Do not modify the objects returned via out parameters.
+		/// Validate setup and create/repair admin console access. Do not modify the objects returned via out parameters.  This method does not always perform complete validation on the settings object.
 		/// </summary>
 		/// <param name="adminConsoleEntrypoint">The Entrypoint used by the Admin Console.</param>
 		/// <param name="adminConsoleExitpoint">The Exitpoint used by the Admin Console.</param>
@@ -346,11 +346,11 @@ namespace WebProxy
 				SaveNewSettings(s);
 		}
 		/// <summary>
-		/// Validate the settings file and repair simple problems.  Throw an exception if anything is invalid that can't be cleanly repaired automatically.  Because this can modify the settings, this should never be passed the static settings instance, and should only be called just prior to saving the settings.
+		/// Validate the settings file and repair simple problems.  Throw an exception if anything is invalid that can't be cleanly repaired automatically.  Because this can modify the settings, this should never be passed the static settings instance, and should only be called just prior to saving the settings.  This method is automatically called by <see cref="SaveNewSettings"/>.
 		/// </summary>
 		/// <param name="s">Settings instance containing settings that need to be validated.</param>
 		/// <exception cref="Exception">If validation fails.</exception>
-		private static void ValidateSettings(Settings s)
+		public static void ValidateSettings(Settings s)
 		{
 			if (s == staticSettings)
 				throw new Exception("Application error: Refusing to run ValidateSettings on the static settings instance due to causing race conditions.");

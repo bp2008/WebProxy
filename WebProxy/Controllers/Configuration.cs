@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -16,17 +17,7 @@ namespace WebProxy.Controllers
 	{
 		public ActionResult Get()
 		{
-			Settings s = WebProxyService.MakeLocalSettingsReference();
-			GetConfigurationResponse response = new GetConfigurationResponse();
-			response.acmeAccountEmail = s.acmeAccountEmail;
-			response.entrypoints = s.entrypoints.ToArray();
-			response.exitpoints = s.exitpoints.ToArray();
-			response.middlewares = s.middlewares.ToArray();
-			response.proxyRoutes = s.proxyRoutes.ToArray();
-			response.errorTrackerSubmitUrl = s.errorTrackerSubmitUrl;
-			response.cloudflareApiToken = s.cloudflareApiToken;
-			response.verboseWebServerLogs = s.verboseWebServerLogs;
-			return Json(response);
+			return Get(false);
 		}
 		public ActionResult Set()
 		{
@@ -41,25 +32,12 @@ namespace WebProxy.Controllers
 			s.errorTrackerSubmitUrl = request.errorTrackerSubmitUrl;
 			s.cloudflareApiToken = request.cloudflareApiToken;
 			s.verboseWebServerLogs = request.verboseWebServerLogs;
-			try
-			{
-				WebProxyService.SaveNewSettings(s);
-			}
-			catch (Exception ex)
-			{
-				return ApiErrorNoAutocomplete(ex.FlattenMessages());
-			}
 
-			WebProxyService.SettingsValidateAndAdminConsoleSetup(out Entrypoint adminEntry, out Exitpoint adminExit, out Middleware adminLogin);
-
-			BPUtil.SimpleHttp.SimpleHttpLogger.RegisterLogger(Logger.httpLogger, s.verboseWebServerLogs);
-
-			SetTimeout.OnBackground(() =>
-			{
-				WebProxyService.UpdateWebServerBindings();
-			}, 1000);
-
-			s = WebProxyService.MakeLocalSettingsReference();
+			return Set(s);
+		}
+		private ActionResult Get(bool withEntryLinks)
+		{
+			Settings s = WebProxyService.MakeLocalSettingsReference();
 			GetConfigurationResponse response = new GetConfigurationResponse();
 			response.acmeAccountEmail = s.acmeAccountEmail;
 			response.entrypoints = s.entrypoints.ToArray();
@@ -70,7 +48,9 @@ namespace WebProxy.Controllers
 			response.cloudflareApiToken = s.cloudflareApiToken;
 			response.verboseWebServerLogs = s.verboseWebServerLogs;
 
+			if (withEntryLinks)
 			{
+				WebProxyService.SettingsValidateAndAdminConsoleSetup(out Entrypoint adminEntry, out Exitpoint adminExit, out Middleware adminLogin);
 				string adminHost = adminExit.host;
 				adminHost = adminHost?.Replace("*", "");
 				if (string.IsNullOrEmpty(adminHost))
@@ -84,8 +64,27 @@ namespace WebProxy.Controllers
 
 				response.adminEntryOrigins = adminEntryOrigins.ToArray();
 			}
-
 			return ApiSuccessNoAutocomplete(response);
+		}
+		private ActionResult Set(Settings s)
+		{
+			try
+			{
+				WebProxyService.SaveNewSettings(s);
+			}
+			catch (Exception ex)
+			{
+				return ApiError(ex.FlattenMessages());
+			}
+
+			BPUtil.SimpleHttp.SimpleHttpLogger.RegisterLogger(Logger.httpLogger, s.verboseWebServerLogs);
+
+			SetTimeout.OnBackground(() =>
+			{
+				WebProxyService.UpdateWebServerBindings();
+			}, 1000);
+
+			return Get(true);
 		}
 		public ActionResult ForceRenew()
 		{
@@ -106,7 +105,7 @@ namespace WebProxy.Controllers
 					{
 						string result = CertMgr.ForceRenew(entrypoint, exitpoint).Result;
 						if (string.IsNullOrEmpty(result))
-							return Json(new ApiResponseBase(true));
+							return ApiSuccessNoAutocomplete(new ApiResponseBase(true));
 						return ApiError(result);
 					}
 				}
@@ -191,7 +190,7 @@ namespace WebProxy.Controllers
 				bet.Stop();
 
 				if (deleted > 0)
-					return Json(new ApiResponseBase(true));
+					return ApiSuccessNoAutocomplete(new ApiResponseBase(true));
 				else
 					return ApiError("Unable to delete test DNS record because it did not exist after successful creation.");
 			}
@@ -204,6 +203,124 @@ namespace WebProxy.Controllers
 			{
 				Context.ResponseHeaders["Server-Timing"] = bet.ToServerTimingHeader();
 			}
+		}
+		public ActionResult Export()
+		{
+			using (MemoryStream ms = new MemoryStream())
+			{
+				using (ZipArchive zipArchive = new ZipArchive(ms, ZipArchiveMode.Update, true))
+				{
+					// Write Settings
+					Settings settings = WebProxyService.MakeLocalSettingsReference();
+					foreach (Exitpoint exitpoint in settings.exitpoints)
+					{
+						string pathNormalized = exitpoint.certificatePath.Replace('\\', '/');
+						if (Platform.IsUnix() ? pathNormalized.StartsWith(CertMgr.CertsBaseDir) : pathNormalized.IStartsWith(CertMgr.CertsBaseDir))
+						{
+							exitpoint.certificatePath = "%CertsBaseDir%/" + exitpoint.certificatePath.Substring(CertMgr.CertsBaseDir.Length);
+						}
+					}
+					string settingsJson = JsonConvert.SerializeObject(settings, Formatting.Indented);
+					zipArchive.CreateEntryFromByteArray("Settings.json", ByteUtil.Utf8NoBOM.GetBytes(settingsJson), CompressionLevel.SmallestSize);
+
+					// Write Cert Renewal Dates
+					string certRenewalDatesJson = JsonConvert.SerializeObject(WebProxyService.certRenewalDates, Formatting.Indented);
+					zipArchive.CreateEntryFromByteArray("CertRenewalDates.json", ByteUtil.Utf8NoBOM.GetBytes(certRenewalDatesJson), CompressionLevel.SmallestSize);
+
+					// Write Certs
+					DirectoryInfo certsDir = new DirectoryInfo(CertMgr.CertsBaseDir);
+					if (certsDir.Exists)
+					{
+						foreach (FileInfo file in certsDir.GetFiles())
+						{
+							zipArchive.CreateEntryFromFile(file.FullName, "Certs/" + file.Name);
+						}
+					}
+					Context.ResponseHeaders.Add("Content-Disposition", "attachment; filename=\"WebProxy_Export_" + StringUtil.MakeSafeForFileName(Context.httpProcessor.hostName) + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss") + ".zip\"");
+				}
+				return new FileDownloadResult(ms.ToArray(), false);
+			}
+		}
+		public ActionResult Import()
+		{
+			UploadSettingsAndCertificatesRequest request = ParseRequest<UploadSettingsAndCertificatesRequest>();
+
+			byte[] zipBytes = null;
+			try
+			{
+				zipBytes = Base64UrlMod.FromBase64UrlMod(request.base64);
+			}
+			catch (Exception ex)
+			{
+				return ApiError("Invalid data was uploaded: " + ex.Message);
+			}
+
+			// Read the archive
+			Settings settings = null;
+			ZipArchiveEntryData certRenewalData = null;
+			List<ZipArchiveEntryData> certs = new List<ZipArchiveEntryData>();
+			try
+			{
+				using (MemoryStream msInput = new MemoryStream(zipBytes))
+				using (ZipArchive zipArchive = new ZipArchive(msInput, ZipArchiveMode.Read))
+				{
+					foreach (ZipArchiveEntry entry in zipArchive.Entries)
+					{
+						ZipArchiveEntryData entryData = entry.ExtractToObject();
+						if (entryData.RelativePath == "Settings.json") // Read Settings
+						{
+							settings = JsonConvert.DeserializeObject<Settings>(ByteUtil.Utf8NoBOM.GetString(entryData.Data));
+							if (settings.exitpoints != null)
+							{
+								foreach (Exitpoint exitpoint in settings.exitpoints)
+								{
+									string pathNormalized = exitpoint.certificatePath.Replace('\\', '/');
+									if (pathNormalized.StartsWith("%CertsBaseDir%/"))
+										exitpoint.certificatePath = CertMgr.CertsBaseDir + pathNormalized.Substring("%CertsBaseDir%/".Length);
+								}
+							}
+							WebProxyService.ValidateSettings(settings);
+						}
+						else if (entryData.RelativePath == "CertRenewalDates.json") // Read Cert Renewal Dates
+							certRenewalData = entryData;
+						else if (entryData.RelativePath.StartsWith("Certs/")) // Read Certs
+							certs.Add(entryData);
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				return ApiError("The archive you are trying to import is not valid: " + ex.ToHierarchicalString());
+			}
+			if (settings == null && certRenewalData == null && certs.Count == 0)
+				return ApiError("The archive you are trying to import did not contain any useful files.");
+
+			// Commit the import.
+			// Write certs
+			if (certs.Count > 0)
+			{
+				foreach (ZipArchiveEntryData cert in certs)
+				{
+					string path = Path.Combine(Globals.WritableDirectoryBase, cert.RelativePath);
+					FileInfo fi = new FileInfo(path);
+					Robust.RetryPeriodic(() =>
+					{
+						Directory.CreateDirectory(fi.Directory.FullName);
+						File.WriteAllBytes(path, cert.Data);
+						File.SetLastWriteTime(path, cert.LastWriteTime);
+					}, 50, 10);
+				}
+			}
+			// Write Cert Renewal Dates
+			if (certRenewalData != null)
+			{
+				Robust.RetryPeriodic(() =>
+				{
+					File.WriteAllBytes("CertRenewalDates.json", certRenewalData.Data);
+				}, 50, 10);
+			}
+			// Write Settings
+			return Set(settings);
 		}
 	}
 	public class GetConfigurationResponse : ApiResponseBase
@@ -270,5 +387,9 @@ namespace WebProxy.Controllers
 	{
 		public string exitpointName;
 		public string certificateBase64;
+	}
+	public class UploadSettingsAndCertificatesRequest
+	{
+		public string base64;
 	}
 }
