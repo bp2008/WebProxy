@@ -31,6 +31,10 @@ namespace WebProxy
 		/// </summary>
 		public bool autoCertificate;
 		/// <summary>
+		/// If enabled, and the certificate does not exist, a self-signed certificate will be created automatically.  This setting is inactive when using <see cref="autoCertificate"/>.
+		/// </summary>
+		public bool allowGenerateSelfSignedCertificate = true;
+		/// <summary>
 		/// [Requires autoCertificate == true] If enabled, DNS validation will prefer to use the DNS-01 method via your Cloudflare API Token.  All of the domains in [host] much be editable via your Cloudflare API Token or else validation will fail.
 		/// </summary>
 		public bool cloudflareDnsValidation;

@@ -25,6 +25,10 @@
 					<label><input type="checkbox" v-model="exitpoint.autoCertificate" /> Automatic Certificate from LetsEncrypt</label>
 					<div class="comment" v-if="store.showHelp">If enabled, certificates for this host will be obtained and managed automatically via LetsEncrypt.  Automatic certificate management will only work if this exitpoint is mapped to an entrypoint that is reachable on the internet at 'http://host:80/' or 'https://host:443/' or can be validated via a configured DNS service.  Wildcards are not allowed in [Host] when using this option.</div>
 				</div>
+				<div v-if="!exitpoint.autoCertificate">
+					<label><input type="checkbox" v-model="exitpoint.allowGenerateSelfSignedCertificate" /> Generate Self-Signed Certificate if Missing</label>
+					<div class="comment" v-if="store.showHelp">If enabled, and the certificate does not exist, a self-signed certificate will be created automatically.</div>
+				</div>
 				<template v-if="exitpoint.autoCertificate">
 					<div v-if="store.cloudflareApiToken">
 						<label><input type="checkbox" v-model="exitpoint.cloudflareDnsValidation" />Use DNS-01 Validation (via Cloudflare)</label>

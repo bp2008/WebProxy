@@ -56,12 +56,19 @@
 		</template>
 		<template v-if="middleware.Type === 'AddHttpHeaderToResponse'">
 			<div>
-				This middleware adds static HTTP headers to all responses.  Only affects Exitpoints of type WebProxy.
+				This middleware adds or removes HTTP headers on all responses.  Only affects Exitpoints of type WebProxy.
 			</div>
 			<div class="httpHeaderList">
 				<label>Http Headers</label>
 				<ArrayEditor v-model="middleware.HttpHeaders" arrayType="text" />
-				<div class="exampleText" v-if="store.showHelp">e.g. <span class="icode">Strict-Transport-Security: max-age=31536000; includeSubDomains</span></div>
+				<div class="exampleText" v-if="store.showHelp">
+					To add a header, enter the header name and value, separated by a colon:<br />
+					<span class="icode">Strict-Transport-Security: max-age=31536000; includeSubDomains</span><br />
+					<br />
+					To remove a header, just provide the header name with no colon:<br />
+					<span class="icode">Strict-Transport-Security</span>
+				</div>
+				<div class="exampleText" v-if="store.showHelp"></div>
 			</div>
 		</template>
 		<template v-if="middleware.Type === 'AddProxyServerTiming'">

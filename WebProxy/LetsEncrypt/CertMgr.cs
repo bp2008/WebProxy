@@ -114,6 +114,14 @@ namespace WebProxy.LetsEncrypt
 			if (string.IsNullOrWhiteSpace(host) || host.Contains('/') || host.Contains('\\'))
 				throw new ArgumentException("host is invalid");
 
+			if (string.IsNullOrWhiteSpace(exitpoint.certificatePath))
+			{
+				Settings newSettings = WebProxyService.CloneSettingsObjectSlow();
+				exitpoint = newSettings.exitpoints.First(e => e.name == exitpoint.name);
+				exitpoint.certificatePath = CertMgr.GetDefaultCertificatePath(domains.First());
+				WebProxyService.SaveNewSettings(newSettings);
+			}
+
 			// Try to get existing certificate.
 			CachedObject<X509Certificate2> cache = GetCertCache(host);
 
@@ -527,6 +535,8 @@ namespace WebProxy.LetsEncrypt
 		/// <returns></returns>
 		public static string DomainToFileName(string domain)
 		{
+			if (domain == "*")
+				return "wildcard_root";
 			string str = StringUtil.MakeSafeForFileName(domain).Trim().ToLower();
 			if (string.IsNullOrWhiteSpace(str))
 				str = "undefined";

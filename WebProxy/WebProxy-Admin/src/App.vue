@@ -524,6 +524,8 @@
 			o.middlewares = [];
 		if (!o.type)
 			o.type = store.exitpointTypes[0];
+		if (typeof o.allowGenerateSelfSignedCertificate === "undefined")
+			o.allowGenerateSelfSignedCertificate = true;
 		o.uniqueId = idCounter++;
 		return o;
 	}

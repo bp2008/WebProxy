@@ -3,6 +3,7 @@ using BPUtil.SimpleHttp;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -81,74 +82,96 @@ namespace WebProxy.LetsEncrypt
 				{
 					Settings newSettings = WebProxyService.CloneSettingsObjectSlow();
 					myExitpoint = newSettings.exitpoints.First(e => e.name == myExitpoint.name);
-					myExitpoint.certificatePath = certPath = CertMgr.GetDefaultCertificatePath(serverName);
+					string[] domains = GetDomainsForSelfSignedCert(myExitpoint);
+					myExitpoint.certificatePath = certPath = CertMgr.GetDefaultCertificatePath(domains[0]);
 					WebProxyService.SaveNewSettings(newSettings);
 				}
-				if (!staticCertDict.TryGetValue(certPath, out CachedObject<X509Certificate2> cache))
-				{
-					// Construct a CachedObject so this certificate does not need to be loaded from disk for every request.
-					staticCertDict[certPath] = cache = new CachedObject<X509Certificate2>(
-						() =>
-						{
-							try
-							{
-								FileInfo fiCert = new FileInfo(certPath);
-								if (!fiCert.Exists)
-								{
-									lock (selfSignedCertLock)
-									{
-										if (!File.Exists(certPath))
-										{
-											string[] domains = myExitpoint.getAllDomains();
-											for (int i = 0; i < domains.Length; i++)
-											{
-												domains[i] = domains[i].Replace("*", "").Trim();
-												if (string.IsNullOrEmpty(domains[i]))
-													domains[i] = "undefined";
-											}
-											domains = domains.Distinct().ToArray();
-											using (System.Security.Cryptography.RSA key = System.Security.Cryptography.RSA.Create(2048))
-											{
-												CertificateRequest request = new CertificateRequest("cn=" + domains[0], key, System.Security.Cryptography.HashAlgorithmName.SHA256, System.Security.Cryptography.RSASignaturePadding.Pkcs1);
 
-												SubjectAlternativeNameBuilder sanBuilder = new SubjectAlternativeNameBuilder();
-												foreach (string domain in domains)
-													sanBuilder.AddDnsName(domain);
-												request.CertificateExtensions.Add(sanBuilder.Build());
+				if (!staticCertDict.TryGetValue(certPath, out CachedCertificate cached))
+					cached = new CachedCertificate(GetCert(myExitpoint)); // Reload certificate from file synchronously.
 
-												X509Certificate2 ssl_certificate = request.CreateSelfSigned(DateTime.Today.AddDays(-1), DateTime.Today.AddYears(100));
-
-												byte[] certData = ssl_certificate.Export(X509ContentType.Pfx);
-												Robust.RetryPeriodic(() =>
-												{
-													Directory.CreateDirectory(fiCert.Directory.FullName);
-													File.WriteAllBytes(fiCert.FullName, certData);
-												}, 50, 6);
-
-												return ssl_certificate;
-											}
-										}
-									}
-								}
-								return new X509Certificate2(certPath);
-							}
-							catch (Exception ex)
-							{
-								WebProxyService.ReportError(ex);
-								return null;
-							}
-						}
-						, TimeSpan.FromSeconds(10)
-						, TimeSpan.FromSeconds(60)
-					);
-				}
-				X509Certificate2 cert = cache.GetInstance();
-				if (cert == null)
-					cert = cache.Reload();
-				return cert;
+				if (cached.Certificate == null || cached.Age.Elapsed > TimeSpan.FromSeconds(60))
+					cached = new CachedCertificate(GetCert(myExitpoint)); // Reload certificate from file synchronously.
+				else if (cached.Age.Elapsed > TimeSpan.FromSeconds(10))
+					_ = Task.Run(() => { GetCert(myExitpoint); }); // Reload certificate from file asynchronously.
+				return cached.Certificate;
 			}
 		}
+		private static string[] GetDomainsForSelfSignedCert(Exitpoint exitpoint)
+		{
+			string[] domains = exitpoint.getAllDomains()
+				.Select(d => d.Trim())
+				.Where(d => !string.IsNullOrEmpty(d))
+				.Distinct()
+				.ToArray();
+			if (domains.Length == 0)
+				domains = new string[] { "*" };
+			return domains;
+		}
+		/// <summary>
+		/// Loads the certificate for the given Exitpoint from disk, generating a self-signed certificate if necessary.  Returns null if the certificate is not available and self-signed generation is disabled.
+		/// </summary>
+		/// <param name="exitpoint">The Exitpoint for which to get the certificate.</param>
+		/// <returns></returns>
+		private static X509Certificate2 GetCert(Exitpoint exitpoint)
+		{
+			string[] domains = null;
+			string certPath = exitpoint.certificatePath;
+			if (string.IsNullOrWhiteSpace(certPath))
+			{
+				domains = GetDomainsForSelfSignedCert(exitpoint);
+				certPath = CertMgr.GetDefaultCertificatePath(domains[0]);
+			}
+			if (!File.Exists(certPath))
+			{
+				if (!exitpoint.allowGenerateSelfSignedCertificate)
+					return null;
+
+				if (domains == null)
+					domains = GetDomainsForSelfSignedCert(exitpoint);
+
+				lock (selfSignedCertLock)
+				{
+					if (!File.Exists(certPath))
+					{
+						using (System.Security.Cryptography.RSA key = System.Security.Cryptography.RSA.Create(2048))
+						{
+							CertificateRequest request = new CertificateRequest("cn=" + domains[0], key, System.Security.Cryptography.HashAlgorithmName.SHA256, System.Security.Cryptography.RSASignaturePadding.Pkcs1);
+
+							SubjectAlternativeNameBuilder sanBuilder = new SubjectAlternativeNameBuilder();
+							foreach (string domain in domains)
+								sanBuilder.AddDnsName(domain);
+							request.CertificateExtensions.Add(sanBuilder.Build());
+
+							X509Certificate2 ssl_certificate = request.CreateSelfSigned(DateTime.Today.AddDays(-1), DateTime.Today.AddYears(100));
+
+							byte[] certData = ssl_certificate.Export(X509ContentType.Pfx);
+							FileInfo fiCert = new FileInfo(certPath);
+							Robust.RetryPeriodic(() =>
+							{
+								Directory.CreateDirectory(fiCert.Directory.FullName);
+								File.WriteAllBytes(fiCert.FullName, certData);
+							}, 50, 6);
+
+							return ssl_certificate;
+						}
+					}
+				}
+			}
+			// If we get here, the certificate file was just confirmed to exist.
+			return new X509Certificate2(certPath);
+		}
 		private static object selfSignedCertLock = new object();
-		private ConcurrentDictionary<string, CachedObject<X509Certificate2>> staticCertDict = new ConcurrentDictionary<string, CachedObject<X509Certificate2>>();
+		private ConcurrentDictionary<string, CachedCertificate> staticCertDict = new ConcurrentDictionary<string, CachedCertificate>();
+	}
+	class CachedCertificate
+	{
+		public X509Certificate2 Certificate { get; set; }
+		public Stopwatch Age = Stopwatch.StartNew();
+		public CachedCertificate() { }
+		public CachedCertificate(X509Certificate2 certificate)
+		{
+			Certificate = certificate;
+		}
 	}
 }
