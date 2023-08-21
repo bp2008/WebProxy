@@ -211,12 +211,13 @@ namespace WebProxy.Controllers
 				using (ZipArchive zipArchive = new ZipArchive(ms, ZipArchiveMode.Update, true))
 				{
 					// Write Settings
-					Settings settings = WebProxyService.MakeLocalSettingsReference();
+					Settings settings = WebProxyService.CloneSettingsObjectSlow();
 					foreach (Exitpoint exitpoint in settings.exitpoints)
 					{
 						string pathNormalized = exitpoint.certificatePath.Replace('\\', '/');
 						if (Platform.IsUnix() ? pathNormalized.StartsWith(CertMgr.CertsBaseDir) : pathNormalized.IStartsWith(CertMgr.CertsBaseDir))
 						{
+							// Replace Certs directory path with macro.  The macro will be expanded back into a path in the ValidateSettings method.
 							exitpoint.certificatePath = "%CertsBaseDir%/" + exitpoint.certificatePath.Substring(CertMgr.CertsBaseDir.Length);
 						}
 					}
@@ -270,15 +271,6 @@ namespace WebProxy.Controllers
 						if (entryData.RelativePath == "Settings.json") // Read Settings
 						{
 							settings = JsonConvert.DeserializeObject<Settings>(ByteUtil.Utf8NoBOM.GetString(entryData.Data));
-							if (settings.exitpoints != null)
-							{
-								foreach (Exitpoint exitpoint in settings.exitpoints)
-								{
-									string pathNormalized = exitpoint.certificatePath.Replace('\\', '/');
-									if (pathNormalized.StartsWith("%CertsBaseDir%/"))
-										exitpoint.certificatePath = CertMgr.CertsBaseDir + pathNormalized.Substring("%CertsBaseDir%/".Length);
-								}
-							}
 							WebProxyService.ValidateSettings(settings);
 						}
 						else if (entryData.RelativePath == "CertRenewalDates.json") // Read Cert Renewal Dates

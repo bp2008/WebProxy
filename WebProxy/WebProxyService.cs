@@ -412,6 +412,10 @@ namespace WebProxy
 					if (exitpoint.certificatePath == null)
 						exitpoint.certificatePath = "";
 
+					string pathNormalized = exitpoint.certificatePath.Replace('\\', '/');
+					if (pathNormalized.StartsWith("%CertsBaseDir%/"))
+						exitpoint.certificatePath = LetsEncrypt.CertMgr.CertsBaseDir + pathNormalized.Substring("%CertsBaseDir%/".Length);
+
 					if (!string.IsNullOrWhiteSpace(exitpoint.certificatePath))
 					{
 						try
