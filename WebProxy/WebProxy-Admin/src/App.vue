@@ -526,6 +526,8 @@
 			o.type = store.exitpointTypes[0];
 		if (typeof o.allowGenerateSelfSignedCertificate === "undefined")
 			o.allowGenerateSelfSignedCertificate = true;
+		if (typeof o.useConnectionKeepAlive === "undefined")
+			o.useConnectionKeepAlive = true;
 		o.uniqueId = idCounter++;
 		return o;
 	}
