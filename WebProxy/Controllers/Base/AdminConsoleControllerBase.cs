@@ -16,12 +16,15 @@ namespace WebProxy.Controllers
 		/// </summary>
 		public override void PreprocessResult(ActionResult result)
 		{
-			if (!ByteUtil.DiscardUntilEndOfStreamWithMaxLength(Context.httpProcessor.RequestBodyStream, ApiRequest.RequestBodySizeLimit, out long bytesDiscarded))
+			if (Context.httpProcessor.RequestBodyStream != null)
 			{
-				WebProxyService.ReportError("AdminConsoleControllerBase.PreprocessResult() found more than " + ApiRequest.RequestBodySizeLimit + " bytes unread in the request body.\r\n"
-					+ "Client IP: " + this.Context.httpProcessor.RemoteIPAddressStr + "\r\n"
-					+ "Request Path: " + this.Context.Path + "\r\n"
-					+ "Controller type: " + this.GetType().Name);
+				if (!ByteUtil.DiscardUntilEndOfStreamWithMaxLength(Context.httpProcessor.RequestBodyStream, ApiRequest.RequestBodySizeLimit, out long bytesDiscarded))
+				{
+					WebProxyService.ReportError("AdminConsoleControllerBase.PreprocessResult() found more than " + ApiRequest.RequestBodySizeLimit + " bytes unread in the request body.\r\n"
+						+ "Client IP: " + this.Context.httpProcessor.RemoteIPAddressStr + "\r\n"
+						+ "Request Path: " + this.Context.Path + "\r\n"
+						+ "Controller type: " + this.GetType().Name);
+				}
 			}
 		}
 
