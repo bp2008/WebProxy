@@ -1,4 +1,5 @@
-﻿using BPUtil.MVC;
+﻿using BPUtil;
+using BPUtil.MVC;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,20 @@ namespace WebProxy.Controllers
 {
 	public abstract class AdminConsoleControllerBase : Controller
 	{
+		/// <summary>
+		/// When overridden in a derived class, this method may modify any ActionResult before it is sent to the client.
+		/// </summary>
+		public override void PreprocessResult(ActionResult result)
+		{
+			if (!ByteUtil.DiscardUntilEndOfStreamWithMaxLength(Context.httpProcessor.RequestBodyStream, ApiRequest.RequestBodySizeLimit, out long bytesDiscarded))
+			{
+				WebProxyService.ReportError("AdminConsoleControllerBase.PreprocessResult() found more than " + ApiRequest.RequestBodySizeLimit + " bytes unread in the request body.\r\n"
+					+ "Client IP: " + this.Context.httpProcessor.RemoteIPAddressStr + "\r\n"
+					+ "Request Path: " + this.Context.Path + "\r\n"
+					+ "Controller type: " + this.GetType().Name);
+			}
+		}
+
 		public T ParseRequest<T>()
 		{
 			return ApiRequest.ParseRequest<T>(this);
