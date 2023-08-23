@@ -250,11 +250,12 @@ namespace WebProxy
 					options.proxyHeaderTrustedIpRanges = trustedProxyIPRanges.ToArray();
 					options.allowConnectionKeepalive = myExitpoint.useConnectionKeepAlive;
 
-					if (overrideResponseHeaders.Count > 0)
+					HttpHeader[] orh = overrideResponseHeaders.GetHeaderArray();
+					if (orh.Length > 0)
 					{
 						options.BeforeResponseHeadersSent += (sender, e) =>
 						{
-							foreach (KeyValuePair<string, string> header in overrideResponseHeaders)
+							foreach (HttpHeader header in orh)
 								e[header.Key] = header.Value;
 						};
 					}
