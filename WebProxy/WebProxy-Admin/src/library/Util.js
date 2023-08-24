@@ -79,3 +79,82 @@ export function escapeRegExp(str)
 {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
+/**
+ * Formats the given number of bytes as a string with a suffix ('B', 'KiB', 'MiB', etc.) using multiples of 1024.
+ * @param {Number} bytes Number of bytes.
+ * @param {Number} decimals Number of decimal places to include in the string.
+ */
+export function formatBytes2(bytes, decimals)
+{
+	if (bytes == 0) return '0 B';
+	var negative = bytes < 0;
+	if (negative)
+		bytes = -bytes;
+	var k = 1024,
+		dm = typeof decimals != "undefined" ? decimals : 2,
+		sizes = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'],
+		i = Math.floor(Math.log(bytes) / Math.log(k));
+	return (negative ? '-' : '') + (bytes / Math.pow(k, i)).toFloat(dm) + ' ' + sizes[i];
+}
+/**
+* Formats the given number of bytes as a string with a suffix ('B', 'KB', 'MB', etc.) using multiples of 1000.
+ * @param {Number} bytes Number of bytes.
+ * @param {Number} decimals Number of decimal places to include in the string.
+ */
+export function formatBytesF10(bytes, decimals)
+{
+	if (bytes == 0) return '0 B';
+	var negative = bytes < 0;
+	if (negative)
+		bytes = -bytes;
+	var k = 1000,
+		dm = typeof decimals != "undefined" ? decimals : 2,
+		sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
+		i = Math.floor(Math.log(bytes) / Math.log(k));
+	return (negative ? '-' : '') + (bytes / Math.pow(k, i)).toFloat(dm) + ' ' + sizes[i];
+}
+String.prototype.toFloat = function (digits)
+{
+	return parseFloat(this.toFixed(digits));
+};
+Number.prototype.toFloat = function (digits)
+{
+	return parseFloat(this.toFixed(digits));
+};
+String.prototype.padLeft = function (len, c)
+{
+	var pads = len - this.length;
+	if (pads > 0)
+	{
+		var sb = [];
+		var pad = c || "&nbsp;";
+		for (var i = 0; i < pads; i++)
+			sb.push(pad);
+		sb.push(this);
+		return sb.join("");
+	}
+	return this;
+};
+String.prototype.padRight = function (len, c)
+{
+	var pads = len - this.length;
+	if (pads > 0)
+	{
+		var sb = [];
+		sb.push(this);
+		var pad = c || "&nbsp;";
+		for (var i = 0; i < pads; i++)
+			sb.push(pad);
+		return sb.join("");
+	}
+	return this;
+};
+Number.prototype.padLeft = function (len, c)
+{
+	return this.toString().padLeft(len, c);
+};
+Number.prototype.padRight = function (len, c)
+{
+	return this.toString().padRight(len, c);
+};

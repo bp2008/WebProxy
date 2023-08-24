@@ -20,6 +20,7 @@ const store = reactive({
 	cloudflareApiToken: "",
 	verboseWebServerLogs: false,
 	logFiles: [],
+	serverMaxConnectionCount: 0,
 	appVersion: "",
 	windowWidth: -1,
 	windowHeight: -1,

@@ -177,7 +177,7 @@
 	}
 </script>
 
-<style>
+<style scoped>
 	.log-box
 	{
 		position: relative;

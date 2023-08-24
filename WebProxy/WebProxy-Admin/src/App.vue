@@ -56,6 +56,24 @@
 						</div>
 					</div>
 					<div class="flexRow">
+						<label>Max Connection Count</label>
+						<input type="number" v-model="store.serverMaxConnectionCount" min="8" max="10000" autocomplete="off" />
+						<div class="comment" v-if="store.showHelp">
+							<div>
+								<span class="icode">N: [8-10000; Default: 48]</span>
+							</div>
+							<div>
+								The server will allow <span class="icode">N</span> connections to be processed concurrently
+							</div>
+							<div>
+								While more than <span class="icode">N/2</span> connections are being processed, the server enters high-load mode which prevents the use of <span class="icode">Connection: keep-alive</span>.
+							</div>
+							<div>
+								An additional <span class="icode">N (clamped between 24 and 256)</span> connections may be opened and queued for processing.  When the queue is full, additional connections are rejected with an HTTP 503 response saying "Server too busy".
+							</div>
+						</div>
+					</div>
+					<div class="flexRow">
 						<label>Admin Console Theme</label>
 						<select v-model="store.currentTheme">
 							<option v-for="t in store.themeList">{{t}}</option>
@@ -106,6 +124,10 @@
 			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Dashboard'">
 				<h2>Hosted URL Summary</h2>
 				<HostedUrlSummary />
+				<h2>Server Status</h2>
+				<div><input type="button" value="Force Garbage Collection" @click="forceGarbageCollection" /></div>
+				<div><br /></div>
+				<ServerStatus />
 			</div>
 			<div v-if="selectedTab.Name === 'All' || selectedTab.Name === 'Settings'">
 				<h2>Raw Settings.json</h2>
@@ -133,6 +155,7 @@
 	import MiddlewareEditor from './components/MiddlewareEditor.vue';
 	import ProxyRouteEditor from './components/ProxyRouteEditor.vue';
 	import HostedUrlSummary from './components/HostedUrlSummary.vue';
+	import ServerStatus from './components/ServerStatus.vue';
 	import PasswordInput from './components/PasswordInput.vue';
 	import LogReader from './components/LogReader.vue';
 	import UploadFileControl from '/src/components/UploadFileControl.vue';
@@ -142,7 +165,7 @@
 	import { VueDraggableNext } from 'vue-draggable-next';
 
 	export default {
-		components: { EntrypointEditor, ExitpointEditor, MiddlewareEditor, ProxyRouteEditor, HostedUrlSummary, PasswordInput, LogReader, Loading, draggable: VueDraggableNext, UploadFileControl },
+		components: { EntrypointEditor, ExitpointEditor, MiddlewareEditor, ProxyRouteEditor, HostedUrlSummary, PasswordInput, LogReader, Loading, draggable: VueDraggableNext, UploadFileControl, ServerStatus },
 		data()
 		{
 			return {
@@ -194,6 +217,7 @@
 					errorTrackerSubmitUrl: store.errorTrackerSubmitUrl,
 					cloudflareApiToken: store.cloudflareApiToken,
 					verboseWebServerLogs: store.verboseWebServerLogs,
+					serverMaxConnectionCount: store.serverMaxConnectionCount,
 					entrypoints: store.entrypoints,
 					exitpoints: store.exitpoints,
 					middlewares: store.middlewares,
@@ -252,6 +276,7 @@
 						errorTrackerSubmitUrl: store.errorTrackerSubmitUrl,
 						cloudflareApiToken: store.cloudflareApiToken,
 						verboseWebServerLogs: store.verboseWebServerLogs,
+						serverMaxConnectionCount: store.serverMaxConnectionCount,
 						entrypoints: store.entrypoints,
 						exitpoints: store.exitpoints,
 						middlewares: store.middlewares,
@@ -280,10 +305,7 @@
 								bestOrigin = response.adminEntryOrigins[0];
 							if (bestOrigin)
 							{
-								setTimeout(() =>
-								{
-									location.href = bestOrigin;
-								}, 2000);
+								location.href = bestOrigin;
 								return;
 							}
 						}
@@ -318,6 +340,7 @@
 				store.errorTrackerSubmitUrl = response.errorTrackerSubmitUrl;
 				store.cloudflareApiToken = response.cloudflareApiToken;
 				store.verboseWebServerLogs = response.verboseWebServerLogs;
+				store.serverMaxConnectionCount = response.serverMaxConnectionCount;
 				store.logFiles = response.logFiles;
 				store.appVersion = response.appVersion;
 
@@ -491,6 +514,25 @@
 				finally
 				{
 					this.showFullscreenLoader = false;
+				}
+			},
+			async forceGarbageCollection()
+			{
+				try
+				{
+					this.showFullscreenLoader = true;
+					const response = await ExecAPI("ServerStatus/GarbageCollect");
+					this.showFullscreenLoader = false;
+
+					if (response.success)
+						toaster.success("Garbage Collection was forced.");
+					else
+						toaster.error(response.error);
+				}
+				catch (ex)
+				{
+					console.log(ex);
+					toaster.error(ex);
 				}
 			},
 		},

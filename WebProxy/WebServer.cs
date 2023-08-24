@@ -25,11 +25,10 @@ namespace WebProxy
 
 		public WebServer() : base(CreateCertificateSelector())
 		{
-			SimpleHttpLogger.RegisterLogger(Logger.httpLogger, WebProxyService.MakeLocalSettingsReference().verboseWebServerLogs);
 			MVCGlobals.RemoteClientsMaySeeExceptionDetails = true;
 			MvcJson.DeserializeObject = JsonConvert.DeserializeObject;
 			MvcJson.SerializeObject = JsonConvert.SerializeObject;
-			mvcAdminConsole = new MVCMain(Assembly.GetExecutingAssembly(), typeof(AdminConsoleControllerBase).Namespace, (Context, ex) => WebProxyService.ReportError(ex, "AdminConsole: " + Context.OriginalRequestPath));
+			mvcAdminConsole = new MVCMain(Assembly.GetExecutingAssembly(), typeof(AdminConsoleControllerBase).Namespace, MvcErrorHandler);
 #if DEBUG
 			if (System.Diagnostics.Debugger.IsAttached)
 			{
@@ -41,6 +40,12 @@ namespace WebProxy
 				viteProxy = new ViteProxy(5173, path);
 			}
 #endif
+		}
+
+		private static void MvcErrorHandler(RequestContext Context, Exception ex)
+		{
+			if (!HttpProcessor.IsOrdinaryDisconnectException(ex))
+				WebProxyService.ReportError(ex, "AdminConsole: " + Context.OriginalRequestPath);
 		}
 
 		private static ICertificateSelector CreateCertificateSelector()
@@ -77,7 +82,9 @@ namespace WebProxy
 				Entrypoint[] matchedEntrypoints = settings.identifyThisEntrypoint((IPEndPoint)p.tcpClient.Client.RemoteEndPoint, (IPEndPoint)p.tcpClient.Client.LocalEndPoint, p.secure_https);
 				if (matchedEntrypoints.Length == 0)
 				{
-					WebProxyService.ReportError("Unable to identify any matching entrypoint for request from client " + p.RemoteIPAddressStr + " to " + p.request_url);
+					// This situation is normal if connections are already open to an Entrypoint that is going away.
+					Logger.Info("Unable to identify any matching entrypoint for request from client " + p.RemoteIPAddressStr + " to " + p.request_url);
+					p.PreventKeepalive();
 					p.writeFailure("500 Internal Server Error");
 					return;
 				}
@@ -310,37 +317,41 @@ namespace WebProxy
 			return WebProxyService.MakeLocalSettingsReference().verboseWebServerLogs;
 		}
 
+		private object updateBindingsLock = new object();
 		/// <summary>
 		/// Reconfigures the web server to listen on all entrypoints currently in the settings object.
 		/// </summary>
 		internal void UpdateBindings()
 		{
-			Settings settings = WebProxyService.MakeLocalSettingsReference();
+			lock (updateBindingsLock)
+			{
+				Settings settings = WebProxyService.MakeLocalSettingsReference();
 
-			// These collections will contain all IP endpoints that are configured to provide HTTP or HTTPS.
-			HashSet<IPEndPoint> httpBindings = new HashSet<IPEndPoint>();
-			HashSet<IPEndPoint> httpsBindings = new HashSet<IPEndPoint>();
-			foreach (Entrypoint entrypoint in settings.entrypoints)
-			{
-				AddBinding(httpBindings, entrypoint.httpPort, entrypoint.ipAddress);
-				AddBinding(httpsBindings, entrypoint.httpsPort, entrypoint.ipAddress);
-			}
+				// These collections will contain all IP endpoints that are configured to provide HTTP or HTTPS.
+				HashSet<IPEndPoint> httpBindings = new HashSet<IPEndPoint>();
+				HashSet<IPEndPoint> httpsBindings = new HashSet<IPEndPoint>();
+				foreach (Entrypoint entrypoint in settings.entrypoints)
+				{
+					AddBinding(httpBindings, entrypoint.httpPort, entrypoint.ipAddress);
+					AddBinding(httpsBindings, entrypoint.httpsPort, entrypoint.ipAddress);
+				}
 
-			// Convert the endpoint HashSets to a list of Bindings.
-			List<Binding> bindings = new List<Binding>();
-			foreach (IPEndPoint ipep in httpBindings)
-			{
-				if (httpsBindings.Contains(ipep))
-					bindings.Add(new Binding(AllowedConnectionTypes.httpAndHttps, ipep));
-				else
-					bindings.Add(new Binding(AllowedConnectionTypes.http, ipep));
+				// Convert the endpoint HashSets to a list of Bindings.
+				List<Binding> bindings = new List<Binding>();
+				foreach (IPEndPoint ipep in httpBindings)
+				{
+					if (httpsBindings.Contains(ipep))
+						bindings.Add(new Binding(AllowedConnectionTypes.httpAndHttps, ipep));
+					else
+						bindings.Add(new Binding(AllowedConnectionTypes.http, ipep));
+				}
+				foreach (IPEndPoint ipep in httpsBindings)
+				{
+					if (!httpBindings.Contains(ipep))
+						bindings.Add(new Binding(AllowedConnectionTypes.https, ipep));
+				}
+				this.SetBindings(bindings.ToArray());
 			}
-			foreach (IPEndPoint ipep in httpsBindings)
-			{
-				if (!httpBindings.Contains(ipep))
-					bindings.Add(new Binding(AllowedConnectionTypes.https, ipep));
-			}
-			this.SetBindings(bindings.ToArray());
 		}
 
 		private void AddBinding(HashSet<IPEndPoint> bindings, int port, string ipAddress)

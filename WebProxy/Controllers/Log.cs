@@ -85,15 +85,4 @@ namespace WebProxy.Controllers
 			return Empty();
 		}
 	}
-	public class GetLogDataResponse : ApiResponseBase
-	{
-
-		public GetLogDataResponse() : base(true, null)
-		{
-		}
-	}
-	public class GetLogDataRequest
-	{
-		public string acmeAccountEmail;
-	}
 }

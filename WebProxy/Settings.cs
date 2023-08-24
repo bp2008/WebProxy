@@ -50,6 +50,10 @@ namespace WebProxy
 		/// If assigned, this is the Cloudflare API key which can be used for DNS configuration.
 		/// </summary>
 		public string cloudflareApiToken = null;
+		/// <summary>
+		/// [8-10000] The maximum number of connections this server will process simultaneously.
+		/// </summary>
+		public int serverMaxConnectionCount = 48;
 
 		protected override object DeserializeFromJson(string str)
 		{

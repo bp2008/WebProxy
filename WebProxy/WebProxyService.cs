@@ -87,6 +87,7 @@ namespace WebProxy
 
 				SettingsValidateAndAdminConsoleSetup(out Entrypoint adminEntry, out Exitpoint adminExit, out Middleware adminLogin);
 			}
+			ActivateSettingsChanges(s);
 		}
 		/// <summary>
 		/// Logs the Exception to file and the Error Tracker, if configured.
@@ -144,7 +145,7 @@ namespace WebProxy
 		{
 			BasicErrorTracker.GenericInfo(Globals.AssemblyName + " " + Globals.AssemblyVersion + " Starting Up");
 			Logger.Info(Globals.AssemblyName + " " + Globals.AssemblyVersion + " Starting Up");
-			UpdateWebServerBindings();
+			ActivateSettingsChanges(MakeLocalSettingsReference());
 			LetsEncrypt.CertRenewalThread.Start();
 		}
 
@@ -162,8 +163,36 @@ namespace WebProxy
 		/// </summary>
 		public static void UpdateWebServerBindings()
 		{
-			webServer.UpdateBindings();
+			webServer?.UpdateBindings();
 		}
+		/// <summary>
+		/// Gets or sets [8-10000] the maximum thread pool size for the web server, which directly affects the number of connections that can be processed concurrently.
+		/// </summary>
+		public static int WebServerMaxConnectionCount
+		{
+			get { return webServer.pool.MaxThreads; }
+			set { webServer.pool.MaxThreads = value.Clamp(8, 10000); }
+		}
+		/// <summary>
+		/// Gets the total number of connections served by this server.
+		/// </summary>
+		public static long TotalConnectionsServed => webServer.TotalConnectionsServed;
+		/// <summary>
+		/// Gets the total number of requests served by this server.
+		/// </summary>
+		public static long TotalRequestsServed => webServer.TotalRequestsServed;
+		/// <summary>
+		/// Gets the current number of open connections being processed by the web server.
+		/// </summary>
+		public static int WebServerOpenConnectionCount => webServer.CurrentNumberOfOpenConnections;
+		/// <summary>
+		/// Gets the current number of open connections that are queued for processing by the web server.
+		/// </summary>
+		public static int WebServerConnectionQueueCount => webServer.pool.QueuedActionCount;
+		/// <summary>
+		/// Gets true if the web server currently reports being under heavy load.
+		/// </summary>
+		public static bool WebServerIsUnderHeavyLoad => webServer.IsServerUnderHighLoad();
 		#region Settings
 		/// <summary>
 		/// <para>Static settings object. To retain maximum performance and exception safety without locks, some usage constraints are necessary:</para>
@@ -217,6 +246,24 @@ namespace WebProxy
 			{
 				ReportError(ex);
 			}
+
+			ActivateSettingsChanges(newSettings);
+		}
+		/// <summary>
+		/// <para>Applies settings from the given settings object to this service:</para>
+		/// <para>* Registers the HTTP logger</para>
+		/// <para>* sets the HTTP server pool max threads</para>
+		/// <para>* updates HTTP server bindings</para>
+		/// </summary>
+		/// <param name="s">Settings object to apply settings from.</param>
+		private static void ActivateSettingsChanges(Settings s)
+		{
+			SimpleHttpLogger.RegisterLogger(Logger.httpLogger, s.verboseWebServerLogs);
+
+			if (webServer != null)
+				webServer.pool.MaxThreads = s.serverMaxConnectionCount;
+
+			UpdateWebServerBindings();
 		}
 
 		public const string AdminConsoleLoginId = "WebProxy Admin Console Login";
@@ -354,6 +401,8 @@ namespace WebProxy
 		{
 			if (s == staticSettings)
 				throw new Exception("Application error: Refusing to run ValidateSettings on the static settings instance due to causing race conditions.");
+
+			s.serverMaxConnectionCount = s.serverMaxConnectionCount.Clamp(8, 10000);
 
 			if (s.entrypoints == null)
 				s.entrypoints = new List<Entrypoint>();

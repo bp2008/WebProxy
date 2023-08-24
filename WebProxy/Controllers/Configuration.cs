@@ -19,22 +19,6 @@ namespace WebProxy.Controllers
 		{
 			return Get(false);
 		}
-		public ActionResult Set()
-		{
-			SetConfigurationRequest request = ParseRequest<SetConfigurationRequest>();
-
-			Settings s = WebProxyService.CloneSettingsObjectSlow();
-			s.acmeAccountEmail = request.acmeAccountEmail;
-			s.entrypoints = request.entrypoints.ToList();
-			s.exitpoints = request.exitpoints.ToList();
-			s.middlewares = request.middlewares.ToList();
-			s.proxyRoutes = request.proxyRoutes.ToList();
-			s.errorTrackerSubmitUrl = request.errorTrackerSubmitUrl;
-			s.cloudflareApiToken = request.cloudflareApiToken;
-			s.verboseWebServerLogs = request.verboseWebServerLogs;
-
-			return Set(s);
-		}
 		private ActionResult Get(bool withEntryLinks)
 		{
 			Settings s = WebProxyService.MakeLocalSettingsReference();
@@ -47,6 +31,7 @@ namespace WebProxy.Controllers
 			response.errorTrackerSubmitUrl = s.errorTrackerSubmitUrl;
 			response.cloudflareApiToken = s.cloudflareApiToken;
 			response.verboseWebServerLogs = s.verboseWebServerLogs;
+			response.serverMaxConnectionCount = s.serverMaxConnectionCount;
 
 			if (withEntryLinks)
 			{
@@ -66,6 +51,23 @@ namespace WebProxy.Controllers
 			}
 			return ApiSuccessNoAutocomplete(response);
 		}
+		public ActionResult Set()
+		{
+			SetConfigurationRequest request = ParseRequest<SetConfigurationRequest>();
+
+			Settings s = WebProxyService.CloneSettingsObjectSlow();
+			s.acmeAccountEmail = request.acmeAccountEmail;
+			s.entrypoints = request.entrypoints.ToList();
+			s.exitpoints = request.exitpoints.ToList();
+			s.middlewares = request.middlewares.ToList();
+			s.proxyRoutes = request.proxyRoutes.ToList();
+			s.errorTrackerSubmitUrl = request.errorTrackerSubmitUrl;
+			s.cloudflareApiToken = request.cloudflareApiToken;
+			s.verboseWebServerLogs = request.verboseWebServerLogs;
+			s.serverMaxConnectionCount = request.serverMaxConnectionCount;
+
+			return Set(s);
+		}
 		private ActionResult Set(Settings s)
 		{
 			try
@@ -76,13 +78,6 @@ namespace WebProxy.Controllers
 			{
 				return ApiError(ex.FlattenMessages());
 			}
-
-			BPUtil.SimpleHttp.SimpleHttpLogger.RegisterLogger(Logger.httpLogger, s.verboseWebServerLogs);
-
-			SetTimeout.OnBackground(() =>
-			{
-				WebProxyService.UpdateWebServerBindings();
-			}, 1000);
 
 			return Get(true);
 		}
@@ -322,6 +317,7 @@ namespace WebProxy.Controllers
 		public string errorTrackerSubmitUrl;
 		public string cloudflareApiToken;
 		public bool verboseWebServerLogs;
+		public int serverMaxConnectionCount;
 		public Entrypoint[] entrypoints;
 		public Exitpoint[] exitpoints;
 		public Middleware[] middlewares;
@@ -366,6 +362,7 @@ namespace WebProxy.Controllers
 		public string errorTrackerSubmitUrl;
 		public string cloudflareApiToken;
 		public bool verboseWebServerLogs;
+		public int serverMaxConnectionCount;
 		public Entrypoint[] entrypoints;
 		public Exitpoint[] exitpoints;
 		public Middleware[] middlewares;
