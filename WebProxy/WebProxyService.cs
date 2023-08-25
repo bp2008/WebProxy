@@ -55,9 +55,6 @@ namespace WebProxy
 
 			BasicErrorTracker.Initialize();
 			Logger.CatchAll((source, ex) => ReportError(ex, source));
-
-			webServer = new WebServer();
-			webServer.pool.MaxThreads = 1024;
 			service = this;
 		}
 
@@ -145,6 +142,7 @@ namespace WebProxy
 		{
 			BasicErrorTracker.GenericInfo(Globals.AssemblyName + " " + Globals.AssemblyVersion + " Starting Up");
 			Logger.Info(Globals.AssemblyName + " " + Globals.AssemblyVersion + " Starting Up");
+			webServer = new WebServer();
 			ActivateSettingsChanges(MakeLocalSettingsReference());
 			LetsEncrypt.CertRenewalThread.Start();
 		}

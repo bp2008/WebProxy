@@ -125,7 +125,7 @@
 				<h2>Hosted URL Summary</h2>
 				<HostedUrlSummary />
 				<h2>Server Status</h2>
-				<div><input type="button" value="Force Garbage Collection" @click="forceGarbageCollection" /></div>
+				<div><input type="button" value="Force Garbage Collection" @click="forceGarbageCollection" title="Force the server to perform full blocking garbage collection of all generations and compact the small and large object heaps." /></div>
 				<div><br /></div>
 				<ServerStatus />
 			</div>
@@ -525,7 +525,7 @@
 					this.showFullscreenLoader = false;
 
 					if (response.success)
-						toaster.success("Garbage Collection was forced.");
+						toaster.success("Garbage Collection took " + response.milliseconds + "ms.");
 					else
 						toaster.error(response.error);
 				}

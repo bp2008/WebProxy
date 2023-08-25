@@ -12,14 +12,16 @@ namespace WebProxyStressTester
 		static long lastRequestTimeMs = 0;
 
 		static volatile bool abort = false;
-		const int NUM_CONNECTIONS = 125;
-		//static string[] urls = new string[] { "http://localhost:80/" };
+		//static int NUM_CONNECTIONS = (int)(Environment.ProcessorCount * 1.25);
+		static int NUM_CONNECTIONS = 30;
+		static string[] urls = new string[] { "http://localhost:8080/", "http://localhost:8080/src/themes.scss", "http://localhost:8080/Log/Test" };
 		//static string[] urls = new string[] { "http://localhost:80/src/themes.scss" };
-		static string[] urls = new string[] { "http://localhost:80/", "http://localhost:80/src/themes.scss", "http://localhost:8080/Log/Test" };
+		//static string[] urls = new string[] { "http://localhost:80/", "http://localhost:80/src/themes.scss", "http://localhost:80/Log/Test" };
 		static void Main(string[] args)
 		{
 			Stopwatch sw = Stopwatch.StartNew();
 
+			RateOfChange requestRate = new RateOfChange(0);
 
 			AnsiConsole.Status().Start("Starting Up", ctx =>
 			{
@@ -44,9 +46,11 @@ namespace WebProxyStressTester
 						while (true)
 						{
 							table.Rows.Clear();
+							long reqs = Interlocked.Read(ref totalRequests);
 							table.AddRow("[green]Time[/]", DateTime.Now.ToString());
 							table.AddRow("[green]Active Connections[/]", Interlocked.Read(ref activeConnections).ToString());
-							table.AddRow("[green]Total Requests[/]", Interlocked.Read(ref totalRequests).ToString());
+							table.AddRow("[green]Request Rate[/]", requestRate.GetRate(reqs, 0));
+							table.AddRow("[green]Total Requests[/]", reqs.ToString());
 							table.AddRow("[red]Total Errors[/]", Interlocked.Read(ref totalErrors).ToString());
 							table.AddRow("[yellow]Request Time[/]", Interlocked.Read(ref lastRequestTimeMs) + "ms");
 							ctx.Refresh();
@@ -71,6 +75,7 @@ namespace WebProxyStressTester
 		{
 			dynamic args = argument;
 			HttpClient client = null;
+			bool didError = false;
 			try
 			{
 				int threadId = args.threadIndex;
@@ -84,6 +89,11 @@ namespace WebProxyStressTester
 				{
 					try
 					{
+						if (didError)
+						{
+							didError = false;
+							Interlocked.Increment(ref activeConnections);
+						}
 						Stopwatch sw = Stopwatch.StartNew();
 						HttpResponseMessage response = await client.GetAsync(url); // +"?"+StringUtil.GetRandomAlphaNumericString(8)
 						string responseContent = await response.Content.ReadAsStringAsync();
@@ -92,6 +102,8 @@ namespace WebProxyStressTester
 					}
 					catch (Exception ex)
 					{
+						didError = true;
+						Interlocked.Decrement(ref activeConnections);
 						Interlocked.Increment(ref totalErrors);
 						AnsiConsole.WriteLine(ex.FlattenMessages().EscapeMarkup());
 					}

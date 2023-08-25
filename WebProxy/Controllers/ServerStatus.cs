@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Runtime;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
@@ -93,8 +94,20 @@ namespace WebProxy.Controllers
 		}
 		public ActionResult GarbageCollect()
 		{
-			System.GC.Collect();
-			return ApiSuccessNoAutocomplete(new ApiResponseBase(true));
+			Stopwatch sw = Stopwatch.StartNew();
+
+			GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+			GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
+
+			return ApiSuccessNoAutocomplete(new GCResponse(sw.ElapsedMilliseconds));
+		}
+	}
+	public class GCResponse : ApiResponseBase
+	{
+		public long milliseconds;
+		public GCResponse(long milliseconds) : base(true)
+		{
+			this.milliseconds = milliseconds;
 		}
 	}
 }
