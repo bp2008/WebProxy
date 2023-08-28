@@ -40,10 +40,17 @@ namespace WebProxy.Controllers
 			CountdownStopwatch pingTimer = CountdownStopwatch.StartNew(TimeSpan.FromSeconds(10));
 			string lastJson = null;
 			Stopwatch swCpuTimer = Stopwatch.StartNew();
+			CountdownStopwatch reReadRamSize = CountdownStopwatch.StartNew(TimeSpan.FromMinutes(1));
 			double lastCpuTime = 0;
 			long lastCpuMeasurementAt = 0;
+			ulong ramSize = GetRamSize();
 			while (isConnected && !WebProxyService.abort)
 			{
+				if (reReadRamSize.Finished)
+				{
+					ramSize = GetRamSize();
+					reReadRamSize.Restart();
+				}
 				Process me = Process.GetCurrentProcess();
 				TimeSpan cpuTime = me.TotalProcessorTime;
 				double nowCpuTime = cpuTime.TotalMilliseconds;
@@ -59,6 +66,7 @@ namespace WebProxy.Controllers
 					cpuUsedLastInterval = (cpuUsedLastInterval / timeElapsed) * 100.0;
 					cpuUsagePercent = cpuUsedLastInterval.ToString("0.0");
 				}
+				GCMemoryInfo gcMem = GC.GetGCMemoryInfo();
 				lastCpuTime = nowCpuTime;
 				string json = JsonConvert.SerializeObject(new
 				{
@@ -71,7 +79,9 @@ namespace WebProxy.Controllers
 					cpu_processorTime = cpuTime.ToString(),
 					cpu_coreUsagePercent = cpuUsagePercent,
 					connectionsServed = WebProxyService.TotalConnectionsServed,
-					requestsServed = WebProxyService.TotalRequestsServed
+					requestsServed = WebProxyService.TotalRequestsServed,
+					gc = gcMem,
+					ramSize = ramSize
 				});
 				if (json != lastJson)
 					socket.Send(json);
@@ -91,6 +101,17 @@ namespace WebProxy.Controllers
 				socket.Close();
 
 			return Empty();
+		}
+		private ulong GetRamSize()
+		{
+			try
+			{
+				return Ram.GetRamSize();
+			}
+			catch
+			{
+				return 0;
+			}
 		}
 		public ActionResult GarbageCollect()
 		{

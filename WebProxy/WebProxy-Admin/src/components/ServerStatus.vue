@@ -34,22 +34,6 @@
 					<td>{{data.requestsServed}}</td>
 				</tr>
 				<tr>
-					<td>Private Memory Size</td>
-					<td>
-						{{Util.formatBytesF10(data.mem_privateMemorySize).padRight(9, ' ')}}
-						({{Util.formatBytes2(data.mem_privateMemorySize).padRight(10, ' ')}})
-						({{data.mem_privateMemorySize}} bytes)
-					</td>
-				</tr>
-				<tr>
-					<td>Working Set</td>
-					<td>
-						{{Util.formatBytesF10(data.mem_workingSet).padRight(9, ' ')}}
-						({{Util.formatBytes2(data.mem_workingSet).padRight(10, ' ')}})
-						({{data.mem_workingSet}} bytes)
-					</td>
-				</tr>
-				<tr>
 					<td>CPU Core Usage</td>
 					<td>
 						{{data.cpu_coreUsagePercent}}
@@ -59,6 +43,75 @@
 					<td>CPU Time</td>
 					<td>
 						{{data.cpu_processorTime}}
+					</td>
+				</tr>
+				<tr title="Current overall system memory load">
+					<td>System Memory Total</td>
+					<td>
+						{{Util.formatBytes2(data.ramSize)}}
+					</td>
+				</tr>
+				<tr>
+					<td>Private Memory Size</td>
+					<td>
+						{{Util.formatBytes2(data.mem_privateMemorySize).padRight(10, ' ')}}
+						({{Util.formatBytesF10(data.mem_privateMemorySize).padRight(9, ' ')}})
+						({{data.mem_privateMemorySize}} bytes)
+					</td>
+				</tr>
+				<tr>
+					<td>Working Set</td>
+					<td>
+						{{Util.formatBytes2(data.mem_workingSet).padRight(10, ' ')}}
+						({{Util.formatBytesF10(data.mem_workingSet).padRight(9, ' ')}})
+						({{data.mem_workingSet}} bytes)
+					</td>
+				</tr>
+				<tr>
+					<td>Memory Usage Breakdown<br />As of Previous GC</td>
+					<td>
+						<canvas width="160" height="160" ref="memCanvas"></canvas>
+						<div class="legend">
+							<div class="legendRow" v-for="item in pieData">
+								<div class="legendBox" v-bind:style="{ backgroundColor: item.color }"></div> {{item.name}} ({{Util.formatBytes2(item.value)}})
+							</div>
+						</div>
+					</td>
+				</tr>
+				<tr>
+					<td>Garbage Collection Count</td>
+					<td>
+						{{data.gc.Index}}
+					</td>
+				</tr>
+				<tr>
+					<td>GC Heap Fragmentation</td>
+					<td>
+						{{Math.round((data.gc.FragmentedBytes / data.gc.HeapSizeBytes) * 100)}}% ({{Util.formatBytes2(data.gc.FragmentedBytes)}} / {{Util.formatBytes2(data.gc.HeapSizeBytes)}})
+					</td>
+				</tr>
+				<tr title="Overall system memory load when the last garbage collection occurred.">
+					<td>GC System Memory Load</td>
+					<td>
+						{{Util.formatBytes2(data.gc.MemoryLoadBytes)}}
+					</td>
+				</tr>
+				<tr title="The high memory load threshold when the last garbage collection occurred. (when total system memory usage reaches this point, it is considered a high memory load)">
+					<td>GC High Load Threshold</td>
+					<td>
+						{{Util.formatBytes2(data.gc.HighMemoryLoadThresholdBytes)}} {{ data.gc.MemoryLoadBytes >= data.gc.HighMemoryLoadThresholdBytes ? "(GC in High Load Mode)" : "" }}
+					</td>
+				</tr>
+				<tr title="The total available memory, in bytes, for the garbage collector to use when the last garbage collection occurred.">
+					<td>GC Available Memory</td>
+					<td>
+						{{Util.formatBytes2(data.gc.TotalAvailableMemoryBytes)}}
+					</td>
+				</tr>
+				<tr>
+					<td>GCMemoryInfo Raw</td>
+					<td>
+						{{data.gc}}
 					</td>
 				</tr>
 			</tbody>
@@ -73,7 +126,8 @@
 		data()
 		{
 			return {
-				data: {},
+				data: { gc: {} },
+				pieData: [],
 				isConnected: false,
 				socket: null,
 				isUnloading: false,
@@ -82,6 +136,10 @@
 		},
 		computed:
 		{
+			gcIndex()
+			{
+				return this.data && this.data.gc ? this.data.gc.Index : -1;
+			}
 		},
 		methods:
 		{
@@ -122,6 +180,19 @@
 					setTimeout(this.connect, 1000);
 				};
 			},
+			computePieData()
+			{
+				let data = this.data;
+				let pieData = [];
+				AddPieData(pieData, "Managed Heap", data.gc.HeapSizeBytes, "#008800");
+				AddPieData(pieData, "Committed Non-Heap", data.gc.TotalCommittedBytes - data.gc.HeapSizeBytes, "#FFFF00");
+				AddPieData(pieData, "Unmanaged", data.mem_workingSet - data.gc.TotalCommittedBytes, "#CCCCCC");
+
+				if (this.$refs.memCanvas)
+					DrawPieChart(this.$refs.memCanvas, pieData);
+
+				this.pieData = pieData;
+			}
 		},
 		mounted()
 		{
@@ -133,6 +204,13 @@
 			if (this.socket)
 				this.socket.close();
 		},
+		watch:
+		{
+			gcIndex()
+			{
+				this.computePieData();
+			}
+		}
 	};
 
 	let specificStatusCodeMappings = {
@@ -173,6 +251,40 @@
 			return specificStatusCodeMappings[code];
 		return '(Unknown)';
 	}
+
+	var AddPieData = function (arr, name, value, color)
+	{
+		arr.push({ name, value, color });
+	};
+	var DrawPieChart = function (canvas, data)
+	{
+		var ctx = canvas.getContext("2d");
+		var lastend = 0;
+		var borderWidth = 3;
+		var radius = canvas.height / 2 - borderWidth;
+
+		var myTotal = 0;
+		for (var i = 0; i < data.length; i++)
+			myTotal += data[i].value;
+
+		for (var i = 0; i < data.length; i++)
+		{
+			ctx.fillStyle = data[i].color;
+			ctx.beginPath();
+			ctx.moveTo(canvas.width / 2, canvas.height / 2);
+			ctx.arc(canvas.width / 2, canvas.height / 2, radius, lastend, lastend + (Math.PI * 2 * (data[i].value / myTotal)), false);
+			ctx.lineTo(canvas.width / 2, canvas.height / 2);
+			ctx.fill();
+			lastend += Math.PI * 2 * (data[i].value / myTotal);
+		}
+
+		ctx.strokeStyle = "white";
+		ctx.lineWidth = borderWidth;
+		ctx.beginPath();
+		ctx.arc(canvas.width / 2, canvas.height / 2, radius, 0, Math.PI * 2);
+		ctx.stroke();
+	}
+
 </script>
 
 <style scoped>
@@ -185,13 +297,14 @@
 		{
 			border: 1px solid currentColor;
 			padding: 2px 4px;
+			word-break: break-word;
 		}
 
-		.serverStatusTable td:nth-child(2)
-		{
-			font-family: consolas, monospace;
-			white-space: pre-wrap;
-		}
+			.serverStatusTable td:nth-child(2)
+			{
+				font-family: consolas, monospace;
+				white-space: pre-wrap;
+			}
 
 	.connection-status
 	{
@@ -209,4 +322,22 @@
 		{
 			background-color: red;
 		}
+
+	.legend
+	{
+		display: inline-block;
+		border: 1px solid #888888;
+		padding: 4px 8px;
+		vertical-align: top;
+		margin-left: 10px;
+	}
+
+	.legendBox
+	{
+		display: inline-block;
+		width: 14px;
+		height: 14px;
+		border: 1px solid #888888;
+		vertical-align: middle;
+	}
 </style>
