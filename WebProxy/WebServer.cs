@@ -11,13 +11,14 @@ using System.Net;
 using System.Net.Security;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using WebProxy.Controllers;
 using WebProxy.LetsEncrypt;
 
 namespace WebProxy
 {
-	public class WebServer : HttpServer
+	public class WebServer : HttpServerAsync
 	{
 		MVCMain mvcAdminConsole;
 		ViteProxy viteProxy = null;
@@ -53,25 +54,7 @@ namespace WebProxy
 			return new WebProxyCertificateSelector();
 		}
 
-		public override void handleGETRequest(HttpProcessor p)
-		{
-			handleAllRequests(p);
-		}
-
-		public override void handlePOSTRequest(HttpProcessor p)
-		{
-			handleAllRequests(p);
-		}
-		/// <summary>
-		/// Handles requests using less common Http verbs such as "HEAD" or "PUT". See <see cref="HttpMethods"/>.
-		/// </summary>
-		/// <param name="method">The HTTP method string, e.g. "HEAD" or "PUT". See <see cref="HttpMethods"/>.</param>
-		/// <param name="p">The HttpProcessor handling the request.</param>
-		public override void handleOtherRequest(HttpProcessor p, string method)
-		{
-			handleAllRequests(p);
-		}
-		private void handleAllRequests(HttpProcessor p)
+		public override async Task handleRequest(HttpProcessor p, string method, CancellationToken cancellationToken = default)
 		{
 			Settings settings = WebProxyService.MakeLocalSettingsReference();
 			BasicEventTimer bet = new BasicEventTimer("0.000");
@@ -85,7 +68,7 @@ namespace WebProxy
 					// This situation is normal if connections are already open to an Entrypoint that is going away.
 					Logger.Info("Unable to identify any matching entrypoint for request from client " + p.RemoteIPAddressStr + " to " + p.request_url);
 					p.PreventKeepalive();
-					p.writeFailure("500 Internal Server Error");
+					await p.writeFailureAsync("500 Internal Server Error", cancellationToken: cancellationToken).ConfigureAwait(false);
 					return;
 				}
 
@@ -107,9 +90,9 @@ namespace WebProxy
 					string payload = CertMgr.GetHttpChallengeResponse(p.hostName, fileName, myEntrypoint, myExitpoint);
 					Logger.Info("ACME HTTP-01: " + p.RemoteIPAddressStr + " -> " + p.hostName + ": " + p.request_url.ToString() + " -> " + payload);
 					if (payload == null)
-						p.writeFailure("404 Not Found");
+						await p.writeFailureAsync("404 Not Found", cancellationToken: cancellationToken).ConfigureAwait(false);
 					else
-						p.writeFullResponseUTF8(payload, "text/plain; charset=utf-8");
+						await p.writeFullResponseUTF8Async(payload, "text/plain; charset=utf-8", cancellationToken: cancellationToken).ConfigureAwait(false);
 					return;
 				}
 
@@ -127,7 +110,7 @@ namespace WebProxy
 						builder.Port = myEntrypoint.httpsPort;
 						builder.Host = p.hostName;
 						builder.Scheme = "https";
-						p.writeRedirect(builder.Uri.ToString());
+						await p.writeRedirectAsync(builder.Uri.ToString(), cancellationToken).ConfigureAwait(false);
 						return;
 					}
 				}
@@ -157,7 +140,7 @@ namespace WebProxy
 					{
 						HttpHeaderCollection headers = new HttpHeaderCollection();
 						headers.Add("WWW-Authenticate", p.GetDigestAuthWWWAuthenticateHeaderValue(realm));
-						p.writeFailure("401 Unauthorized", additionalHeaders: headers);
+						await p.writeFailureAsync("401 Unauthorized", additionalHeaders: headers, cancellationToken: cancellationToken).ConfigureAwait(false);
 						return;
 					}
 				}
@@ -205,13 +188,13 @@ namespace WebProxy
 				// Process the request in the context of the chosen Exitpoint.
 				if (myExitpoint.type == ExitpointType.AdminConsole)
 				{
-					if (!mvcAdminConsole.ProcessRequest(p))
+					if (!await mvcAdminConsole.ProcessRequestAsync(p, cancellationToken: cancellationToken).ConfigureAwait(false))
 					{
 						if (viteProxy != null)
 						{
 							bet.Start("Proxy AdminConsole request: " + p.http_method + " " + p.request_url);
 							// Handle hot module reload provided by Vite dev server.
-							viteProxy.Proxy(p);
+							await viteProxy.ProxyAsync(p, cancellationToken).ConfigureAwait(false);
 							bet.Stop();
 							return;
 						}
@@ -225,12 +208,12 @@ namespace WebProxy
 							string targetFilePath = fi.FullName.Replace('\\', '/');
 							if (!targetFilePath.StartsWith(wwwDirectoryBase) || targetFilePath.Contains("../"))
 							{
-								p.writeFailure("400 Bad Request");
+								await p.writeFailureAsync("400 Bad Request", cancellationToken: cancellationToken).ConfigureAwait(false);
 								return;
 							}
 							if (p.requestedPage.IEquals(""))
 								fi = new FileInfo(wwwDirectoryBase + "index.html");
-							p.writeStaticFile(fi);
+							await p.writeStaticFileAsync(fi, cancellationToken: cancellationToken).ConfigureAwait(false);
 							#endregion
 							bet.Stop();
 						}
@@ -256,6 +239,7 @@ namespace WebProxy
 					options.xRealIp = xri?.ProxyHeaderBehavior ?? ProxyHeaderBehavior.Drop;
 					options.proxyHeaderTrustedIpRanges = trustedProxyIPRanges.ToArray();
 					options.allowConnectionKeepalive = myExitpoint.useConnectionKeepAlive;
+					options.cancellationToken = cancellationToken;
 
 					HttpHeader[] orh = overrideResponseHeaders.GetHeaderArray();
 					if (orh.Length > 0)
@@ -270,7 +254,7 @@ namespace WebProxy
 					bet.Start("Calling p.ProxyToAsync");
 					try
 					{
-						p.ProxyToAsync(builder.Uri.ToString(), options).Wait();
+						await p.ProxyToAsync(builder.Uri.ToString(), options).ConfigureAwait(false);
 						bet.Stop();
 						if (settings.verboseWebServerLogs)
 							Logger.Info("Proxy Completed: " + p.http_method + " " + p.request_url + "\r\n\r\n" + options.log.ToString() + "\r\n");
@@ -293,6 +277,7 @@ namespace WebProxy
 				bet.Stop();
 				//Logger.Info(p.http_method + " " + p.request_url + "\r\n\r\n" + bet.ToString("\r\n") + "\r\n");
 			}
+			return;
 		}
 		/// <inheritdoc/>
 		protected override void stopServer()

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace WebProxy
@@ -21,10 +22,11 @@ namespace WebProxy
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <param name="controller">The <see cref="Controller"/> you are calling from. ("this")</param>
+		/// <param name="cancellationToken">Cancellation Token</param>
 		/// <returns></returns>
-		public static T ParseRequest<T>(Controller controller)
+		public static async Task<T> ParseRequest<T>(Controller controller, CancellationToken cancellationToken = default)
 		{
-			return ParseRequest<T>(controller.Context.httpProcessor);
+			return await ParseRequest<T>(controller.Context.httpProcessor, cancellationToken).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -32,21 +34,22 @@ namespace WebProxy
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <param name="httpProcessor">The <see cref="HttpProcessor"/> which is handling the API request.</param>
+		/// <param name="cancellationToken">Cancellation Token</param>
 		/// <returns></returns>
-		public static T ParseRequest<T>(HttpProcessor httpProcessor)
+		public static async Task<T> ParseRequest<T>(HttpProcessor httpProcessor, CancellationToken cancellationToken = default)
 		{
 			if (httpProcessor.http_method != "POST")
 				throw new Exception("This API method must be called using HTTP POST");
-
-			if (ByteUtil.ReadToEndWithMaxLength(httpProcessor.RequestBodyStream, RequestBodySizeLimit, out byte[] data))
+			ByteUtil.AsyncReadResult result = await ByteUtil.ReadToEndWithMaxLengthAsync(httpProcessor.RequestBodyStream, RequestBodySizeLimit, cancellationToken).ConfigureAwait(false);
+			if (result.EndOfStream)
 			{
-				string str = ByteUtil.Utf8NoBOM.GetString(data);
+				string str = ByteUtil.Utf8NoBOM.GetString(result.Data);
 				return JsonConvert.DeserializeObject<T>(str);
 			}
 			else
 			{
 				if (!httpProcessor.responseWritten)
-					httpProcessor.writeFailure("413 Content Too Large", "This server allows a maximum request body size of " + RequestBodySizeLimit + " bytes.");
+					await httpProcessor.writeFailureAsync("413 Content Too Large", "This server allows a maximum request body size of " + RequestBodySizeLimit + " bytes.", cancellationToken: cancellationToken).ConfigureAwait(false);
 				throw new Exception("413 Content Too Large: This server allows a maximum request body size of " + RequestBodySizeLimit + " bytes.");
 			}
 		}

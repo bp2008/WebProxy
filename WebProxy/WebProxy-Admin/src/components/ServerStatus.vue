@@ -22,10 +22,6 @@
 					<td>{{data.serverMaxConnectionCount}}</td>
 				</tr>
 				<tr>
-					<td>Connection Queue Count</td>
-					<td>{{data.serverConnectionQueueCount}}</td>
-				</tr>
-				<tr>
 					<td>Total Connections Accepted</td>
 					<td>{{data.connectionsServed}}</td>
 				</tr>

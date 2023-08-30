@@ -15,9 +15,9 @@ namespace WebProxy.Controllers
 {
 	public class Configuration : AdminConsoleControllerBase
 	{
-		public ActionResult Get()
+		public Task<ActionResult> Get()
 		{
-			return Get(false);
+			return Task.FromResult<ActionResult>(Get(false));
 		}
 		private ActionResult Get(bool withEntryLinks)
 		{
@@ -51,9 +51,9 @@ namespace WebProxy.Controllers
 			}
 			return ApiSuccessNoAutocomplete(response);
 		}
-		public ActionResult Set()
+		public async Task<ActionResult> Set()
 		{
-			SetConfigurationRequest request = ParseRequest<SetConfigurationRequest>();
+			SetConfigurationRequest request = await ParseRequest<SetConfigurationRequest>().ConfigureAwait(false);
 
 			Settings s = WebProxyService.CloneSettingsObjectSlow();
 			s.acmeAccountEmail = request.acmeAccountEmail;
@@ -66,13 +66,13 @@ namespace WebProxy.Controllers
 			s.verboseWebServerLogs = request.verboseWebServerLogs;
 			s.serverMaxConnectionCount = request.serverMaxConnectionCount;
 
-			return Set(s);
+			return await Set(s).ConfigureAwait(false);
 		}
-		private ActionResult Set(Settings s)
+		private async Task<ActionResult> Set(Settings s)
 		{
 			try
 			{
-				WebProxyService.SaveNewSettings(s);
+				await WebProxyService.SaveNewSettings(s).ConfigureAwait(false);
 			}
 			catch (Exception ex)
 			{
@@ -81,9 +81,9 @@ namespace WebProxy.Controllers
 
 			return Get(true);
 		}
-		public ActionResult ForceRenew()
+		public async Task<ActionResult> ForceRenew()
 		{
-			ForceRenewRequest request = ParseRequest<ForceRenewRequest>();
+			ForceRenewRequest request = await ParseRequest<ForceRenewRequest>().ConfigureAwait(false);
 
 			Settings s = WebProxyService.MakeLocalSettingsReference();
 			Exitpoint exitpoint = s.exitpoints.FirstOrDefault(e => e.name == request.forceRenewExitpointName);
@@ -98,7 +98,7 @@ namespace WebProxy.Controllers
 				{
 					if (entrypoint.httpPort == 80 || entrypoint.httpsPort == 443)
 					{
-						string result = CertMgr.ForceRenew(entrypoint, exitpoint).Result;
+						string result = await CertMgr.ForceRenew(entrypoint, exitpoint).ConfigureAwait(false);
 						if (string.IsNullOrEmpty(result))
 							return ApiSuccessNoAutocomplete(new ApiResponseBase(true));
 						return ApiError(result);
@@ -107,13 +107,13 @@ namespace WebProxy.Controllers
 			}
 			return ApiError("Unable to find an acceptable Entrypoint that is routed to the chosen Exitpoint.");
 		}
-		public ActionResult GetRaw()
+		public Task<ActionResult> GetRaw()
 		{
-			return PlainText(JsonConvert.SerializeObject(WebProxyService.MakeLocalSettingsReference(), Formatting.Indented));
+			return PlainTextTask(JsonConvert.SerializeObject(WebProxyService.MakeLocalSettingsReference(), Formatting.Indented));
 		}
-		public ActionResult UploadCertificate()
+		public async Task<ActionResult> UploadCertificate()
 		{
-			UploadCertificateRequest request = ParseRequest<UploadCertificateRequest>();
+			UploadCertificateRequest request = await ParseRequest<UploadCertificateRequest>().ConfigureAwait(false);
 
 			Settings s = WebProxyService.MakeLocalSettingsReference();
 			Exitpoint exitpoint = s.exitpoints.FirstOrDefault(e => e.name == request.exitpointName);
@@ -143,32 +143,33 @@ namespace WebProxy.Controllers
 				Settings newSettings = WebProxyService.CloneSettingsObjectSlow();
 				exitpoint = newSettings.exitpoints.First(e => e.name == exitpoint.name);
 				exitpoint.certificatePath = certPath = CertMgr.GetDefaultCertificatePath(domains[0]);
-				WebProxyService.SaveNewSettings(newSettings);
+				await WebProxyService.SaveNewSettings(newSettings).ConfigureAwait(false);
 			}
 
 			DirectoryInfo diCertDir = new FileInfo(certPath).Directory;
 			if (!diCertDir.Exists)
 			{
-				Robust.RetryPeriodic(() =>
+				await Robust.RetryPeriodicAsync(() =>
 				{
 					Directory.CreateDirectory(diCertDir.FullName);
-				}, 50, 6);
+					return Task.CompletedTask;
+				}, 50, 6, CancellationToken).ConfigureAwait(false);
 			}
 
-			Robust.RetryPeriodic(() =>
+			await Robust.RetryPeriodicAsync(async () =>
 			{
-				File.WriteAllBytes(certPath, certBytes);
-			}, 50, 6);
+				await File.WriteAllBytesAsync(certPath, certBytes, CancellationToken).ConfigureAwait(false);
+			}, 50, 6, CancellationToken).ConfigureAwait(false);
 
-			return Get();
+			return Get(false);
 		}
-		public ActionResult TestCloudflareDNS()
+		public async Task<ActionResult> TestCloudflareDNS()
 		{
 			BasicEventTimer bet = new BasicEventTimer();
 			bet.Start("Get domain name");
 			try
 			{
-				string anyDomainName = CloudflareDnsValidator.GetAnyConfiguredDomain().Result;
+				string anyDomainName = await CloudflareDnsValidator.GetAnyConfiguredDomain().ConfigureAwait(false);
 				if (string.IsNullOrWhiteSpace(anyDomainName))
 					return ApiError("Test failed: Found null or whitespace domain name in Cloudflare account.");
 
@@ -176,11 +177,10 @@ namespace WebProxy.Controllers
 				string key = "_test-access-token." + anyDomainName;
 				string value = TimeUtil.GetTimeInMsSinceEpoch().ToString();
 
-				Task t = CloudflareDnsValidator.CreateDNSRecord(key, value);
-				t.Wait();
+				await CloudflareDnsValidator.CreateDNSRecord(key, value).ConfigureAwait(false);
 
 				bet.Start("Delete DNS record");
-				int deleted = CloudflareDnsValidator.DeleteDNSRecord(key).Result;
+				int deleted = await CloudflareDnsValidator.DeleteDNSRecord(key).ConfigureAwait(false);
 
 				bet.Stop();
 
@@ -237,9 +237,9 @@ namespace WebProxy.Controllers
 				return new FileDownloadResult(ms.ToArray(), false);
 			}
 		}
-		public ActionResult Import()
+		public async Task<ActionResult> Import()
 		{
-			UploadSettingsAndCertificatesRequest request = ParseRequest<UploadSettingsAndCertificatesRequest>();
+			UploadSettingsAndCertificatesRequest request = await ParseRequest<UploadSettingsAndCertificatesRequest>().ConfigureAwait(false);
 
 			byte[] zipBytes = null;
 			try
@@ -290,24 +290,24 @@ namespace WebProxy.Controllers
 				{
 					string path = Path.Combine(Globals.WritableDirectoryBase, cert.RelativePath);
 					FileInfo fi = new FileInfo(path);
-					Robust.RetryPeriodic(() =>
+					await Robust.RetryPeriodicAsync(async () =>
 					{
 						Directory.CreateDirectory(fi.Directory.FullName);
-						File.WriteAllBytes(path, cert.Data);
+						await File.WriteAllBytesAsync(path, cert.Data, CancellationToken).ConfigureAwait(false);
 						File.SetLastWriteTime(path, cert.LastWriteTime);
-					}, 50, 10);
+					}, 50, 10, CancellationToken).ConfigureAwait(false);
 				}
 			}
 			// Write Cert Renewal Dates
 			if (certRenewalData != null)
 			{
-				Robust.RetryPeriodic(() =>
+				await Robust.RetryPeriodicAsync(async () =>
 				{
-					File.WriteAllBytes("CertRenewalDates.json", certRenewalData.Data);
-				}, 50, 10);
+					await File.WriteAllBytesAsync("CertRenewalDates.json", certRenewalData.Data, CancellationToken).ConfigureAwait(false);
+				}, 50, 10,CancellationToken).ConfigureAwait(false);
 			}
 			// Write Settings
-			return Set(settings);
+			return await Set(settings).ConfigureAwait(false);
 		}
 	}
 	public class GetConfigurationResponse : ApiResponseBase

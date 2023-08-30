@@ -47,7 +47,7 @@ namespace WebProxy.LetsEncrypt
 			if (acme != null && LastEmail == settings.acmeAccountEmail)
 				return;
 
-			await myLock.WaitAsync();
+			await myLock.WaitAsync().ConfigureAwait(false);
 			try
 			{
 				settings = WebProxyService.MakeLocalSettingsReference();
@@ -61,26 +61,26 @@ namespace WebProxy.LetsEncrypt
 				{
 					Logger.Info("CertMgr.Initialize: Create LetsEncrypt" + (acmeServerUri == WellKnownServers.LetsEncryptStagingV2 ? " Staging" : "") + " Account (" + settings.acmeAccountEmail + ")");
 					acme = new AcmeContext(acmeServerUri);
-					IAccountContext account = await acme.NewAccount(settings.acmeAccountEmail, true);
+					IAccountContext account = await acme.NewAccount(settings.acmeAccountEmail, true).ConfigureAwait(false);
 
 					// Save the account key for later use
 					settings = WebProxyService.CloneSettingsObjectSlow();
 					settings.acmeAccountKey = acme.AccountKey.ToPem();
-					WebProxyService.SaveNewSettings(settings);
+					await WebProxyService.SaveNewSettings(settings).ConfigureAwait(false);
 				}
 				else
 				{
 					Logger.Info("CertMgr.Initialize: Use existing LetsEncrypt" + (acmeServerUri == WellKnownServers.LetsEncryptStagingV2 ? " Staging" : "") + " Account (" + settings.acmeAccountEmail + ")");
 					IKey accountKey = KeyFactory.FromPem(settings.acmeAccountKey);
 					acme = new AcmeContext(acmeServerUri, accountKey);
-					IAccountContext accountContext = await acme.Account();
-					Certes.Acme.Resource.Account account = await accountContext.Resource();
+					IAccountContext accountContext = await acme.Account().ConfigureAwait(false);
+					Certes.Acme.Resource.Account account = await accountContext.Resource().ConfigureAwait(false);
 					string emailContact = "mailto:" + settings.acmeAccountEmail;
 					if (account.Contact.Count < 1 || account.Contact[0] != emailContact)
 					{
 						List<string> newContact = new List<string>(new string[] { emailContact });
 						Logger.Info("CertMgr.Initialize: Changing LetsEncrypt Account Contact from \"" + string.Join(",", account.Contact) + "\" to \"" + string.Join(",", newContact) + "\"");
-						await accountContext.Update(newContact, true);
+						await accountContext.Update(newContact, true).ConfigureAwait(false);
 					}
 				}
 				LastEmail = settings.acmeAccountEmail;
@@ -119,7 +119,7 @@ namespace WebProxy.LetsEncrypt
 				Settings newSettings = WebProxyService.CloneSettingsObjectSlow();
 				exitpoint = newSettings.exitpoints.First(e => e.name == exitpoint.name);
 				exitpoint.certificatePath = CertMgr.GetDefaultCertificatePath(domains.First());
-				WebProxyService.SaveNewSettings(newSettings);
+				await WebProxyService.SaveNewSettings(newSettings).ConfigureAwait(false);
 			}
 
 			// Try to get existing certificate.
@@ -134,7 +134,7 @@ namespace WebProxy.LetsEncrypt
 					Logger.Info("CertMgr: Create now " + host + " (" + string.Join(" ", domains) + ")");
 				// Create new certificate
 				if (shouldRenew)
-					await CreateCertificateForDomains(entrypoint, exitpoint);
+					await CreateCertificateForDomains(entrypoint, exitpoint).ConfigureAwait(false);
 				return cache.Reload();
 			}
 			else
@@ -143,7 +143,7 @@ namespace WebProxy.LetsEncrypt
 				{
 					// Create new certificate in background
 					Logger.Info("CertMgr: Renew async " + host + " (" + string.Join(" ", domains) + ")");
-					_ = CreateCertificateForDomains(entrypoint, exitpoint);
+					_ = CreateCertificateForDomains(entrypoint, exitpoint).ConfigureAwait(false);
 				}
 				return cert;
 			}
@@ -166,7 +166,7 @@ namespace WebProxy.LetsEncrypt
 
 				Logger.Info("CertMgr: Force renew " + string.Join(" ", domains));
 
-				bool success = await CreateCertificateForDomains(entrypoint, exitpoint);
+				bool success = await CreateCertificateForDomains(entrypoint, exitpoint).ConfigureAwait(false);
 				if (!success)
 				{
 					string err = LastError;
@@ -252,31 +252,31 @@ namespace WebProxy.LetsEncrypt
 				Initialize();
 
 
-				await myLock.WaitAsync();
+				await myLock.WaitAsync().ConfigureAwait(false);
 				try
 				{
 					// Create order for certificate.
 					Logger.Info("CertMgr.Create: order");
-					IOrderContext orderContext = await acme.NewOrder(domains);
-					Certes.Acme.Resource.Order order = await orderContext.Resource();
-					IEnumerable<IAuthorizationContext> authorizations = await orderContext.Authorizations();
+					IOrderContext orderContext = await acme.NewOrder(domains).ConfigureAwait(false);
+					Certes.Acme.Resource.Order order = await orderContext.Resource().ConfigureAwait(false);
+					IEnumerable<IAuthorizationContext> authorizations = await orderContext.Authorizations().ConfigureAwait(false);
 					IKey alpnCertKey = null;
 					foreach (IAuthorizationContext authz in authorizations)
 					{
-						Certes.Acme.Resource.Authorization authResource = await authz.Resource();
+						Certes.Acme.Resource.Authorization authResource = await authz.Resource().ConfigureAwait(false);
 						string domain = authResource.Identifier.Value;
 						if (authResource.Status == Certes.Acme.Resource.AuthorizationStatus.Valid)
 						{
 							Logger.Info("CertMgr.Create: " + domain + " is already validated with expiration: " + authResource.Expires);
 							continue;
 						}
-						IEnumerable<IChallengeContext> allChallenges = await authz.Challenges();
+						IEnumerable<IChallengeContext> allChallenges = await authz.Challenges().ConfigureAwait(false);
 						Logger.Info("CertMgr.Create: " + domain + " can be validated via: " + string.Join(", ", allChallenges.Select(cc => cc.Type)));
 
 						// Validate domain ownership.
 						if (dns01Cloudflare)
 						{
-							IChallengeContext challengeContext = await authz.Dns();
+							IChallengeContext challengeContext = await authz.Dns().ConfigureAwait(false);
 							if (challengeContext != null)
 							{
 								Logger.Info("CertMgr.Create: " + domain + " starting validation via " + challengeContext.Type);
@@ -284,17 +284,17 @@ namespace WebProxy.LetsEncrypt
 								string dnsValue = acme.AccountKey.DnsTxt(challengeContext.Token);
 								try
 								{
-									await CloudflareDnsValidator.CreateDNSRecord(dnsKey, dnsValue);
+									await CloudflareDnsValidator.CreateDNSRecord(dnsKey, dnsValue).ConfigureAwait(false);
 									Logger.Info("CertMgr.Create Cloudflare-DNS-01: " + dnsKey + " TXT record created");
 
-									Certes.Acme.Resource.Challenge challenge = await ValidateAndWait(challengeContext);
+									Certes.Acme.Resource.Challenge challenge = await ValidateAndWait(challengeContext).ConfigureAwait(false);
 									continue;
 								}
 								finally
 								{
 									try
 									{
-										await CloudflareDnsValidator.DeleteDNSRecord(dnsKey);
+										await CloudflareDnsValidator.DeleteDNSRecord(dnsKey).ConfigureAwait(false);
 										Logger.Info("CertMgr.Create Cloudflare-DNS-01: " + dnsKey + " TXT record deleted");
 									}
 									catch (Exception ex)
@@ -306,7 +306,7 @@ namespace WebProxy.LetsEncrypt
 						}
 						if (standardHttpSupported)
 						{
-							IChallengeContext challengeContext = await authz.Http();
+							IChallengeContext challengeContext = await authz.Http().ConfigureAwait(false);
 							if (challengeContext != null)
 							{
 								Logger.Info("CertMgr.Create: " + domain + " starting validation via " + challengeContext.Type);
@@ -314,7 +314,7 @@ namespace WebProxy.LetsEncrypt
 								{
 									SetupHttpChallenge(domain, challengeContext.Token, challengeContext.KeyAuthz);
 
-									Certes.Acme.Resource.Challenge challenge = await ValidateAndWait(challengeContext);
+									Certes.Acme.Resource.Challenge challenge = await ValidateAndWait(challengeContext).ConfigureAwait(false);
 									continue;
 								}
 								finally
@@ -325,7 +325,7 @@ namespace WebProxy.LetsEncrypt
 						}
 						if (standardHttpsSupported)
 						{
-							IChallengeContext challengeContext = await authz.TlsAlpn();
+							IChallengeContext challengeContext = await authz.TlsAlpn().ConfigureAwait(false);
 							if (challengeContext != null)
 							{
 								if (alpnCertKey == null)
@@ -335,7 +335,7 @@ namespace WebProxy.LetsEncrypt
 								{
 									SetupTlsAlpn01Challenge(challengeContext.Token, domain, alpnCertKey);
 
-									Certes.Acme.Resource.Challenge challenge = await ValidateAndWait(challengeContext);
+									Certes.Acme.Resource.Challenge challenge = await ValidateAndWait(challengeContext).ConfigureAwait(false);
 									continue;
 								}
 								finally
@@ -351,7 +351,7 @@ namespace WebProxy.LetsEncrypt
 					IKey privateKey = KeyFactory.NewKey(KeyAlgorithm.ES256);
 					CsrInfo csrInfo = new CsrInfo();
 					csrInfo.CommonName = domains[0];
-					CertificateChain cert = await orderContext.Generate(csrInfo, privateKey);
+					CertificateChain cert = await orderContext.Generate(csrInfo, privateKey).ConfigureAwait(false);
 					Certes.Pkcs.PfxBuilder pfxBuilder = cert.ToPfx(privateKey);
 					if (acmeServerUri == WellKnownServers.LetsEncryptStagingV2)
 					{
@@ -404,12 +404,12 @@ namespace WebProxy.LetsEncrypt
 		/// <returns></returns>
 		private static async Task<Certes.Acme.Resource.Challenge> ValidateAndWait(IChallengeContext challenge)
 		{
-			Certes.Acme.Resource.Challenge result = await challenge.Validate();
+			Certes.Acme.Resource.Challenge result = await challenge.Validate().ConfigureAwait(false);
 			CountdownStopwatch sw = CountdownStopwatch.StartNew(TimeSpan.FromMinutes(1));
 			while (!sw.Finished && result.Status == Certes.Acme.Resource.ChallengeStatus.Pending || result.Status == Certes.Acme.Resource.ChallengeStatus.Processing)
 			{
-				result = await challenge.Resource();
-				await Task.Delay(500);
+				result = await challenge.Resource().ConfigureAwait(false);
+				await Task.Delay(500).ConfigureAwait(false);
 			}
 			Logger.Info("CertMgr.Create: validation challenge status: " + result.Status);
 			if (result.Error != null)

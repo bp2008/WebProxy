@@ -38,11 +38,11 @@ namespace WebProxy.Controllers
 				return ApiError(ex.FlattenMessages());
 			}
 		}
-		public ActionResult SaveConfig()
+		public async Task<ActionResult> SaveConfig()
 		{
 			try
 			{
-				WebProxyService.SaveNewSettings(WebProxyService.CloneSettingsObjectSlow());
+				await WebProxyService.SaveNewSettings(WebProxyService.CloneSettingsObjectSlow(), CancellationToken).ConfigureAwait(false);
 				return Json(new CLIResponse("Success"));
 			}
 			catch (Exception ex)

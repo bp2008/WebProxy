@@ -15,21 +15,21 @@ namespace WebProxy.Controllers
 {
 	public class Log : AdminConsoleControllerBase
 	{
-		public ActionResult Index(string logFileName)
+		public async Task<ActionResult> Index(string logFileName)
 		{
 			string filePath = Globals.WritableDirectoryBase + "Logs/" + logFileName;
 			if (!logFileName.Contains('/') && !logFileName.Contains('\\'))
 			{
 				if (File.Exists(filePath))
-					return PlainText(File.ReadAllText(filePath));
+					return PlainText(await File.ReadAllTextAsync(filePath, CancellationToken).ConfigureAwait(false));
 
 				filePath = Globals.WritableDirectoryBase + "Logs/" + Globals.AssemblyName + "_" + logFileName;
 				if (File.Exists(filePath))
-					return PlainText(File.ReadAllText(filePath));
+					return PlainText(await File.ReadAllTextAsync(filePath, CancellationToken).ConfigureAwait(false));
 
 				filePath = Globals.WritableDirectoryBase + "Logs/" + Globals.AssemblyName + "_" + logFileName + ".txt";
 				if (File.Exists(filePath))
-					return PlainText(File.ReadAllText(filePath));
+					return PlainText(await File.ReadAllTextAsync(filePath, CancellationToken).ConfigureAwait(false));
 			}
 
 			return this.StatusCode("404 Not Found");

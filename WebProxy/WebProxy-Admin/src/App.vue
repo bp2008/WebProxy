@@ -479,7 +479,6 @@
 				{
 					this.showFullscreenLoader = true;
 					const response = await ExecAPI("Configuration/TestCloudflareDNS");
-					this.showFullscreenLoader = false;
 
 					if (response.success)
 						toaster.success("Test success.");
@@ -490,6 +489,10 @@
 				{
 					console.log(ex);
 					toaster.error(ex);
+				}
+				finally
+				{
+					this.showFullscreenLoader = false;
 				}
 			},
 			async uploadSettingsAndCertificatesClicked(selectedFileBase64)
@@ -522,7 +525,6 @@
 				{
 					this.showFullscreenLoader = true;
 					const response = await ExecAPI("ServerStatus/GarbageCollect");
-					this.showFullscreenLoader = false;
 
 					if (response.success)
 						toaster.success("Garbage Collection took " + response.milliseconds + "ms.");
@@ -533,6 +535,10 @@
 				{
 					console.log(ex);
 					toaster.error(ex);
+				}
+				finally
+				{
+					this.showFullscreenLoader = false;
 				}
 			},
 		},

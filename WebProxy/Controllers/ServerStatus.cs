@@ -73,7 +73,6 @@ namespace WebProxy.Controllers
 					serverIsUnderHeavyLoad = WebProxyService.WebServerIsUnderHeavyLoad,
 					serverOpenConnectionCount = WebProxyService.WebServerOpenConnectionCount,
 					serverMaxConnectionCount = WebProxyService.MakeLocalSettingsReference().serverMaxConnectionCount,
-					serverConnectionQueueCount = WebProxyService.WebServerConnectionQueueCount,
 					mem_privateMemorySize = me.PrivateMemorySize64,
 					mem_workingSet = me.WorkingSet64,
 					cpu_processorTime = cpuTime.ToString(),

@@ -11,6 +11,7 @@ using System.Linq;
 using System.Net;
 using System.ServiceProcess;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace WebProxy
@@ -75,7 +76,7 @@ namespace WebProxy
 			lock (settingsSaveLock)
 			{
 				if (settingsOriginal != settingsAfterValidation)
-					SaveNewSettings(s);
+					SaveNewSettings(s).GetAwaiter().GetResult();
 				else
 				{
 					staticSettings = s;
@@ -168,8 +169,8 @@ namespace WebProxy
 		/// </summary>
 		public static int WebServerMaxConnectionCount
 		{
-			get { return webServer.pool.MaxThreads; }
-			set { webServer.pool.MaxThreads = value.Clamp(8, 10000); }
+			get { return webServer.MaxConnections; }
+			set { webServer.MaxConnections = value.Clamp(8, 10000); }
 		}
 		/// <summary>
 		/// Gets the total number of connections served by this server.
@@ -183,10 +184,6 @@ namespace WebProxy
 		/// Gets the current number of open connections being processed by the web server.
 		/// </summary>
 		public static int WebServerOpenConnectionCount => webServer.CurrentNumberOfOpenConnections;
-		/// <summary>
-		/// Gets the current number of open connections that are queued for processing by the web server.
-		/// </summary>
-		public static int WebServerConnectionQueueCount => webServer.pool.QueuedActionCount;
 		/// <summary>
 		/// Gets true if the web server currently reports being under heavy load.
 		/// </summary>
@@ -220,15 +217,19 @@ namespace WebProxy
 		/// Replaces the internal settings object with this one and saves the settings to disk in a thread-safe manner.  You should not modify the settings object again after calling this; instead, make a new clone of the settings object if you need to make more changes.
 		/// </summary>
 		/// <param name="newSettings">A clone of the settings object.  The clone contains changes that you want to save.</param>
-		public static void SaveNewSettings(Settings newSettings)
+		/// <param name="cancellationToken">Cancellation Token</param>
+		public static async Task SaveNewSettings(Settings newSettings, CancellationToken cancellationToken = default)
 		{
 			ValidateSettings(newSettings);
 
-			lock (settingsSaveLock)
+			await TaskHelper.RunBlockingCodeSafely(() =>
 			{
-				staticSettings = newSettings;
-				newSettings.Save();
-			}
+				lock (settingsSaveLock)
+				{
+					staticSettings = newSettings;
+					newSettings.Save();
+				}
+			}, cancellationToken).ConfigureAwait(false);
 
 			string settingsBackupDir = Path.Combine(Globals.WritableDirectoryBase, "SettingsBackup");
 			Directory.CreateDirectory(settingsBackupDir);
@@ -238,7 +239,7 @@ namespace WebProxy
 			byte[] fileBody = ByteUtil.Utf8NoBOM.GetBytes(json);
 			try
 			{
-				Compression.AddFileToZip(settingsBackupPath, backupJsonFilename, fileBody);
+				await Compression.AddFileToZipAsync(settingsBackupPath, backupJsonFilename, fileBody, cancellationToken).ConfigureAwait(false);
 			}
 			catch (Exception ex)
 			{
@@ -259,7 +260,7 @@ namespace WebProxy
 			SimpleHttpLogger.RegisterLogger(Logger.httpLogger, s.verboseWebServerLogs);
 
 			if (webServer != null)
-				webServer.pool.MaxThreads = s.serverMaxConnectionCount;
+				webServer.MaxConnections = s.serverMaxConnectionCount;
 
 			UpdateWebServerBindings();
 		}
@@ -388,7 +389,7 @@ namespace WebProxy
 
 			// After all changes are made to the settings object, the settings can be saved.
 			if (shouldSave)
-				SaveNewSettings(s);
+				SaveNewSettings(s).GetAwaiter().GetResult();
 		}
 		/// <summary>
 		/// Validate the settings file and repair simple problems.  Throw an exception if anything is invalid that can't be cleanly repaired automatically.  Because this can modify the settings, this should never be passed the static settings instance, and should only be called just prior to saving the settings.  This method is automatically called by <see cref="SaveNewSettings"/>.

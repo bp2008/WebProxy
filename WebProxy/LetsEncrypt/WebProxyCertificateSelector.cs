@@ -66,7 +66,7 @@ namespace WebProxy.LetsEncrypt
 			{
 				try
 				{
-					return await CertMgr.GetCertificate(serverName, myEntrypoint, myExitpoint, true);
+					return await CertMgr.GetCertificate(serverName, myEntrypoint, myExitpoint, true).ConfigureAwait(false);
 				}
 				catch (Exception ex)
 				{
@@ -84,7 +84,7 @@ namespace WebProxy.LetsEncrypt
 					myExitpoint = newSettings.exitpoints.First(e => e.name == myExitpoint.name);
 					string[] domains = GetDomainsForSelfSignedCert(myExitpoint);
 					myExitpoint.certificatePath = certPath = CertMgr.GetDefaultCertificatePath(domains[0]);
-					WebProxyService.SaveNewSettings(newSettings);
+					await WebProxyService.SaveNewSettings(newSettings).ConfigureAwait(false);
 				}
 
 				if (!staticCertDict.TryGetValue(certPath, out CachedCertificate cached))
@@ -93,7 +93,7 @@ namespace WebProxy.LetsEncrypt
 				if (cached.Certificate == null || cached.Age.Elapsed > TimeSpan.FromSeconds(60))
 					cached = new CachedCertificate(GetCert(myExitpoint)); // Reload certificate from file synchronously.
 				else if (cached.Age.Elapsed > TimeSpan.FromSeconds(10))
-					_ = Task.Run(() => { GetCert(myExitpoint); }); // Reload certificate from file asynchronously.
+					_ = Task.Run(() => { GetCert(myExitpoint); }).ConfigureAwait(false); // Reload certificate from file asynchronously.
 				return cached.Certificate;
 			}
 		}

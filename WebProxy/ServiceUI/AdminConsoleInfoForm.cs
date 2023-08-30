@@ -15,6 +15,7 @@ namespace WebProxy.ServiceUI
 {
 	public partial class AdminConsoleInfoForm : Form
 	{
+		private bool Loaded = false;
 		public AdminConsoleInfoForm()
 		{
 			InitializeComponent();
@@ -54,6 +55,11 @@ namespace WebProxy.ServiceUI
 			txtPass.Text = adminInfo.pass;
 		}
 
+		private void AdminConsoleInfoForm_Load(object sender, EventArgs e)
+		{
+			Loaded = true;
+		}
+
 		private void linkLabelHttp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
 		{
 			ProcessRunner.Start((string)((LinkLabel)sender).Tag);
@@ -66,6 +72,8 @@ namespace WebProxy.ServiceUI
 
 		private void txtUser_TextChanged(object sender, EventArgs e)
 		{
+			if (!Loaded)
+				return;
 			if (ValidateCredentials())
 			{
 				WebProxyService.SettingsValidateAndAdminConsoleSetup(out Entrypoint adminEntry, out Exitpoint adminExit, out Middleware adminLogin);
@@ -75,7 +83,7 @@ namespace WebProxy.ServiceUI
 					throw new ApplicationException("Unable to locate Admin Login Middleware to change credentials.");
 				editableAdminLogin.SetPassword((string)txtUser.Tag, null);
 				editableAdminLogin.SetPassword(txtUser.Text, txtPass.Text);
-				WebProxyService.SaveNewSettings(s);
+				WebProxyService.SaveNewSettings(s).GetAwaiter().GetResult();
 				txtUser.Tag = txtUser.Text;
 				btnCopyUser.Enabled = btnCopyPass.Enabled = true;
 			}
@@ -85,6 +93,8 @@ namespace WebProxy.ServiceUI
 
 		private void txtPass_TextChanged(object sender, EventArgs e)
 		{
+			if (!Loaded)
+				return;
 			if (ValidateCredentials())
 			{
 				WebProxyService.SettingsValidateAndAdminConsoleSetup(out Entrypoint adminEntry, out Exitpoint adminExit, out Middleware adminLogin);
@@ -93,7 +103,7 @@ namespace WebProxy.ServiceUI
 				if (editableAdminLogin == null)
 					throw new ApplicationException("Unable to locate Admin Login Middleware to change credentials.");
 				editableAdminLogin.SetPassword(txtUser.Text, txtPass.Text);
-				WebProxyService.SaveNewSettings(s);
+				WebProxyService.SaveNewSettings(s).GetAwaiter().GetResult();
 				btnCopyUser.Enabled = btnCopyPass.Enabled = true;
 			}
 			else
