@@ -1,13 +1,19 @@
 ﻿using BPUtil;
 using BPUtil.MVC;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Reflection;
+using System.Runtime;
 using System.Security.Cryptography.X509Certificates;
+using System.ServiceProcess;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using WebProxy.LetsEncrypt;
 
@@ -17,12 +23,15 @@ namespace WebProxy.Controllers
 	{
 		public Task<ActionResult> Get()
 		{
-			return Task.FromResult<ActionResult>(Get(false));
+			return Get(false);
 		}
-		private ActionResult Get(bool withEntryLinks)
+		private async Task<ActionResult> Get(bool withEntryLinks)
 		{
 			Settings s = WebProxyService.MakeLocalSettingsReference();
 			GetConfigurationResponse response = new GetConfigurationResponse();
+#if LINUX
+			response.memoryMax = await AppInit.GetPropertySystemdServiceFileAsync(Program.serviceName, "MemoryMax", CancellationToken).ConfigureAwait(false);
+#endif
 			response.acmeAccountEmail = s.acmeAccountEmail;
 			response.entrypoints = s.entrypoints.ToArray();
 			response.exitpoints = s.exitpoints.ToArray();
@@ -39,7 +48,7 @@ namespace WebProxy.Controllers
 				string adminHost = adminExit.host;
 				adminHost = adminHost?.Replace("*", "");
 				if (string.IsNullOrEmpty(adminHost))
-					adminHost = Context.httpProcessor.hostName;
+					adminHost = Context.httpProcessor.HostName;
 
 				List<string> adminEntryOrigins = new List<string>();
 				if (adminEntry.httpPortValid())
@@ -79,7 +88,7 @@ namespace WebProxy.Controllers
 				return ApiError(ex.FlattenMessages());
 			}
 
-			return Get(true);
+			return await Get(true).ConfigureAwait(false);
 		}
 		public async Task<ActionResult> ForceRenew()
 		{
@@ -161,7 +170,7 @@ namespace WebProxy.Controllers
 				await File.WriteAllBytesAsync(certPath, certBytes, CancellationToken).ConfigureAwait(false);
 			}, 50, 6, CancellationToken).ConfigureAwait(false);
 
-			return Get(false);
+			return await Get(false).ConfigureAwait(false);
 		}
 		public async Task<ActionResult> TestCloudflareDNS()
 		{
@@ -232,7 +241,7 @@ namespace WebProxy.Controllers
 							zipArchive.CreateEntryFromFile(file.FullName, "Certs/" + file.Name);
 						}
 					}
-					Context.ResponseHeaders.Add("Content-Disposition", "attachment; filename=\"WebProxy_Export_" + StringUtil.MakeSafeForFileName(Context.httpProcessor.hostName) + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss") + ".zip\"");
+					Context.ResponseHeaders.Add("Content-Disposition", "attachment; filename=\"WebProxy_Export_" + StringUtil.MakeSafeForFileName(Context.httpProcessor.HostName) + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss") + ".zip\"");
 				}
 				return new FileDownloadResult(ms.ToArray(), false);
 			}
@@ -304,10 +313,122 @@ namespace WebProxy.Controllers
 				await Robust.RetryPeriodicAsync(async () =>
 				{
 					await File.WriteAllBytesAsync("CertRenewalDates.json", certRenewalData.Data, CancellationToken).ConfigureAwait(false);
-				}, 50, 10,CancellationToken).ConfigureAwait(false);
+				}, 50, 10, CancellationToken).ConfigureAwait(false);
 			}
 			// Write Settings
 			return await Set(settings).ConfigureAwait(false);
+		}
+		public async Task<ActionResult> EnableServerGC()
+		{
+			await SetGarbageCollectorModeAsync(true, CancellationToken).ConfigureAwait(false);
+			if (RestartServer())
+				return this.ApiSuccessNoAutocomplete(new ApiResponseBase(true));
+			return ApiError("The change will take effect when the service is restarted.");
+		}
+		public async Task<ActionResult> DisableServerGC()
+		{
+			await SetGarbageCollectorModeAsync(false, CancellationToken).ConfigureAwait(false);
+			if (RestartServer())
+				return this.ApiSuccessNoAutocomplete(new ApiResponseBase(true));
+			return ApiError("The change will take effect when the service is restarted.");
+		}
+
+		/// <summary>
+		/// Asynchronously sets the garbage collector type for the currently executing program by editing the service startup options.  The change affects future processes, not the one currently executing.
+		/// </summary>
+		/// <param name="useServerGC">If true, sets the garbage collector type to Server; otherwise, sets it to Workstation.</param>
+		/// <param name="cancellationToken">Cancellation Token</param>
+		/// <returns>A task that represents the asynchronous write operation.</returns>
+		private Task SetGarbageCollectorModeAsync(bool useServerGC, CancellationToken cancellationToken)
+		{
+#if LINUX
+			return AppInit.SetEnvironmentVariableInSystemdServiceFileAsync(Program.serviceName, "DOTNET_gcServer", useServerGC ? "1" : "0");
+#else
+			AppInit.SetEnvironmentVariableInWindowsService(Program.serviceName, "DOTNET_gcServer", useServerGC ? "1" : "0");
+			return TaskHelper.CompletedTask;
+#endif
+		}
+		//		/// <summary>
+		//		/// Asynchronously sets the garbage collector type for the currently executing program by writing a runtime configuration file.  The change affects future processes, not the one currently executing.
+		//		/// </summary>
+		//		/// <param name="useServerGC">If true, sets the garbage collector type to Server; otherwise, sets it to Workstation.</param>
+		//		/// <param name="cancellationToken">Cancellation Token</param>
+		//		/// <returns>A task that represents the asynchronous write operation.</returns>
+		//		private Task SetGarbageCollectorModeAsync(bool useServerGC, CancellationToken cancellationToken)
+		//		{
+		//			string config = @"<?xml version=""1.0"" encoding=""utf-8""?>
+		//<configuration>
+		//  <runtime>
+		//    <gcServer enabled=""" + useServerGC.ToString().ToLower() + @"""/>
+		//  </runtime>
+		//</configuration>";
+		//			string configFile = Assembly.GetEntryAssembly().Location + ".config";
+		//			return File.WriteAllTextAsync(configFile, config, ByteUtil.Utf8NoBOM, cancellationToken);
+		//		}
+		//private async Task SetGarbageCollectorModeAsync(bool useServerGC, CancellationToken cancellationToken)
+		//{
+		//	string projectName = Assembly.GetExecutingAssembly().GetName().Name;
+		//	string path = AppDomain.CurrentDomain.BaseDirectory + projectName + ".runtimeconfig.json";
+		//	JObject config;
+
+		//	if (File.Exists(path))
+		//	{
+		//		string json = await File.ReadAllTextAsync(path, ByteUtil.Utf8NoBOM, cancellationToken).ConfigureAwait(false);
+		//		config = JObject.Parse(json);
+		//	}
+		//	else
+		//	{
+		//		config = new JObject();
+		//		config["runtimeOptions"] = new JObject();
+		//		config["runtimeOptions"]["configProperties"] = new JObject();
+		//	}
+
+		//	config["runtimeOptions"]["configProperties"]["System.GC.Server"] = useServerGC;
+		//	await File.WriteAllTextAsync(path, config.ToString(), ByteUtil.Utf8NoBOM, cancellationToken).ConfigureAwait(false);
+		//}
+		public async Task<ActionResult> SetMemoryMaxMiB()
+		{
+			SetMemoryMaxMiBRequest request = await ParseRequest<SetMemoryMaxMiBRequest>().ConfigureAwait(false);
+#if LINUX
+			await AppInit.SetMemoryMaxInSystemdServiceFileAsync(Program.serviceName, request.MiB, CancellationToken).ConfigureAwait(false);
+			if (RestartServer())
+				return this.ApiSuccessNoAutocomplete(new ApiResponseBase(true));
+			return ApiError("The change will take effect when the service is restarted.");
+#else
+			return ApiError("Unsupported platform. This operation is only supported on Linux.");
+#endif
+		}
+		private bool RestartServer()
+		{
+			if (Debugger.IsAttached)
+				return false;
+			Thread thrRestartSelf = new Thread(() =>
+			{
+				try
+				{
+					Thread.Sleep(1000);
+
+#if LINUX
+					AppInit.RestartLinuxSystemdService(Program.serviceName);
+#else
+					string restartBat = Globals.WritableDirectoryBase + "RestartService.bat";
+					File.WriteAllText(restartBat, "NET STOP \"" + Program.serviceName + "\"" + Environment.NewLine + "NET START \"" + Program.serviceName + "\"");
+
+					ProcessStartInfo psi = new ProcessStartInfo(restartBat, "");
+					psi.UseShellExecute = true;
+					psi.CreateNoWindow = true;
+					Process.Start(psi);
+#endif
+				}
+				catch (Exception ex)
+				{
+					Logger.Debug(ex);
+				}
+			});
+			thrRestartSelf.Name = "Restart Self";
+			thrRestartSelf.IsBackground = true;
+			thrRestartSelf.Start();
+			return true;
 		}
 	}
 	public class GetConfigurationResponse : ApiResponseBase
@@ -330,6 +451,11 @@ namespace WebProxy.Controllers
 		public Dictionary<string, string> tlsCipherSuiteSetDescriptions = DescriptionAttribute.GetDescriptions<TlsCipherSuiteSet>();
 		public bool tlsCipherSuitesPolicySupported = BPUtil.SimpleHttp.HttpServer.IsTlsCipherSuitesPolicySupported();
 		public LogFile[] logFiles = GetLogFiles();
+		public bool gcModeServer = GCSettings.IsServerGC;
+#if LINUX
+		public bool platformSupportsMemoryMax = true;
+		public string memoryMax;
+#endif
 
 		[JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
 		public string[] adminEntryOrigins;
@@ -380,5 +506,9 @@ namespace WebProxy.Controllers
 	public class UploadSettingsAndCertificatesRequest
 	{
 		public string base64;
+	}
+	public class SetMemoryMaxMiBRequest
+	{
+		public uint MiB;
 	}
 }

@@ -79,6 +79,18 @@
 							<option v-for="t in store.themeList">{{t}}</option>
 						</select>
 					</div>
+					<div class="flexRow">
+						<label>Garbage Collector Mode: {{store.gcModeServer ? "Server" : "Workstation"}}</label>
+						<div><input type="button" value="Enable Server GC" @click="EnableServerGC" /> <input type="button" value="Enable Workstation GC" @click="DisableServerGC" /></div>
+					</div>
+					<div class="flexRow" v-if="platformSupportsMemoryMax">
+						<label>Process Memory Limit: {{memoryMaxCurrentValue}}</label>
+						<div>
+							<input type="number" v-model="memoryMaxMiB" min="100" max="100000" autocomplete="off" />
+							<input type="button" value="<- Set New Limit" @click="SetMemoryMax(memoryMaxMiB)" />
+							<input type="button" value="Remove Limit" @click="DeleteMemoryMax" />
+						</div>
+					</div>
 				</div>
 			</div>
 			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Entrypoints'">
@@ -184,7 +196,10 @@
 					{ Name: "Routes", scrollTop: true },
 					{ Name: "Log", scrollTop: true }
 				],
-				fileInputChangeCounter: 0
+				fileInputChangeCounter: 0,
+				platformSupportsMemoryMax: false,
+				memoryMaxMiB: null,
+				memoryMaxCurrentValue: null
 			};
 		},
 		created()
@@ -342,7 +357,17 @@
 				store.verboseWebServerLogs = response.verboseWebServerLogs;
 				store.serverMaxConnectionCount = response.serverMaxConnectionCount;
 				store.logFiles = response.logFiles;
+				store.gcModeServer = response.gcModeServer;
 				store.appVersion = response.appVersion;
+				if (response.platformSupportsMemoryMax)
+				{
+					this.platformSupportsMemoryMax = true;
+					this.memoryMaxCurrentValue = response.memoryMax;
+					if (response.memoryMax.indexOf("M") > -1)
+						this.memoryMax = parseInt(response.memoryMax);
+					else
+						this.memoryMax = 1500;
+				}
 
 				for (let i = 0; i < response.entrypoints.length; i++)
 					FixEntrypoint(response.entrypoints[i]);
@@ -475,6 +500,12 @@
 			},
 			async testCloudflareDNS()
 			{
+				if (this.configurationChanged)
+				{
+					toaster.info("Please save the changes on this page, then try again.");
+					return;
+				}
+
 				try
 				{
 					this.showFullscreenLoader = true;
@@ -538,6 +569,128 @@
 				}
 				finally
 				{
+					this.showFullscreenLoader = false;
+				}
+			},
+			async EnableServerGC()
+			{
+				if (this.configurationChanged)
+				{
+					toaster.info("Please save the changes on this page, then try again.");
+					return;
+				}
+				if (!confirm("Warning: This operation will cause the server to be restarted."))
+				{
+					toaster.info("Operation was cancelled.");
+					return;
+				}
+
+				try
+				{
+					this.showFullscreenLoader = true;
+					const response = await ExecAPI("Configuration/EnableServerGC");
+
+					if (response.success)
+					{
+						toaster.success("Server is restarting");
+						setTimeout(() =>
+						{
+							location.reload();
+						}, 2000);
+					}
+					else
+					{
+						toaster.error(response.error);
+						this.showFullscreenLoader = false;
+					}
+				}
+				catch (ex)
+				{
+					console.log(ex);
+					toaster.error(ex);
+					this.showFullscreenLoader = false;
+				}
+			},
+			async DisableServerGC()
+			{
+				if (this.configurationChanged)
+				{
+					toaster.info("Please save the changes on this page, then try again.");
+					return;
+				}
+				if (!confirm("Warning: This operation will cause the server to be restarted."))
+				{
+					toaster.info("Operation was cancelled.");
+					return;
+				}
+
+				try
+				{
+					this.showFullscreenLoader = true;
+					const response = await ExecAPI("Configuration/DisableServerGC");
+
+					if (response.success)
+					{
+						toaster.success("Server is restarting");
+						setTimeout(() =>
+						{
+							location.reload();
+						}, 2000);
+					}
+					else
+					{
+						toaster.error(response.error);
+						this.showFullscreenLoader = false;
+					}
+				}
+				catch (ex)
+				{
+					console.log(ex);
+					toaster.error(ex);
+					this.showFullscreenLoader = false;
+				}
+			},
+			async DeleteMemoryMax()
+			{
+				this.memoryMaxMiB = null;
+				await SetMemoryMax(null);
+			},
+			async SetMemoryMax(MiB)
+			{
+				if (this.configurationChanged)
+				{
+					toaster.info("Please save the changes on this page, then try again.");
+					return;
+				}
+				if (!confirm("Warning: This operation will cause the server to be restarted."))
+				{
+					toaster.info("Operation was cancelled.");
+					return;
+				}
+
+				try
+				{
+					this.showFullscreenLoader = true;
+					const response = await ExecAPI("Configuration/SetMemoryMaxMiB", { MiB });
+
+					if (response.success)
+					{
+						toaster.success("Server is restarting");
+						setTimeout(() =>
+						{
+							location.reload();
+						}, 2000);
+					}
+					else
+					{
+						toaster.error(response.error);
+						this.showFullscreenLoader = false;
+					}
+				}
+				catch (ex)
+				{
+					console.log(ex);
+					toaster.error(ex);
 					this.showFullscreenLoader = false;
 				}
 			},

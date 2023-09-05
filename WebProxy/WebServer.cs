@@ -62,37 +62,37 @@ namespace WebProxy
 			{
 				// Identify the entrypoint and exitpoint which this request is targeting.
 				bet.Start("Request Routing");
-				Entrypoint[] matchedEntrypoints = settings.identifyThisEntrypoint((IPEndPoint)p.tcpClient.Client.RemoteEndPoint, (IPEndPoint)p.tcpClient.Client.LocalEndPoint, p.secure_https);
+				Entrypoint[] matchedEntrypoints = settings.identifyThisEntrypoint(p.RemoteEndPoint, p.LocalEndPoint, p.secure_https);
 				if (matchedEntrypoints.Length == 0)
 				{
 					// This situation is normal if connections are already open to an Entrypoint that is going away.
-					Logger.Info("Unable to identify any matching entrypoint for request from client " + p.RemoteIPAddressStr + " to " + p.request_url);
-					p.PreventKeepalive();
-					await p.writeFailureAsync("500 Internal Server Error", cancellationToken: cancellationToken).ConfigureAwait(false);
+					Logger.Info("Unable to identify any matching entrypoint for request from client " + p.RemoteIPAddressStr + " to " + p.Request.Url);
+					p.Response.PreventKeepalive();
+					p.Response.Simple("500 Internal Server Error");
 					return;
 				}
 
 				Exitpoint myExitpoint = settings.identifyThisExitpoint(matchedEntrypoints, p, out Entrypoint myEntrypoint);
 				if (myExitpoint == null || myExitpoint.type == ExitpointType.Disabled)
 				{
-					// Set responseWritten = true to prevent a fallback response.  We want this connection to simply close.
-					//Logger.Info("No exitpoint for request from client " + p.RemoteIPAddressStr + " to " + p.request_url);
-					p.responseWritten = true;
+					// Prevent a fallback response.  We want this connection to simply close.
+					//Logger.Info("No exitpoint for request from client " + p.RemoteIPAddressStr + " to " + p.Request.Url);
+					p.Response.CloseWithoutResponse();
 					return;
 				}
 
 				// ACME Validation: HTTP-01
-				if (myExitpoint.autoCertificate && p.requestedPage.StartsWith(".well-known/acme-challenge/"))
+				if (myExitpoint.autoCertificate && p.Request.Page.StartsWith(".well-known/acme-challenge/"))
 				{
 					// We could restrict this to only unsecured requests on port 80, but for debugging purposes it 
 					//   can be useful to allow the request on any port and protocol that reaches this exitpoint.
-					string fileName = p.requestedPage.Substring(".well-known/acme-challenge/".Length);
-					string payload = CertMgr.GetHttpChallengeResponse(p.hostName, fileName, myEntrypoint, myExitpoint);
-					Logger.Info("ACME HTTP-01: " + p.RemoteIPAddressStr + " -> " + p.hostName + ": " + p.request_url.ToString() + " -> " + payload);
+					string fileName = p.Request.Page.Substring(".well-known/acme-challenge/".Length);
+					string payload = CertMgr.GetHttpChallengeResponse(p.HostName, fileName, myEntrypoint, myExitpoint);
+					Logger.Info("ACME HTTP-01: " + p.RemoteIPAddressStr + " -> " + p.HostName + ": " + p.Request.Url.ToString() + " -> " + payload);
 					if (payload == null)
-						await p.writeFailureAsync("404 Not Found", cancellationToken: cancellationToken).ConfigureAwait(false);
+						p.Response.Simple("404 Not Found");
 					else
-						await p.writeFullResponseUTF8Async(payload, "text/plain; charset=utf-8", cancellationToken: cancellationToken).ConfigureAwait(false);
+						p.Response.FullResponseUTF8(payload, "text/plain; charset=utf-8");
 					return;
 				}
 
@@ -106,11 +106,11 @@ namespace WebProxy
 				{
 					if (allApplicableMiddlewares.Any(m => m.Type == MiddlewareType.RedirectHttpToHttps))
 					{
-						UriBuilder builder = new UriBuilder(p.request_url);
+						UriBuilder builder = new UriBuilder(p.Request.Url);
 						builder.Port = myEntrypoint.httpsPort;
-						builder.Host = p.hostName;
+						builder.Host = p.HostName;
 						builder.Scheme = "https";
-						await p.writeRedirectAsync(builder.Uri.ToString(), cancellationToken).ConfigureAwait(false);
+						await p.Response.RedirectAsync(builder.Uri.ToString(), cancellationToken).ConfigureAwait(false);
 						return;
 					}
 				}
@@ -119,7 +119,7 @@ namespace WebProxy
 				if (!IPWhitelistCheck(p.TrueRemoteIPAddress, allApplicableMiddlewares))
 				{
 					// IP whitelisting is in effect, but the client is not communicating from a whitelisted IP.  Close the connection without writing a response.
-					p.responseWritten = true;
+					p.Response.CloseWithoutResponse();
 					return;
 				}
 
@@ -127,7 +127,7 @@ namespace WebProxy
 				{
 					NetworkCredential userCredential = null;
 					bool authRequired = false;
-					string realm = p.hostName == null ? "WebProxy" : p.hostName;
+					string realm = p.HostName == null ? "WebProxy" : p.HostName;
 					foreach (Middleware m in allApplicableMiddlewares.Where(m => m.Type == MiddlewareType.HttpDigestAuth))
 					{
 						authRequired = true;
@@ -138,9 +138,8 @@ namespace WebProxy
 					}
 					if (authRequired && userCredential == null)
 					{
-						HttpHeaderCollection headers = new HttpHeaderCollection();
-						headers.Add("WWW-Authenticate", p.GetDigestAuthWWWAuthenticateHeaderValue(realm));
-						await p.writeFailureAsync("401 Unauthorized", additionalHeaders: headers, cancellationToken: cancellationToken).ConfigureAwait(false);
+						p.Response.Simple("401 Unauthorized");
+						p.Response.Headers.Set("WWW-Authenticate", p.GetDigestAuthWWWAuthenticateHeaderValue(realm));
 						return;
 					}
 				}
@@ -192,7 +191,7 @@ namespace WebProxy
 					{
 						if (viteProxy != null)
 						{
-							bet.Start("Proxy AdminConsole request: " + p.http_method + " " + p.request_url);
+							bet.Start("Proxy AdminConsole request: " + p.Request.HttpMethod + " " + p.Request.Url);
 							// Handle hot module reload provided by Vite dev server.
 							await viteProxy.ProxyAsync(p, cancellationToken).ConfigureAwait(false);
 							bet.Stop();
@@ -200,20 +199,20 @@ namespace WebProxy
 						}
 						else
 						{
-							bet.Start("Handle AdminConsole request: " + p.http_method + " " + p.request_url);
+							bet.Start("Handle AdminConsole request: " + p.Request.HttpMethod + " " + p.Request.Url);
 							#region www
 							string wwwDirectoryBase = Globals.ApplicationDirectoryBase + "www" + '/';
 
-							FileInfo fi = new FileInfo(wwwDirectoryBase + p.requestedPage);
+							FileInfo fi = new FileInfo(wwwDirectoryBase + p.Request.Page);
 							string targetFilePath = fi.FullName.Replace('\\', '/');
 							if (!targetFilePath.StartsWith(wwwDirectoryBase) || targetFilePath.Contains("../"))
 							{
-								await p.writeFailureAsync("400 Bad Request", cancellationToken: cancellationToken).ConfigureAwait(false);
+								p.Response.Simple("400 Bad Request");
 								return;
 							}
-							if (p.requestedPage.IEquals(""))
+							if (p.Request.Page.IEquals(""))
 								fi = new FileInfo(wwwDirectoryBase + "index.html");
-							await p.writeStaticFileAsync(fi, cancellationToken: cancellationToken).ConfigureAwait(false);
+							await p.Response.StaticFileAsync(fi, cancellationToken: cancellationToken).ConfigureAwait(false);
 							#endregion
 							bet.Stop();
 						}
@@ -221,9 +220,9 @@ namespace WebProxy
 				}
 				else if (myExitpoint.type == ExitpointType.WebProxy)
 				{
-					bet.Start("Start proxying " + p.http_method + " " + p.request_url);
+					bet.Start("Start proxying " + p.Request.HttpMethod + " " + p.Request.Url);
 					Uri destinationOrigin = new Uri(myExitpoint.destinationOrigin);
-					UriBuilder builder = new UriBuilder(p.request_url);
+					UriBuilder builder = new UriBuilder(p.Request.Url);
 					builder.Scheme = destinationOrigin.Scheme;
 					builder.Host = destinationOrigin.DnsSafeHost;
 					builder.Port = destinationOrigin.Port;
@@ -257,13 +256,13 @@ namespace WebProxy
 						await p.ProxyToAsync(builder.Uri.ToString(), options).ConfigureAwait(false);
 						bet.Stop();
 						if (settings.verboseWebServerLogs)
-							Logger.Info("Proxy Completed: " + p.http_method + " " + p.request_url + "\r\n\r\n" + options.log.ToString() + "\r\n");
+							Logger.Info("Proxy Completed: " + p.Request.HttpMethod + " " + p.Request.Url + "\r\n\r\n" + options.log.ToString() + "\r\n");
 					}
 					catch (Exception ex)
 					{
 						bet.Stop();
 						if (settings.verboseWebServerLogs)
-							Logger.Info("Proxy Completed With Error: " + p.http_method + " " + p.request_url + "\r\n\r\n" + options.log.ToString() + "\r\n");
+							Logger.Info("Proxy Completed With Error: " + p.Request.HttpMethod + " " + p.Request.Url + "\r\n\r\n" + options.log.ToString() + "\r\n");
 						ex.Rethrow();
 					}
 				}
@@ -275,7 +274,7 @@ namespace WebProxy
 			finally
 			{
 				bet.Stop();
-				//Logger.Info(p.http_method + " " + p.request_url + "\r\n\r\n" + bet.ToString("\r\n") + "\r\n");
+				//Logger.Info(p.Request.HttpMethod + " " + p.Request.Url + "\r\n\r\n" + bet.ToString("\r\n") + "\r\n");
 			}
 			return;
 		}
@@ -377,7 +376,7 @@ namespace WebProxy
 		public override IEnumerable<TlsCipherSuite> GetAllowedCipherSuites(HttpProcessor p)
 		{
 			Settings settings = WebProxyService.MakeLocalSettingsReference();
-			Entrypoint[] matchedEntrypoints = settings.identifyThisEntrypoint((IPEndPoint)p.tcpClient.Client.RemoteEndPoint, (IPEndPoint)p.tcpClient.Client.LocalEndPoint, true);
+			Entrypoint[] matchedEntrypoints = settings.identifyThisEntrypoint(p.RemoteEndPoint, p.LocalEndPoint, true);
 			if (matchedEntrypoints.Length == 0)
 				return null;
 

@@ -41,7 +41,7 @@
 						{{data.cpu_processorTime}}
 					</td>
 				</tr>
-				<tr title="Current overall system memory load">
+				<tr title="Current overall system memory load" v-if="data.ramSize !== 0">
 					<td>System Memory Total</td>
 					<td>
 						{{Util.formatBytes2(data.ramSize)}}
@@ -78,6 +78,12 @@
 					<td>Garbage Collection Count</td>
 					<td>
 						{{data.gc.Index}}
+					</td>
+				</tr>
+				<tr>
+					<td>Garbage Collector Mode</td>
+					<td>
+						{{data.isServerGc ? "Server" : "Workstation" }}
 					</td>
 				</tr>
 				<tr>

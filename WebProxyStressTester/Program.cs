@@ -13,10 +13,11 @@ namespace WebProxyStressTester
 
 		static volatile bool abort = false;
 		//static int NUM_CONNECTIONS = (int)(Environment.ProcessorCount * 1.25);
-		static int NUM_CONNECTIONS = 30;
+		static int NUM_CONNECTIONS = 40;
 		static string[] urls = new string[] { "http://localhost:8080/", "http://localhost:8080/src/themes.scss", "http://localhost:8080/Log/Test" };
 		//static string[] urls = new string[] { "http://localhost:80/src/themes.scss" };
 		//static string[] urls = new string[] { "http://localhost:80/", "http://localhost:80/src/themes.scss", "http://localhost:80/Log/Test" };
+		static object consoleLock = new object();
 		static void Main(string[] args)
 		{
 			Stopwatch sw = Stopwatch.StartNew();
@@ -41,7 +42,8 @@ namespace WebProxyStressTester
 					{
 						table.AddColumn("[blue]Field[/]");
 						table.AddColumn("[blue]Value[/]");
-						ctx.Refresh();
+						lock (consoleLock)
+							ctx.Refresh();
 
 						while (true)
 						{
@@ -53,7 +55,8 @@ namespace WebProxyStressTester
 							table.AddRow("[green]Total Requests[/]", reqs.ToString());
 							table.AddRow("[red]Total Errors[/]", Interlocked.Read(ref totalErrors).ToString());
 							table.AddRow("[yellow]Request Time[/]", Interlocked.Read(ref lastRequestTimeMs) + "ms");
-							ctx.Refresh();
+							lock (consoleLock)
+								ctx.Refresh();
 							Thread.Sleep(250);
 						}
 					}
@@ -75,53 +78,40 @@ namespace WebProxyStressTester
 		{
 			dynamic args = argument;
 			HttpClient client = null;
-			bool didError = false;
-			try
+			while (true)
 			{
-				int threadId = args.threadIndex;
-				string url = urls[threadId % urls.Length];
-				HttpClientHandler handler = new HttpClientHandler();
-				handler.MaxConnectionsPerServer = 1;
-				client = new HttpClient(handler);
-				Interlocked.Increment(ref activeConnections);
-
-				while (!abort)
+				try
 				{
-					try
+					int threadId = args.threadIndex;
+					string url = urls[threadId % urls.Length];
+					HttpClientHandler handler = new HttpClientHandler();
+					handler.MaxConnectionsPerServer = 1;
+					client = new HttpClient(handler);
+					Interlocked.Increment(ref activeConnections);
+
+					while (!abort)
 					{
-						if (didError)
-						{
-							didError = false;
-							Interlocked.Increment(ref activeConnections);
-						}
 						Stopwatch sw = Stopwatch.StartNew();
 						HttpResponseMessage response = await client.GetAsync(url); // +"?"+StringUtil.GetRandomAlphaNumericString(8)
 						string responseContent = await response.Content.ReadAsStringAsync();
 						lastRequestTimeMs = sw.ElapsedMilliseconds;
 						Interlocked.Increment(ref totalRequests);
 					}
-					catch (Exception ex)
+				}
+				catch (Exception ex)
+				{
+					Interlocked.Increment(ref totalErrors);
+					lock (consoleLock)
 					{
-						didError = true;
-						Interlocked.Decrement(ref activeConnections);
-						Interlocked.Increment(ref totalErrors);
-						AnsiConsole.WriteLine(ex.FlattenMessages().EscapeMarkup());
-					}
-					finally
-					{
+						if (!BPUtil.SimpleHttp.HttpProcessor.IsOrdinaryDisconnectException(ex))
+							AnsiConsole.WriteLine(ex.FlattenMessages().EscapeMarkup());
 					}
 				}
-			}
-			catch (Exception ex)
-			{
-				Interlocked.Increment(ref totalErrors);
-				AnsiConsole.WriteException(ex);
-				AnsiConsole.WriteLine("Thread " + args.threadIndex + " is exiting.".EscapeMarkup());
-			}
-			finally
-			{
-				Interlocked.Decrement(ref activeConnections);
-				client.Dispose();
+				finally
+				{
+					Interlocked.Decrement(ref activeConnections);
+					client.Dispose();
+				}
 			}
 		}
 	}

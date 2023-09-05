@@ -38,7 +38,7 @@ namespace WebProxy.Controllers
 		{
 			WebSocket socket = new WebSocket(Context.httpProcessor);
 
-			Context.httpProcessor.tcpClient.ReceiveTimeout = Context.httpProcessor.tcpClient.SendTimeout = 20000;
+			socket.SendTimeout = socket.ReceiveTimeout = 20000;
 
 			EventWaitHandle ewhDisconnect = new EventWaitHandle(false, EventResetMode.ManualReset);
 			bool isConnected = true;

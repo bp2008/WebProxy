@@ -109,7 +109,7 @@ namespace WebProxy
 				Exitpoint bestMatch = null;
 				foreach (Exitpoint exit in mappedExitpoints)
 				{
-					if (exit.isHostnameMatch(p.hostName, out bool isExactMatch))
+					if (exit.isHostnameMatch(p.HostName, out bool isExactMatch))
 					{
 						if (isExactMatch)
 						{

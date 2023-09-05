@@ -1,5 +1,6 @@
 ﻿using BPUtil;
 using BPUtil.MVC;
+using BPUtil.SimpleHttp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,9 +18,9 @@ namespace WebProxy.Controllers
 		/// </summary>
 		public override async Task PreprocessResult(ActionResult result)
 		{
-			if (Context.httpProcessor.RequestBodyStream != null)
+			if (Context.httpProcessor.Request.RequestBodyStream != null)
 			{
-				ByteUtil.AsyncDiscardResult discardResult = await ByteUtil.DiscardUntilEndOfStreamWithMaxLengthAsync(Context.httpProcessor.RequestBodyStream, ApiRequest.RequestBodySizeLimit, CancellationToken).ConfigureAwait(false);
+				ByteUtil.DiscardToEndResult discardResult = await ByteUtil.DiscardUntilEndOfStreamWithMaxLengthAsync(Context.httpProcessor.Request.RequestBodyStream, ApiRequest.RequestBodySizeLimit, 5000, CancellationToken).ConfigureAwait(false);
 				if (!discardResult.EndOfStream)
 				{
 					WebProxyService.ReportError("AdminConsoleControllerBase.PreprocessResult() found more than " + ApiRequest.RequestBodySizeLimit + " bytes unread in the request body.\r\n"

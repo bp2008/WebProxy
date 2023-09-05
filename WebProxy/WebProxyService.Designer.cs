@@ -31,7 +31,7 @@ namespace WebProxy
 		private void InitializeComponent()
 		{
 			components = new System.ComponentModel.Container();
-			this.ServiceName = "WebProxyService";
+			this.ServiceName = "WebProxy";
 		}
 
 		#endregion

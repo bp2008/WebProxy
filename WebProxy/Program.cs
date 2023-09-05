@@ -18,9 +18,10 @@ namespace WebProxy
 {
 	static class Program
 	{
-#pragma warning disable CS0414
-		static string serviceName;
-#pragma warning restore
+		/// <summary>
+		/// Gets the name of the service, usable for service management.
+		/// </summary>
+		public static string serviceName { get; private set; }
 		/// <summary>
 		/// The main entry point for the application.
 		/// </summary>

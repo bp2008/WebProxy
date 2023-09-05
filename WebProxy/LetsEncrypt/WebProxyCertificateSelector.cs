@@ -41,10 +41,10 @@ namespace WebProxy.LetsEncrypt
 				serverName = "";
 
 			Settings settings = WebProxyService.MakeLocalSettingsReference();
-			Entrypoint[] matchedEntrypoints = settings.identifyThisEntrypoint((IPEndPoint)p.tcpClient.Client.RemoteEndPoint, (IPEndPoint)p.tcpClient.Client.LocalEndPoint, true);
+			Entrypoint[] matchedEntrypoints = settings.identifyThisEntrypoint(p.RemoteEndPoint, p.LocalEndPoint, true);
 			if (matchedEntrypoints.Length == 0)
 			{
-				WebProxyService.ReportError("WebProxyCertificateSelector: Unable to identify any matching entrypoint for request from client " + p.RemoteIPAddressStr + " to " + p.request_url);
+				WebProxyService.ReportError("WebProxyCertificateSelector: Unable to identify any matching entrypoint for request from client " + p.RemoteIPAddressStr + " to " + p.Request.Url);
 				return null;
 			}
 

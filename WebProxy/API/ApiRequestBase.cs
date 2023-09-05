@@ -38,9 +38,9 @@ namespace WebProxy
 		/// <returns></returns>
 		public static async Task<T> ParseRequest<T>(HttpProcessor httpProcessor, CancellationToken cancellationToken = default)
 		{
-			if (httpProcessor.http_method != "POST")
+			if (httpProcessor.Request.HttpMethod != "POST")
 				throw new Exception("This API method must be called using HTTP POST");
-			ByteUtil.AsyncReadResult result = await ByteUtil.ReadToEndWithMaxLengthAsync(httpProcessor.RequestBodyStream, RequestBodySizeLimit, cancellationToken).ConfigureAwait(false);
+			ByteUtil.ReadToEndResult result = await ByteUtil.ReadToEndWithMaxLengthAsync(httpProcessor.Request.RequestBodyStream, RequestBodySizeLimit, 5000, cancellationToken).ConfigureAwait(false);
 			if (result.EndOfStream)
 			{
 				string str = ByteUtil.Utf8NoBOM.GetString(result.Data);
@@ -48,9 +48,7 @@ namespace WebProxy
 			}
 			else
 			{
-				if (!httpProcessor.responseWritten)
-					await httpProcessor.writeFailureAsync("413 Content Too Large", "This server allows a maximum request body size of " + RequestBodySizeLimit + " bytes.", cancellationToken: cancellationToken).ConfigureAwait(false);
-				throw new Exception("413 Content Too Large: This server allows a maximum request body size of " + RequestBodySizeLimit + " bytes.");
+				throw new HttpProcessor.HttpProcessorException("413 Content Too Large", "This server allows a maximum request body size of " + RequestBodySizeLimit + " bytes.");
 			}
 		}
 	}
