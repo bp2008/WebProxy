@@ -361,7 +361,7 @@
 				{
 					this.platformSupportsMemoryMax = true;
 					this.memoryMaxCurrentValue = response.memoryMax;
-					if (response.memoryMax.indexOf("M") > -1)
+					if (response.memoryMax && response.memoryMax.indexOf("M") > -1)
 						this.memoryMax = parseInt(response.memoryMax);
 					else
 						this.memoryMax = 1500;
