@@ -40,8 +40,8 @@
 	</ItemGroup>
 	<PropertyGroup>
 		<Nullable>disable</Nullable>
-		<FileVersion>1.18.0.4</FileVersion>
-		<AssemblyVersion>1.18.0.4</AssemblyVersion>
+		<FileVersion>1.18.0.5</FileVersion>
+		<AssemblyVersion>1.18.0.5</AssemblyVersion>
 		<NeutralLanguage>en-US</NeutralLanguage>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

@@ -512,6 +512,6 @@ namespace WebProxy.Controllers
 	}
 	public class SetMemoryMaxMiBRequest
 	{
-		public uint MiB;
+		public uint? MiB;
 	}
 }
