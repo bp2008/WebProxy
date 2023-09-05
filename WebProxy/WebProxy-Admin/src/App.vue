@@ -86,7 +86,7 @@
 					<div class="flexRow" v-if="platformSupportsMemoryMax">
 						<label>Process Memory Limit: {{memoryMaxCurrentValue}}</label>
 						<div>
-							<input type="number" v-model="memoryMax" min="100" max="100000" autocomplete="off" /> <input type="button" value="<- Set New Limit" @click="SetMemoryMax(memoryMax)" /> <input type="button" value="Remove Limit" @click="DeleteMemoryMax()" />
+							<input type="number" v-model="memoryMax" min="100" max="100000" autocomplete="off" /> MiB <input type="button" value="<- Set New Limit" @click="SetMemoryMax(memoryMax)" /> <input type="button" value="Remove Limit" @click="DeleteMemoryMax()" />
 						</div>
 					</div>
 				</div>
@@ -365,6 +365,8 @@
 						this.memoryMax = parseInt(response.memoryMax);
 					else
 						this.memoryMax = 1500;
+					if (!this.memoryMaxCurrentValue)
+						this.memoryMaxCurrentValue = "None";
 				}
 
 				for (let i = 0; i < response.entrypoints.length; i++)
