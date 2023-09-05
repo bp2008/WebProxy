@@ -86,9 +86,7 @@
 					<div class="flexRow" v-if="platformSupportsMemoryMax">
 						<label>Process Memory Limit: {{memoryMaxCurrentValue}}</label>
 						<div>
-							<input type="number" v-model="memoryMaxMiB" min="100" max="100000" autocomplete="off" />
-							<input type="button" value="<- Set New Limit" @click="SetMemoryMax(memoryMaxMiB)" />
-							<input type="button" value="Remove Limit" @click="DeleteMemoryMax" />
+							<input type="number" v-model="memoryMaxMiB" min="100" max="100000" autocomplete="off" /> <input type="button" value="<- Set New Limit" @click="SetMemoryMax(memoryMaxMiB)" /> <input type="button" value="Remove Limit" @click="DeleteMemoryMax()" />
 						</div>
 					</div>
 				</div>
