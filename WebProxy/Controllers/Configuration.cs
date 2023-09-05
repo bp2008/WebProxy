@@ -32,6 +32,7 @@ namespace WebProxy.Controllers
 #if LINUX
 			response.memoryMax = await AppInit.GetPropertySystemdServiceFileAsync(Program.serviceName, "MemoryMax", CancellationToken).ConfigureAwait(false);
 #endif
+			await Task.CompletedTask.ConfigureAwait(false);
 			response.acmeAccountEmail = s.acmeAccountEmail;
 			response.entrypoints = s.entrypoints.ToArray();
 			response.exitpoints = s.exitpoints.ToArray();
@@ -339,13 +340,14 @@ namespace WebProxy.Controllers
 		/// <param name="useServerGC">If true, sets the garbage collector type to Server; otherwise, sets it to Workstation.</param>
 		/// <param name="cancellationToken">Cancellation Token</param>
 		/// <returns>A task that represents the asynchronous write operation.</returns>
-		private Task SetGarbageCollectorModeAsync(bool useServerGC, CancellationToken cancellationToken)
+		private async Task SetGarbageCollectorModeAsync(bool useServerGC, CancellationToken cancellationToken)
 		{
 #if LINUX
-			return AppInit.SetEnvironmentVariableInSystemdServiceFileAsync(Program.serviceName, "DOTNET_gcServer", useServerGC ? "1" : "0");
+			await AppInit.SetEnvironmentVariableInSystemdServiceFileAsync(Program.serviceName, "DOTNET_gcServer", useServerGC ? "1" : "0", cancellationToken).ConfigureAwait(false);
+			await TaskHelper.RunBlockingCodeSafely(() => AppInit.RunSystemctlDaemonReload(), cancellationToken).ConfigureAwait(false);
 #else
 			AppInit.SetEnvironmentVariableInWindowsService(Program.serviceName, "DOTNET_gcServer", useServerGC ? "1" : "0");
-			return TaskHelper.CompletedTask;
+			await TaskHelper.CompletedTask.ConfigureAwait(false);
 #endif
 		}
 		//		/// <summary>
@@ -391,6 +393,7 @@ namespace WebProxy.Controllers
 			SetMemoryMaxMiBRequest request = await ParseRequest<SetMemoryMaxMiBRequest>().ConfigureAwait(false);
 #if LINUX
 			await AppInit.SetMemoryMaxInSystemdServiceFileAsync(Program.serviceName, request.MiB, CancellationToken).ConfigureAwait(false);
+			await TaskHelper.RunBlockingCodeSafely(() => AppInit.RunSystemctlDaemonReload(), CancellationToken).ConfigureAwait(false);
 			if (RestartServer())
 				return this.ApiSuccessNoAutocomplete(new ApiResponseBase(true));
 			return ApiError("The change will take effect when the service is restarted.");
