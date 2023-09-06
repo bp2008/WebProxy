@@ -116,6 +116,15 @@
 						{{data.gc}}
 					</td>
 				</tr>
+				<tr title="Busy/Max [Min, Free]">
+					<td>Dotnet ThreadPool</td>
+					<td>
+						<div>Threads:</div>
+						<div>{{data.maxThreads-data.availableThreads}}/{{data.maxThreads}} (Min: {{data.minThreads}}, Free: {{data.availableThreads}})</div>
+						<div>Completion Port Threads:</div>
+						<div>{{data.maxCompletionPortThreads-data.availableCompletionPortThreads}}/{{data.maxCompletionPortThreads}} (Min: {{data.minCompletionPortThreads}}, Free: {{data.availableCompletionPortThreads}})</div>
+					</td>
+				</tr>
 			</tbody>
 		</table>
 	</div>

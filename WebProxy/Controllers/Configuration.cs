@@ -425,7 +425,7 @@ namespace WebProxy.Controllers
 				}
 				catch (Exception ex)
 				{
-					Logger.Debug(ex);
+					Logger.Debug(ex, "WebProxy.Configuration.RestartServer");
 				}
 			});
 			thrRestartSelf.Name = "Restart Self";

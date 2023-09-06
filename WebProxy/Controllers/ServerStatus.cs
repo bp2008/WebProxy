@@ -40,17 +40,29 @@ namespace WebProxy.Controllers
 			CountdownStopwatch pingTimer = CountdownStopwatch.StartNew(TimeSpan.FromSeconds(10));
 			string lastJson = null;
 			Stopwatch swCpuTimer = Stopwatch.StartNew();
-			CountdownStopwatch reReadRamSize = CountdownStopwatch.StartNew(TimeSpan.FromMinutes(1));
+			CountdownStopwatch cd60 = new CountdownStopwatch(TimeSpan.FromSeconds(60)); // Just construct, do not start.
+			CountdownStopwatch cd10 = new CountdownStopwatch(TimeSpan.FromSeconds(10));
 			double lastCpuTime = 0;
 			long lastCpuMeasurementAt = 0;
-			ulong ramSize = GetRamSize();
+			ulong ramSize = 0;
+			int minThreads = 0;
+			int maxThreads = 0;
+			int availableThreads = 0;
+			int minCompletionPortThreads = 0;
+			int maxCompletionPortThreads = 0;
+			int availableCompletionPortThreads = 0;
 			while (isConnected && !WebProxyService.abort)
 			{
-				if (reReadRamSize.Finished)
+				if (CheckCooldown(cd60))
 				{
 					ramSize = GetRamSize();
-					reReadRamSize.Restart();
 				}
+				if (CheckCooldown(cd10))
+				{
+					ThreadPool.GetMinThreads(out minThreads, out minCompletionPortThreads);
+					ThreadPool.GetMaxThreads(out maxThreads, out maxCompletionPortThreads);
+				}
+				ThreadPool.GetAvailableThreads(out availableThreads, out availableCompletionPortThreads);
 				Process me = Process.GetCurrentProcess();
 				TimeSpan cpuTime = me.TotalProcessorTime;
 				double nowCpuTime = cpuTime.TotalMilliseconds;
@@ -81,7 +93,13 @@ namespace WebProxy.Controllers
 					requestsServed = WebProxyService.TotalRequestsServed,
 					gc = gcMem,
 					ramSize = ramSize,
-					isServerGc = GCSettings.IsServerGC
+					isServerGc = GCSettings.IsServerGC,
+					minThreads,
+					maxThreads,
+					availableThreads,
+					minCompletionPortThreads,
+					maxCompletionPortThreads,
+					availableCompletionPortThreads
 				});
 				if (json != lastJson)
 					socket.Send(json);
@@ -101,6 +119,15 @@ namespace WebProxy.Controllers
 				socket.Close();
 
 			return Empty();
+		}
+		private bool CheckCooldown(CountdownStopwatch cd)
+		{
+			if (!cd.IsRunning || cd.Finished)
+			{
+				cd.Restart();
+				return true;
+			}
+			return false;
 		}
 		private ulong GetRamSize()
 		{
