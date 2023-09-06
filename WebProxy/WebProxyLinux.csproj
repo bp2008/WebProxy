@@ -49,8 +49,8 @@
 	<PropertyGroup>
 		<Nullable>disable</Nullable>
 		<BaseIntermediateOutputPath>objLinux\</BaseIntermediateOutputPath>
-		<AssemblyVersion>1.18.0.8</AssemblyVersion>
-		<FileVersion>1.18.0.8</FileVersion>
+		<AssemblyVersion>1.19.1.0</AssemblyVersion>
+		<FileVersion>1.19.1.0</FileVersion>
 		<NeutralLanguage>en-US</NeutralLanguage>
 		<RootNamespace>WebProxy</RootNamespace>
 	</PropertyGroup>

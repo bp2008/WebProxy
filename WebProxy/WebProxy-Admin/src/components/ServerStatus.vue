@@ -125,6 +125,12 @@
 						<div>{{data.maxCompletionPortThreads-data.availableCompletionPortThreads}}/{{data.maxCompletionPortThreads}} (Min: {{data.minCompletionPortThreads}}, Free: {{data.availableCompletionPortThreads}})</div>
 					</td>
 				</tr>
+				<tr>
+					<td>Active Connections</td>
+					<td>
+						{{data.activeConnections ? data.activeConnections.join('\r\n') : ''}}
+					</td>
+				</tr>
 			</tbody>
 		</table>
 	</div>

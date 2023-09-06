@@ -1,5 +1,6 @@
 ﻿using BPUtil;
 using BPUtil.MVC;
+using BPUtil.SimpleHttp;
 using BPUtil.SimpleHttp.WebSockets;
 using Newtonsoft.Json;
 using System;
@@ -99,7 +100,10 @@ namespace WebProxy.Controllers
 					availableThreads,
 					minCompletionPortThreads,
 					maxCompletionPortThreads,
-					availableCompletionPortThreads
+					availableCompletionPortThreads,
+					activeConnections = Context.Server.GetActiveHttpProcessors()
+						.Select(p => p.ToString())
+						.ToArray()
 				});
 				if (json != lastJson)
 					socket.Send(json);

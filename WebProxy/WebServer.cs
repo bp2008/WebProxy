@@ -246,7 +246,7 @@ namespace WebProxy
 						options.BeforeResponseHeadersSent += (sender, e) =>
 						{
 							foreach (HttpHeader header in orh)
-								e[header.Key] = header.Value;
+								e.Response.Headers[header.Key] = header.Value;
 						};
 					}
 

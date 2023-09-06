@@ -13,7 +13,7 @@ namespace WebProxyStressTester
 
 		static volatile bool abort = false;
 		//static int NUM_CONNECTIONS = (int)(Environment.ProcessorCount * 1.25);
-		static int NUM_CONNECTIONS = 40;
+		static int NUM_CONNECTIONS = 24;
 		static string[] urls = new string[] { "http://localhost:8080/", "http://localhost:8080/src/themes.scss", "http://localhost:8080/Log/Test" };
 		//static string[] urls = new string[] { "http://localhost:80/src/themes.scss" };
 		//static string[] urls = new string[] { "http://localhost:80/", "http://localhost:80/src/themes.scss", "http://localhost:80/Log/Test" };
