@@ -102,8 +102,8 @@ namespace WebProxy.Controllers
 					maxCompletionPortThreads,
 					availableCompletionPortThreads,
 					activeConnections = Context.Server.GetActiveHttpProcessors()
-						.Select(p => p.ToString())
-						.ToArray()
+						.Select(p => p.GetSummary())
+						.ToArray(),
 				});
 				if (json != lastJson)
 					socket.Send(json);

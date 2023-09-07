@@ -729,6 +729,10 @@
 			o.allowGenerateSelfSignedCertificate = true;
 		if (typeof o.useConnectionKeepAlive === "undefined")
 			o.useConnectionKeepAlive = true;
+		if (!o.connectTimeoutSec)
+			o.connectTimeoutSec = 10;
+		if (!o.networkTimeoutSec)
+			o.networkTimeoutSec = 15;
 		o.uniqueId = idCounter++;
 		return o;
 	}

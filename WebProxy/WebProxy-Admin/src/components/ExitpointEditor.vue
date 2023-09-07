@@ -15,11 +15,54 @@
 		</div>
 		<template v-if="exitpoint.type !== 'Disabled'">
 			<div class="flexRow" :title="hostTitle">
-				<label>Host</label>
+				<label>Host Binding</label>
 				<input type="text" v-model="exitpoint.host" class="hostInput" autocomplete="off" />
-				<div class="exampleText" v-if="store.showHelp">Multiple hosts? Use comma and/or space to separate: <span class="icode">example.com www.example.com</span>.</div>
+				<div class="exampleText" v-if="store.showHelp">Enter the hostname which should route to this exitpoint.</div>
+				<div class="exampleText" v-if="store.showHelp">Multiple hostnames? Use comma and/or space to separate: <span class="icode">example.com www.example.com</span>.</div>
 				<div class="exampleText" v-if="store.showHelp">Using wildcards will disable automatic certificate creation: <span class="icode">*.example.com</span>.</div>
 			</div>
+			<template v-if="exitpoint.type === 'WebProxy'">
+				<div class="flexRow" title="Destination origin, e.g. http://example.com or https://example.com:8000">
+					<label>Destination Origin</label>
+					<input type="text" v-model="exitpoint.destinationOrigin" class="destinationOriginInput" autocomplete="off" />
+					<div class="comment" v-if="store.showHelp">Requests shall be proxied to this origin (scheme, host, optional port), e.g. <span class="icode">https://example.com:8000</span>.  If you include a request path, query string, etc, it will be accepted but ignored.</div>
+				</div>
+				<div class="flexRow" v-if="destinationOriginIsHttps">
+					<label><input type="checkbox" v-model="exitpoint.proxyAcceptAnyCertificate" /> Skip Certificate Validation for Destination Origin</label>
+				</div>
+				<div class="flexRow">
+					<label>Destination Host Header</label>
+					<input type="text" v-model="exitpoint.destinationHostHeader" autocomplete="off" />
+					<div class="comment" v-if="store.showHelp">If you need to override the host string used in outgoing proxy requests (for the Host header and TLS Server Name Indication), provide the host string here.  Otherwise leave this empty and the host from the Destination Origin will be used. DO NOT include a port number, even if using a non-standard port.  The port number will be added automatically where appropriate.</div>
+				</div>
+				<div class="flexRow">
+					<label><input type="checkbox" v-model="exitpoint.useConnectionKeepAlive" /> Use <span class="icode">Connection: keep-alive</span></label>
+					<div class="comment" v-if="store.showHelp">Enabled by default for performance reasons, you can disable this to force a new connection to be made to the destination server for every request.</div>
+				</div>
+				<div class="flexRow">
+					<label>Connect Timeout (seconds)</label>
+					<input type="number" v-model="exitpoint.connectTimeoutSec" min="1" max="60" autocomplete="off" />
+					<div class="comment" v-if="store.showHelp">
+						The connection timeout, in seconds.  Min: 1, Max: 60, Default: 10.<br />
+						This timeout applies only to the Connect operation (when connecting to the destination server to faciliate proxying).
+					</div>
+				</div>
+				<div class="flexRow">
+					<label>Network Timeout (seconds)</label>
+					<input type="number" v-model="exitpoint.networkTimeoutSec" min="1" max="600" autocomplete="off" />
+					<div class="comment" v-if="store.showHelp">
+						The send and receive timeout for other time-sensitive network operations, in seconds.  Min: 1, Max: 600, Default: 15.<br />
+						This timeout applies to:<br />
+						<ul>
+							<li>Reading the HTTP request body from the client.</li>
+							<li>Reading the HTTP response header from the destination server.</li>
+							<li>All other proxy operations that send data on a network socket.</li>
+						</ul>
+						If a destination sometimes has slow time-to-first-byte, you may need to increase this timeout.<br />
+						This timeout does not apply when reading a response body or websocket data because these actions often sit idle for extended periods of time.
+					</div>
+				</div>
+			</template>
 			<div class="dashedBorder">
 				<div>
 					<label><input type="checkbox" v-model="exitpoint.autoCertificate" /> Automatic Certificate from LetsEncrypt</label>
@@ -45,25 +88,6 @@
 					<div class="comment" v-if="store.showHelp">Path to the certificate file (pfx). If omitted, a path will be automatically filled in upon first use.</div>
 				</div>
 			</div>
-			<template v-if="exitpoint.type === 'WebProxy'">
-				<div class="flexRow">
-					<label>Destination Origin</label>
-					<input type="text" v-model="exitpoint.destinationOrigin" class="destinationOriginInput" autocomplete="off" />
-					<div class="comment" v-if="store.showHelp">Requests shall be proxied to this origin, e.g. <span class="icode">https://example.com:8000</span></div>
-				</div>
-				<div class="flexRow" v-if="destinationOriginIsHttps">
-					<label><input type="checkbox" v-model="exitpoint.proxyAcceptAnyCertificate" /> Skip Certificate Validation for Destination Origin</label>
-				</div>
-				<div class="flexRow">
-					<label><input type="checkbox" v-model="exitpoint.useConnectionKeepAlive" /> Use <span class="icode">Connection: keep-alive</span></label>
-					<div class="comment" v-if="store.showHelp">Enabled by default for performance reasons, you can disable this to force a new connection to be made to the destination server for every request.</div>
-				</div>
-				<div class="flexRow">
-					<label>Destination Host Header</label>
-					<input type="text" v-model="exitpoint.destinationHostHeader" autocomplete="off" />
-					<div class="comment" v-if="store.showHelp">If you need to override the host string used in outgoing proxy requests (for the Host header and TLS Server Name Indication), provide the host string here.  Otherwise leave this empty and the host from the Destination Origin will be used. DO NOT include a port number, even if using a non-standard port.  The port number will be added automatically where appropriate.</div>
-				</div>
-			</template>
 			<div class="middlewares">
 				<MiddlewareSelector v-model="exitpoint.middlewares"></MiddlewareSelector>
 			</div>

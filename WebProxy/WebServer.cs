@@ -228,7 +228,8 @@ namespace WebProxy
 					builder.Port = destinationOrigin.Port;
 
 					ProxyOptions options = new ProxyOptions();
-					options.networkTimeoutMs = 15000;
+					options.connectTimeoutMs = myExitpoint.connectTimeoutSec * 1000;
+					options.networkTimeoutMs = myExitpoint.networkTimeoutSec * 1000;
 					options.bet = bet;
 					options.host = myExitpoint.destinationHostHeader;
 					options.includeServerTimingHeader = AddProxyServerTiming;
@@ -274,7 +275,8 @@ namespace WebProxy
 			finally
 			{
 				bet.Stop();
-				//Logger.Info(p.Request.HttpMethod + " " + p.Request.Url + "\r\n\r\n" + bet.ToString("\r\n") + "\r\n");
+				//if (settings.verboseWebServerLogs)
+				//	Logger.Info(p.Request.HttpMethod + " " + p.Request.Url + "\r\n\r\n" + bet.ToString("\r\n") + "\r\n");
 			}
 			return;
 		}

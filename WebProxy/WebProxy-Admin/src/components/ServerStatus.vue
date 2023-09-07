@@ -128,7 +128,79 @@
 				<tr>
 					<td>Active Connections</td>
 					<td>
-						{{data.activeConnections ? data.activeConnections.join('\r\n') : ''}}
+						<div style="min-height: 100vh" v-if="data.activeConnections">
+							<div class="activeConnection" v-for="c in data.activeConnections" :key="c.ID">
+								<div class="header" title="[[Connection ID]] [Client IP] -> [Host][:Port] [Num Requests Completed This Connection]">[{{c.ID}}] {{c.ClientIP}} -> {{c.Host}}{{getPortStr(c)}}{{c.Tls ? " (TLS)" : ""}} R#{{c.RequestsHandled}}</div>
+								<div class="request">
+									<!-- Line 1 -->
+									Request:
+									<template v-if="c.Request">
+										{{c.Request.Method}} {{c.Request.Url}}
+									</template>
+									<template v-else>
+										<ClockLoader class="loadingAnimation" />
+									</template>
+									<div class="requestBody">
+										<!-- Line 2 -->
+										<template v-if="c.Request && c.Request.Body">
+											<template v-if="c.Request.Body.Type === 'WebSocket'">
+												WebSocket
+												<ClockLoader class="loadingAnimation" />
+											</template>
+											<template v-else>
+												{{typeof c.Request.Body.Read !== 'undefined' ? c.Request.Body.Read : '~'}}/{{typeof c.Request.Body.Size !== 'undefined' ? c.Request.Body.Size : '∞'}}
+												<ClockLoader class="loadingAnimation" v-if="c.Request.Body.Read !== c.Request.Body.Size" />
+											</template>
+										</template>
+										<template v-else>
+											<template v-if="c.Response">
+												[no request body]
+											</template>
+											<template v-else>
+												...
+											</template>
+										</template>
+									</div>
+								</div>
+								<div class="response">
+									<!-- Line 3 -->
+									Response:
+									<template v-if="c.Response">
+										<template v-if="c.Response.Type === 'Pending'">
+											Pending
+										</template>
+										<template v-else>
+											{{c.Response.Status}}
+										</template>
+									</template>
+									<template v-else>
+										<ClockLoader class="loadingAnimation" />
+									</template>
+									<div class="responseBody">
+										<!-- Line 4 -->
+										<template v-if="c.Response">
+											<template v-if="c.Response.Type === 'Pending'">
+												...
+											</template>
+											<template v-else-if="c.Response.Type === 'WebSocket'">
+												WebSocket
+												<ClockLoader class="loadingAnimation" />
+											</template>
+											<template v-else-if="c.Response.Body">
+												{{typeof c.Response.Body.Written !== 'undefined' ? c.Response.Body.Written : '~'}}/{{typeof c.Response.Body.Size !== 'undefined' ? c.Response.Body.Size : '~'}}
+												<ClockLoader class="loadingAnimation" v-if="c.Response.Body.Written !== c.Response.Body.Size" />
+											</template>
+											<template v-else>
+												Finished
+											</template>
+										</template>
+										<template v-else>
+											...
+										</template>
+									</div>
+								</div>
+							</div>
+						</div>
 					</td>
 				</tr>
 			</tbody>
@@ -138,8 +210,10 @@
 
 <script>
 	import * as Util from '/src/library/Util';
+	import ClockLoader from '/src/assets/clockLoader.svg?component';
 
 	export default {
+		components: { ClockLoader },
 		data()
 		{
 			return {
@@ -209,6 +283,14 @@
 					DrawPieChart(this.$refs.memCanvas, pieData);
 
 				this.pieData = pieData;
+			},
+			getPortStr(c)
+			{
+				if (c.Https && c.LocalPort === 443)
+					return "";
+				if (!c.Https && c.LocalPort === 80)
+					return "";
+				return ":" + c.LocalPort;
 			}
 		},
 		mounted()
@@ -356,5 +438,51 @@
 		height: 14px;
 		border: 1px solid #888888;
 		vertical-align: middle;
+	}
+
+	.activeConnection
+	{
+		border: 1px solid #888888;
+		margin-bottom: 5px;
+		white-space: pre-line;
+	}
+
+		.activeConnection:last-child
+		{
+			margin-bottom: 0px;
+		}
+
+		.activeConnection .header
+		{
+			background-color: rgba(0,0,150,0.8);
+			padding: 1px 2px 3px 2px;
+			color: #FFFFFF;
+		}
+
+		.activeConnection .request
+		{
+			margin-left: 10px;
+		}
+
+		.activeConnection .requestBody
+		{
+			margin-left: 10px;
+		}
+
+		.activeConnection .response
+		{
+			margin-left: 10px;
+		}
+
+		.activeConnection .responseBody
+		{
+			margin-left: 10px;
+		}
+
+	.loadingAnimation
+	{
+		width: 16px;
+		height: 16px;
+		vertical-align: text-top;
 	}
 </style>

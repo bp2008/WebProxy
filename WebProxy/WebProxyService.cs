@@ -484,6 +484,9 @@ namespace WebProxy
 
 					if (!string.IsNullOrEmpty(exitpoint.destinationHostHeader) && !Uri.TryCreate("http://" + exitpoint.destinationHostHeader + ":80/", UriKind.Absolute, out Uri ignored2))
 						throw new Exception("Exitpoint \"" + exitpoint.name + "\" has invalid Destination Host Header.");
+
+					exitpoint.connectTimeoutSec = exitpoint.connectTimeoutSec.Clamp(1, 60);
+					exitpoint.networkTimeoutSec = exitpoint.networkTimeoutSec.Clamp(1, 600);
 				}
 
 				exitpoint.name = exitpoint.name.Trim();

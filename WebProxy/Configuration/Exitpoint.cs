@@ -59,6 +59,25 @@ namespace WebProxy
 		/// </summary>
 		public bool useConnectionKeepAlive = true;
 		/// <summary>
+		/// <para>[Requires type == WebProxy]</para>
+		/// <para>[Default: 10] The connection timeout, in milliseconds.</para>
+		/// <para>Clamped to the range [1, 60].</para>
+		/// <para>This timeout applies only to the Connect operation (when connecting to the destination server to faciliate proxying).</para>
+		/// </summary>
+		public int connectTimeoutSec = 10;
+		/// <summary>
+		/// <para>[Requires type == WebProxy]</para>
+		/// <para>[Default: 15] The send and receive timeout for other time-sensitive network operations, in seconds.</para>
+		/// <para>Clamped to the range [1, 600].</para>
+		/// <para>This timeout applies to:</para>
+		/// <para>* Reading the HTTP request body from the client.</para>
+		/// <para>* Reading the HTTP response header from the destination server.</para>
+		/// <para>* All other proxy operations that send data on a network socket.</para>
+		/// <para>If a destination sometimes has slow time-to-first-byte, you may need to increase this timeout.</para>
+		/// <para>This timeout does not apply when reading a response body or WebSocket data because these actions often sit idle for extended periods of time.</para>
+		/// </summary>
+		public int networkTimeoutSec = 15;
+		/// <summary>
 		/// Defines the type of Exitpoint this is.  Can be Disabled, AdminConsole, or WebProxy.
 		/// </summary>
 		[JsonConverter(typeof(StringEnumConverter))]
