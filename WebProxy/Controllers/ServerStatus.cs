@@ -46,6 +46,8 @@ namespace WebProxy.Controllers
 			double lastCpuTime = 0;
 			long lastCpuMeasurementAt = 0;
 			ulong ramSize = 0;
+			int coreCount = 1;
+			int coreCountDigits = 1;
 			int minThreads = 0;
 			int maxThreads = 0;
 			int availableThreads = 0;
@@ -57,6 +59,8 @@ namespace WebProxy.Controllers
 				if (CheckCooldown(cd60))
 				{
 					ramSize = GetRamSize();
+					coreCount = Environment.ProcessorCount;
+					coreCountDigits = coreCount.ToString().Length;
 				}
 				if (CheckCooldown(cd10))
 				{
@@ -70,14 +74,14 @@ namespace WebProxy.Controllers
 				long timeNow = swCpuTimer.ElapsedMilliseconds;
 				long timeElapsed = timeNow - lastCpuMeasurementAt;
 				lastCpuMeasurementAt = timeNow;
-				string cpuUsagePercent;
+				string cpuCoreUsagePercent;
 				if (lastCpuTime == 0 || timeElapsed <= 0)
-					cpuUsagePercent = "0.0";
+					cpuCoreUsagePercent = "0.0";
 				else
 				{
 					double cpuUsedLastInterval = nowCpuTime - lastCpuTime;
-					cpuUsedLastInterval = (cpuUsedLastInterval / timeElapsed) * 100.0;
-					cpuUsagePercent = cpuUsedLastInterval.ToString("0.0");
+					cpuUsedLastInterval = (cpuUsedLastInterval / timeElapsed);
+					cpuCoreUsagePercent = cpuUsedLastInterval.ToString("0.00").PadLeft(3 + coreCountDigits, ' ');
 				}
 				GCMemoryInfo gcMem = GC.GetGCMemoryInfo();
 				lastCpuTime = nowCpuTime;
@@ -88,8 +92,9 @@ namespace WebProxy.Controllers
 					serverMaxConnectionCount = WebProxyService.MakeLocalSettingsReference().serverMaxConnectionCount,
 					mem_privateMemorySize = me.PrivateMemorySize64,
 					mem_workingSet = me.WorkingSet64,
-					cpu_processorTime = cpuTime.ToString(),
-					cpu_coreUsagePercent = cpuUsagePercent,
+					cpu_processorTime = TimeUtil.ToDHMS(cpuTime),
+					cpu_coreUsagePercent = cpuCoreUsagePercent,
+					cpu_coreCount = coreCount,
 					connectionsServed = WebProxyService.TotalConnectionsServed,
 					requestsServed = WebProxyService.TotalRequestsServed,
 					gc = gcMem,

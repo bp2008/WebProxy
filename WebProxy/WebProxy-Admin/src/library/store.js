@@ -1,7 +1,8 @@
-﻿import { reactive, watch } from 'vue';
+﻿import { reactive, watch, computed } from 'vue';
 
 const store = reactive({
 	currentTheme: "",
+	darkTheme: computed(() => store.currentTheme.indexOf('dark') > -1),
 	themeList: ["dark", "dark2", "light"],
 	showHelp: false,
 	exitpointTypes: [],
@@ -25,6 +26,7 @@ const store = reactive({
 	appVersion: "",
 	windowWidth: -1,
 	windowHeight: -1,
+	windowSize: computed(() => store.windowWidth + "x" + store.windowHeight),
 	mobileLayout: false,
 	tabBarHeight: 0,
 	recalcTabBarHeight: recalcTabBarHeight

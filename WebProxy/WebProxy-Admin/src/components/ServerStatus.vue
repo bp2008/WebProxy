@@ -9,54 +9,41 @@
 				</tr>
 			</thead>
 			<tbody>
-				<tr>
-					<td>Is Under Heavy Load</td>
-					<td>{{data.serverIsUnderHeavyLoad}}</td>
+				<tr title="When the server is under a 'heavy load', some limits are put into place such as smaller buffers and 'keep-alive' is not allowed.">
+					<td>Current / Max Connections</td>
+					<td>{{data.serverOpenConnectionCount}} / {{data.serverMaxConnectionCount}} ({{((data.serverOpenConnectionCount / data.serverMaxConnectionCount) * 100).toFixed(1)}}% load)<b>{{data.serverIsUnderHeavyLoad ? ' (heavy load)' : ''}}</b></td>
 				</tr>
 				<tr>
-					<td>Open Connection Count</td>
-					<td>{{data.serverOpenConnectionCount}}</td>
+					<td>Usage Totals</td>
+					<td>Connections:&nbsp;{{data.connectionsServed}}, Requests:&nbsp;{{data.requestsServed}}</td>
 				</tr>
 				<tr>
-					<td>Max Connection Count</td>
-					<td>{{data.serverMaxConnectionCount}}</td>
-				</tr>
-				<tr>
-					<td>Total Connections Accepted</td>
-					<td>{{data.connectionsServed}}</td>
-				</tr>
-				<tr>
-					<td>Total Requests Handled</td>
-					<td>{{data.requestsServed}}</td>
-				</tr>
-				<tr>
-					<td>CPU Core Usage</td>
+					<td>CPU Usage</td>
 					<td>
-						{{data.cpu_coreUsagePercent}}
+						<circular-meter :diameter="100"
+										:degrees="180"
+										:value="cpuUsagePercent"
+										:background-thickness="20"
+										:foreground-thickness="20"
+										:background-color="store.darkTheme ? '#666' : '#ddd'"
+										foreground-color="#f00"
+										:segment-count="data.cpu_coreCount"
+										:segment-separator-thickness="0.25"
+										:segment-separator-color="store.darkTheme ? '#000' : '#fff'"
+										:text="(cpuUsagePercent * 100).toFixed(0) + '%'"
+										:textOffset="5">
+						</circular-meter>
+						<div style="display: inline-block; margin-left: 1em;">CPU Time:<br />{{data.cpu_processorTime}}</div>
 					</td>
 				</tr>
-				<tr>
-					<td>CPU Time</td>
-					<td>
-						{{data.cpu_processorTime}}
-					</td>
-				</tr>
-				<tr title="Current overall system memory load" v-if="data.ramSize !== 0">
+				<!--<tr title="Current overall system memory load" v-if="data.ramSize !== 0">
 					<td>System Memory Total</td>
 					<td>
 						{{Util.formatBytes2(data.ramSize)}}
 					</td>
-				</tr>
+				</tr>-->
 				<tr>
-					<td>Private Memory Size</td>
-					<td>
-						{{Util.formatBytes2(data.mem_privateMemorySize).padRight(10, ' ')}}
-						({{Util.formatBytesF10(data.mem_privateMemorySize).padRight(9, ' ')}})
-						({{data.mem_privateMemorySize}} bytes)
-					</td>
-				</tr>
-				<tr>
-					<td>Working Set</td>
+					<td :title="privateMemorySizeTooltip">Working Set</td>
 					<td>
 						{{Util.formatBytes2(data.mem_workingSet).padRight(10, ' ')}}
 						({{Util.formatBytesF10(data.mem_workingSet).padRight(9, ' ')}})
@@ -64,60 +51,48 @@
 					</td>
 				</tr>
 				<tr>
-					<td>Memory Usage Breakdown<br />As of Previous GC</td>
+					<td :title="gcRawJson">Garbage Collector</td>
 					<td>
-						<canvas width="160" height="160" ref="memCanvas"></canvas>
+						{{data.isServerGc ? "Server" : "Workstation" }} mode, {{data.gc.Index}} collections
+					</td>
+				</tr>
+				<tr>
+					<td :title="gcRawJson">Memory Usage Breakdown<br />As of Previous GC</td>
+					<td>
+						<canvas width="100" height="100" ref="memPieCanvas"></canvas>
 						<div class="legend">
 							<div class="legendRow" v-for="item in pieData">
-								<div class="legendBox" v-bind:style="{ backgroundColor: item.color }"></div> {{item.name}} ({{Util.formatBytes2(item.value)}})
+								<div class="legendBox" v-bind:style="{ backgroundColor: item.color }"></div> ({{Util.formatBytes2(item.value)}}) {{item.name}}
 							</div>
 						</div>
 					</td>
 				</tr>
 				<tr>
-					<td>Garbage Collection Count</td>
-					<td>
-						{{data.gc.Index}}
-					</td>
-				</tr>
-				<tr>
-					<td>Garbage Collector Mode</td>
-					<td>
-						{{data.isServerGc ? "Server" : "Workstation" }}
-					</td>
-				</tr>
-				<tr>
-					<td>GC Heap Fragmentation</td>
+					<td :title="gcRawJson">GC Heap Fragmentation</td>
 					<td>
 						{{Math.round((data.gc.FragmentedBytes / data.gc.HeapSizeBytes) * 100)}}% ({{Util.formatBytes2(data.gc.FragmentedBytes)}} / {{Util.formatBytes2(data.gc.HeapSizeBytes)}})
 					</td>
 				</tr>
-				<tr title="Overall system memory load when the last garbage collection occurred.">
-					<td>GC System Memory Load</td>
+				<tr>
+					<td title="Overall system memory load when the last garbage collection occurred.">GC System Memory Load</td>
 					<td>
 						{{Util.formatBytes2(data.gc.MemoryLoadBytes)}}
 					</td>
 				</tr>
-				<tr title="The high memory load threshold when the last garbage collection occurred. (when total system memory usage reaches this point, it is considered a high memory load)">
-					<td>GC High Load Threshold</td>
+				<tr>
+					<td title="The high memory load threshold when the last garbage collection occurred. (when total system memory usage reaches this point, it is considered a high memory load)">GC High Load Threshold</td>
 					<td>
 						{{Util.formatBytes2(data.gc.HighMemoryLoadThresholdBytes)}} {{ data.gc.MemoryLoadBytes >= data.gc.HighMemoryLoadThresholdBytes ? "(GC in High Load Mode)" : "" }}
 					</td>
 				</tr>
-				<tr title="The total available memory, in bytes, for the garbage collector to use when the last garbage collection occurred.">
-					<td>GC Available Memory</td>
+				<tr>
+					<td title="The total available memory, in bytes, for the garbage collector to use when the last garbage collection occurred.">GC Available Memory</td>
 					<td>
 						{{Util.formatBytes2(data.gc.TotalAvailableMemoryBytes)}}
 					</td>
 				</tr>
 				<tr>
-					<td>GCMemoryInfo Raw</td>
-					<td>
-						{{data.gc}}
-					</td>
-				</tr>
-				<tr title="Busy/Max [Min, Free]">
-					<td>Dotnet ThreadPool</td>
+					<td title="Busy/Max [Min, Free]">Dotnet ThreadPool</td>
 					<td>
 						<div>Threads:</div>
 						<div>{{data.maxThreads-data.availableThreads}}/{{data.maxThreads}} (Min: {{data.minThreads}}, Free: {{data.availableThreads}})</div>
@@ -211,12 +186,15 @@
 <script>
 	import * as Util from '/src/library/Util';
 	import ClockLoader from '/src/assets/clockLoader.svg?component';
+	import CircularMeter from '/src/components/CircularMeter.vue';
+	import store from '/src/library/store';
 
 	export default {
-		components: { ClockLoader },
+		components: { ClockLoader, CircularMeter },
 		data()
 		{
 			return {
+				store: store,
 				data: { gc: {} },
 				pieData: [],
 				isConnected: false,
@@ -225,11 +203,33 @@
 				Util: Util
 			};
 		},
+		created()
+		{
+		},
 		computed:
 		{
 			gcIndex()
 			{
 				return this.data && this.data.gc ? this.data.gc.Index : -1;
+			},
+			gcRawJson()
+			{
+				return JSON.stringify(this.data.gc, null, 2);
+			},
+			cpuUsagePercent()
+			{
+				if (this.data)
+					return parseFloat(this.data.cpu_coreUsagePercent) / this.data.cpu_coreCount;
+				return 0;
+			},
+			privateMemorySizeTooltip()
+			{
+				let pms = this.data.mem_privateMemorySize;
+				let text = "";
+				if (this.data.ramSize !== 0)
+					text += "System Memory Total: " + Util.formatBytes2(this.data.ramSize) + "\n";
+				text += "Private Memory Size: " + Util.formatBytes2(pms).padRight(10, ' ') + " (" + Util.formatBytesF10(pms).padRight(9, ' ') + ") (" + pms + " bytes)";
+				return text;
 			}
 		},
 		methods:
@@ -271,7 +271,7 @@
 					setTimeout(this.connect, 1000);
 				};
 			},
-			computePieData()
+			computeMemPieData()
 			{
 				let data = this.data;
 				let pieData = [];
@@ -279,8 +279,8 @@
 				AddPieData(pieData, "Committed Non-Heap", data.gc.TotalCommittedBytes - data.gc.HeapSizeBytes, "#FFFF00");
 				AddPieData(pieData, "Unmanaged", data.mem_workingSet - data.gc.TotalCommittedBytes, "#CCCCCC");
 
-				if (this.$refs.memCanvas)
-					DrawPieChart(this.$refs.memCanvas, pieData);
+				if (this.$refs.memPieCanvas)
+					DrawPieChart(this.$refs.memPieCanvas, pieData, 3, "white");
 
 				this.pieData = pieData;
 			},
@@ -307,7 +307,7 @@
 		{
 			gcIndex()
 			{
-				this.computePieData();
+				this.computeMemPieData();
 			}
 		}
 	};
@@ -355,11 +355,11 @@
 	{
 		arr.push({ name, value, color });
 	};
-	var DrawPieChart = function (canvas, data)
+	var DrawPieChart = function (canvas, data, borderWidth, borderColor)
 	{
 		var ctx = canvas.getContext("2d");
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		var lastend = 0;
-		var borderWidth = 3;
 		var radius = canvas.height / 2 - borderWidth;
 
 		var myTotal = 0;
@@ -376,12 +376,14 @@
 			ctx.fill();
 			lastend += Math.PI * 2 * (data[i].value / myTotal);
 		}
-
-		ctx.strokeStyle = "white";
-		ctx.lineWidth = borderWidth;
-		ctx.beginPath();
-		ctx.arc(canvas.width / 2, canvas.height / 2, radius, 0, Math.PI * 2);
-		ctx.stroke();
+		if (borderWidth)
+		{
+			ctx.strokeStyle = borderColor;
+			ctx.lineWidth = borderWidth;
+			ctx.beginPath();
+			ctx.arc(canvas.width / 2, canvas.height / 2, radius, 0, Math.PI * 2);
+			ctx.stroke();
+		}
 	}
 
 </script>
@@ -484,5 +486,18 @@
 		width: 16px;
 		height: 16px;
 		vertical-align: text-top;
+	}
+
+	canvas
+	{
+		vertical-align: text-top;
+	}
+
+	@media (min-width: 650px)
+	{
+		.serverStatusTable td:first-child
+		{
+			min-width: 210px;
+		}
 	}
 </style>

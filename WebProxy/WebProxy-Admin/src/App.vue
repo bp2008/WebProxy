@@ -495,8 +495,8 @@
 						localStorage.webProxySelectedTabName = tab.Name;
 				}
 				catch { }
-				if (tab.scrollTop)
-					document.querySelector("html").scrollTop = 0;
+				if (tab && tab.scrollTop)
+					document.querySelector("#app").scrollTop = 0;
 			},
 			async testCloudflareDNS()
 			{
