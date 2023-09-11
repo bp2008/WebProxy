@@ -13,7 +13,8 @@ export default function ExecAPI(method, args)
 		method: 'POST',
 		headers: {
 			'Accept': 'application/json',
-			'Content-Type': 'application/json'
+			'Content-Type': 'application/json',
+			'X-WebProxy-CSRF-Protection': '1'
 		},
 		body: JSON.stringify(args)
 	})

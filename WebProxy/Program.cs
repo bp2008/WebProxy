@@ -131,7 +131,7 @@ namespace WebProxy
 				builder.Path = "/CommandLineInterface/" + methodName;
 				if (!string.IsNullOrWhiteSpace(adminInfo.user) && wru.BasicAuthCredentials == null)
 					wru.BasicAuthCredentials = new NetworkCredential(adminInfo.user, adminInfo.pass);
-				BpWebResponse response = wru.POST(builder.Uri.ToString(), new byte[0], "application/json");
+				BpWebResponse response = wru.POST(builder.Uri.ToString(), new byte[0], "application/json", new string[] { "X-WebProxy-CSRF-Protection", "1" });
 				if (response.StatusCode == 0)
 					c.RedLine("Failed to get a response from the service. Is it running?");
 				else

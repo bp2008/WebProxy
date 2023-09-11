@@ -15,6 +15,25 @@ namespace WebProxy.Controllers
 	public abstract class AdminConsoleControllerBase : ControllerAsync
 	{
 		/// <summary>
+		/// Implements Cross-Site Request Forgery (CSRF) protection.
+		/// </summary>
+		/// <returns></returns>
+		public override Task<ActionResult> OnAuthorization()
+		{
+			// "GET" requests are excluded from this requirement, as they are not typically able to use this the HTTP header method of CSRF protection.
+			// Instead, we ensure that no "GET" requests can be used to mutate the server state in a meaningful way.
+			if (Context.httpProcessor.Request.HttpMethod == "GET")
+				return Task.FromResult<ActionResult>(null);
+
+			// Check for the existence of the "X-WebProxy-CSRF-Protection" header.
+			if (Context.httpProcessor.Request.Headers["X-WebProxy-CSRF-Protection"] == "1")
+				return Task.FromResult<ActionResult>(null);
+
+			// CSRF header missing, therefore this is a probable CSRF attempt.  Refuse the request.
+			ActionResult forbidden = StatusCode("403 Forbidden");
+			return Task.FromResult(forbidden);
+		}
+		/// <summary>
 		/// When overridden in a derived class, this method may modify any ActionResult before it is sent to the client.
 		/// </summary>
 		public override async Task PreprocessResult(ActionResult result)
