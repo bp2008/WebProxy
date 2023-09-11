@@ -28,7 +28,7 @@
 										:background-color="store.darkTheme ? '#666' : '#ddd'"
 										foreground-color="#f00"
 										:segment-count="data.cpu_coreCount"
-										:segment-separator-thickness="0.25"
+										:segment-separator-thickness="1"
 										:segment-separator-color="store.darkTheme ? '#000' : '#fff'"
 										:text="(cpuUsagePercent * 100).toFixed(0) + '%'"
 										:textOffset="5">
