@@ -20,6 +20,7 @@ namespace WebProxy.Controllers
 {
 	public class ServerStatus : AdminConsoleControllerBase
 	{
+		[RequiresHttpMethod("GET")]
 		public ActionResult GetServerStatusStream()
 		{
 			WebSocket socket = new WebSocket(Context.httpProcessor);

@@ -15,6 +15,7 @@ namespace WebProxy.Controllers
 {
 	public class Log : AdminConsoleControllerBase
 	{
+		[RequiresHttpMethod("GET")]
 		public async Task<ActionResult> Index(string logFileName)
 		{
 			string filePath = Globals.WritableDirectoryBase + "Logs/" + logFileName;
@@ -34,6 +35,7 @@ namespace WebProxy.Controllers
 
 			return this.StatusCode("404 Not Found");
 		}
+		[RequiresHttpMethod("GET")]
 		public ActionResult GetLogData()
 		{
 			WebSocket socket = new WebSocket(Context.httpProcessor);

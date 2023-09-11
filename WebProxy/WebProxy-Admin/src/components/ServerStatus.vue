@@ -52,9 +52,7 @@
 				</tr>
 				<tr>
 					<td :title="gcRawJson">Garbage Collector</td>
-					<td>
-						{{data.isServerGc ? "Server" : "Workstation" }} mode, {{data.gc.Index}} collections
-					</td>
+					<td>#{{data.gc.Index}}, {{data.isServerGc ? "Server" : "Workstation" }} mode</td>
 				</tr>
 				<tr>
 					<td :title="gcRawJson">Memory Usage Breakdown<br />As of Previous GC</td>

@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace WebProxy.Controllers
 {
+	[RequiresHttpMethod("POST")]
 	public abstract class AdminConsoleControllerBase : ControllerAsync
 	{
 		/// <summary>

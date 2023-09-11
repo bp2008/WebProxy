@@ -117,6 +117,7 @@ namespace WebProxy.Controllers
 			}
 			return ApiError("Unable to find an acceptable Entrypoint that is routed to the chosen Exitpoint.");
 		}
+		[RequiresHttpMethod("GET")]
 		public Task<ActionResult> GetRaw()
 		{
 			return PlainTextTask(JsonConvert.SerializeObject(WebProxyService.MakeLocalSettingsReference(), Formatting.Indented));
@@ -209,6 +210,7 @@ namespace WebProxy.Controllers
 				Context.ResponseHeaders["Server-Timing"] = bet.ToServerTimingHeader();
 			}
 		}
+		[RequiresHttpMethod("GET")]
 		public ActionResult Export()
 		{
 			using (MemoryStream ms = new MemoryStream())

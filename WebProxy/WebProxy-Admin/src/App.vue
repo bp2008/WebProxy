@@ -82,11 +82,19 @@
 					<div class="flexRow">
 						<label>Garbage Collector Mode: {{store.gcModeServer ? "Server" : "Workstation"}}</label>
 						<div><input type="button" value="Enable Server GC" @click="EnableServerGC" /> <input type="button" value="Enable Workstation GC" @click="DisableServerGC" /></div>
+						<div class="comment" v-if="store.showHelp">
+							<p>The "Workstation" garbage collector runs more often than the "Server" GC, and generally results in a smaller memory footprint.</p>
+							<p>The "Server" garbage collector is tuned for higher throughput and scalability.</p>
+							<p>It is said that workstation garbage collection is always used on a computer that has only one logical CPU, regardless of the configuration setting.</p>
+						</div>
 					</div>
 					<div class="flexRow" v-if="platformSupportsMemoryMax">
 						<label>Process Memory Limit: {{memoryMaxCurrentValue}}</label>
 						<div>
 							<input type="number" v-model="memoryMax" min="100" max="100000" autocomplete="off" /> MiB <input type="button" value="<- Set New Limit" @click="SetMemoryMax(memoryMax)" /> <input type="button" value="Remove Limit" @click="DeleteMemoryMax()" />
+						</div>
+						<div class="comment" v-if="store.showHelp">
+							The service will be restarted by systemd if the Working Set exceeds this amount.
 						</div>
 					</div>
 				</div>
