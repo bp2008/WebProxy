@@ -17,7 +17,7 @@ See the [Admin Console Tour](https://github.com/bp2008/WebProxy/wiki/Admin-Conso
   * Supported validation methods include `HTTP-01`, `TLS-ALPN-01`.  WebProxy will automatically select between validation methods `HTTP-01` or `TLS-ALPN-01` with a preference for `HTTP-01` if both ports are available.
   * `HTTP-01` validation requires the domain to be reachable via the internet using HTTP on port 80.
   * `TLS-ALPN-01` validation requires the domain to be reachable via the internet using HTTPS on port 443.
-  * `DNS-01` validation is also available, but requires you to use Cloudflare Registrar and provide a Cloudflare API Token.
+  * `DNS-01` validation is also available, but requires you to use Cloudflare Registrar and provide a Cloudflare API Token.  This validation method will work even if you can't accept inbound traffic on ports 80 or 443.
 * WebSocket support
 * TLS 1.2 support
 * TLS 1.3 support on operating systems that provide it via the [SslStream](https://learn.microsoft.com/en-us/dotnet/api/system.net.security.sslstream) API (Windows 11, Server 2022, Ubuntu Server 22.04, and others).
