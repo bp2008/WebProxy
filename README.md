@@ -12,6 +12,7 @@ See the [Admin Console Tour](https://github.com/bp2008/WebProxy/wiki/Admin-Conso
 ## Features
 * Web-based configuration GUI
 * HTTP/1.1 protocol (HTTP 2.0 and newer are not supported at this time, as this is largely irrelevant for small-scale usage)
+* Request routing based on hostname (one IP address, multiple web sites)
 * Automatic certificates from LetsEncrypt (optional)
   * Usage of this feature indicates acceptance of [LetsEncrypt's Terms of Service](https://community.letsencrypt.org/tos)
   * Supported validation methods include `HTTP-01`, `TLS-ALPN-01`.  WebProxy will automatically select between validation methods `HTTP-01` or `TLS-ALPN-01` with a preference for `HTTP-01` if both ports are available.
