@@ -1,5 +1,5 @@
 # WebProxy
-An HTTP(S) reverse proxy server with web-based configuration.
+An HTTP(S) reverse proxy server with web-based configuration.  WebProxy is an easier alternative to more advanced command-line and config-file-driven reverse proxies like [nginx](https://www.nginx.com/) or [traefik](https://traefik.io/).
 
 See the [Admin Console Tour](https://github.com/bp2008/WebProxy/wiki/Admin-Console-Tour) for more screenshots.
 
@@ -11,14 +11,16 @@ See the [Admin Console Tour](https://github.com/bp2008/WebProxy/wiki/Admin-Conso
 
 ## Features
 * Web-based configuration GUI
+* HTTP/1.1 protocol (HTTP 2.0 and newer are not supported at this time, as this is largely irrelevant for small-scale usage)
 * Automatic certificates from LetsEncrypt (optional)
   * Usage of this feature indicates acceptance of [LetsEncrypt's Terms of Service](https://community.letsencrypt.org/tos)
-  * Supported validation methods include `HTTP-01` and `TLS-ALPN-01`.  WebProxy will automatically select between validation methods `HTTP-01` or `TLS-ALPN-01` with a preference for `HTTP-01` if both ports are available.
+  * Supported validation methods include `HTTP-01`, `TLS-ALPN-01`.  WebProxy will automatically select between validation methods `HTTP-01` or `TLS-ALPN-01` with a preference for `HTTP-01` if both ports are available.
   * `HTTP-01` validation requires the domain to be reachable via the internet using HTTP on port 80.
   * `TLS-ALPN-01` validation requires the domain to be reachable via the internet using HTTPS on port 443.
+  * `DNS-01` validation is also available, but requires you to use Cloudflare Registrar and provide a Cloudflare API Token.
 * WebSocket support
 * TLS 1.2 support
-* TLS 1.3 support on operating systems that provide it via SslStream interface (Windows 11, Server 2022, maybe others).
+* TLS 1.3 support on operating systems that provide it via the [SslStream](https://learn.microsoft.com/en-us/dotnet/api/system.net.security.sslstream) API (Windows 11, Server 2022, Ubuntu Server 22.04, and others).
 * Middleware system to manipulate proxy requests or add usage constraints.  Middlewares can be enabled individually for each proxied website.  Available middleware types:
   * `IPWhitelist` - Provides IP whitelisting of client connections.
   * `HttpDigestAuth` - This middleware causes requests to require HTTP Digest Authentication.
@@ -36,7 +38,7 @@ See the [Admin Console Tour](https://github.com/bp2008/WebProxy/wiki/Admin-Conso
 
 
 ## Installation
-Installation is simple but different between Windows and Linux.  Just follow the appropriate instructions for your platform below and make sure any TCP ports you want to use for incoming traffic are not blocked by any firewalls.
+Installation is simple but different between Windows and Linux.  Just follow the appropriate instructions for your platform below and make sure any TCP ports you want to use for incoming traffic are allowed by any applicable firewalls and routers.
 
 
 
@@ -58,7 +60,7 @@ To update, just download a new release, stop the service, overwrite it, and star
 
 ### Linux Installation Script
 
-So far, the Linux release of WebProxy is only tested on Ubuntu Server 22.04, but should work on any operating system that supports the .NET 6.0 Runtime.
+The Linux release of WebProxy is primarly tested on Ubuntu Server 22.04, but should work on any operating system that supports the .NET 6.0 Runtime.
 
 On supported operating systems, run these commands to download and start the installation script:
 
@@ -68,7 +70,7 @@ chmod u+x webproxy_install.sh
 ./webproxy_install.sh
 ```
 
-The installation script will ask if you wish to install or uninstall.  Once installed, WebProxy will start automatically as a background service.
+The installation script will ask if you wish to `1) Install/Update` or `2) Uninstall`.  The installation procedure will take a few minutes the first time, as it must install .NET 6.0.  Later install/update operations are completed in seconds.  Once installed, WebProxy will start automatically as a background service.
 
 Access the interactive command line interface by running WebProxy with the argument "cmd":
 
@@ -77,9 +79,14 @@ sudo /usr/bin/dotnet ~/webproxy/WebProxyLinux.dll cmd
 ```
 *(the above command assumes you installed in your home directory)*
 
-Within the interactive command line interface, use the command `admin` to see the URLs and credentials for the Admin Console website.
+Within the interactive command line interface, **use the command `admin` to see the URLs and credentials for the Admin Console website.**
 
 The command line interface offers service management commands for install, uninstall, start, stop, etc.  If you prefer, you can manage the webproxy service directly via standard `systemctl` commands (the service name is `webproxy`).
+
+### Can't use the installation script?
+
+If you have an operating system not supported by the installation script, you can manually [install the .NET 6.0 Runtime](https://www.google.com/search?q=install+.net+6.0+runtime+on+linux), then download and extract the WebProxy Linux release of your choice from Github's [Releases Section](https://github.com/bp2008/WebProxy/releases).  Once extracted, access the interactive command line interface via `sudo /usr/bin/dotnet ~/webproxy/WebProxyLinux.dll cmd`.  If your computer has `systemd`, you can use WebProxy's `install` and other related commands to manage the service.  If you need to use a different service manager, you should have it set an environment variable `INVOCATION_ID=1` to trick WebProxy into thinking it is being run by `systemd`, and then run it via this command: `sudo /usr/bin/dotnet ~/webproxy/WebProxyLinux.dll svc`.
+
 
 
 
