@@ -39,45 +39,34 @@
 					<div class="flexRow">
 						<label>ErrorTracker Submission URL</label>
 						<PasswordInput v-model="store.errorTrackerSubmitUrl" class="password-container" />
-						<div class="comment" v-if="store.showHelp">Optional submit URL for an ErrorTracker instance.</div>
+						<div class="comment" v-if="store.showHelp">Optional submit URL for an <a href="https://github.com/bp2008/ErrorTracker" target="_blank">ErrorTracker</a> instance.</div>
 					</div>
 					<div class="flexRow">
 						<label>Cloudflare API Token</label>
 						<PasswordInput v-model="store.cloudflareApiToken" class="password-container" />
 						<div class="comment" v-if="store.showHelp">
-							Optional.  If set, automatic certificate validation via Cloudflare DNS will be an option for Exitpoints.  DNS validation means your WebProxy server does not need to be accessible on any public port (but outgoing internet access is still required).<br /><br />This must be a <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank">Cloudflare API Token</a>, not a Global API Key, and the token needs permissions <span class="icode">Zone &gt; Zone &gt; Read</span> and <span class="icode">Zone &gt; DNS &gt; Edit</span>.  Under Zone Resources, <span class="icode">Include &gt All zones</span>.
+							Optional.  If set, automatic certificate validation via Cloudflare DNS will be an option for Exitpoints.  DNS validation means your WebProxy server does not need to be accessible on any public port (but outgoing internet access is still required).  DNS validation will allow you to enter a wildcard domain in the Exitpoint's [Host Binding] and still use LetsEncrypt.<br /><br />
+							This must be a <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank">Cloudflare API Token</a>, not a Global API Key, and the token needs permissions <span class="icode">Zone &gt; Zone &gt; Read</span> and <span class="icode">Zone &gt; DNS &gt; Edit</span>.  Under Zone Resources, <span class="icode">Include &gt All zones</span>.
 						</div>
 						<div><input type="button" v-if="store.cloudflareApiToken" value="Test Cloudflare DNS" @click="testCloudflareDNS" title="Tests the Cloudflare API Token by attempting to add and remove a DNS TXT record from the account." /></div>
 					</div>
 					<div class="flexRow">
 						<label><input type="checkbox" v-model="store.verboseWebServerLogs" /> Enable Verbose Web Server Logging</label>
 						<div class="comment" v-if="store.showHelp">
-							For troubleshooting purposes, the web server can be configured to use verbose logging.
+							For troubleshooting purposes, the web server can be configured to use verbose logging.  All requests will be logged along with other details.
 						</div>
 					</div>
 					<div class="flexRow">
-						<label>Max Connection Count</label>
+						<label>Max Concurrent Connection Count</label>
 						<input type="number" v-model="store.serverMaxConnectionCount" min="8" max="10000" autocomplete="off" />
 						<div class="comment" v-if="store.showHelp">
 							<div>
-								<span class="icode">N: [8-10000; Default: 48]</span>
+								<span class="icode">N: [8-10000; Default: 1024]</span>
 							</div>
 							<div>
-								The server will allow <span class="icode">N</span> connections to be processed concurrently
-							</div>
-							<div>
-								While more than <span class="icode">N/2</span> connections are being processed, the server enters high-load mode which prevents the use of <span class="icode">Connection: keep-alive</span>.
-							</div>
-							<div>
-								An additional <span class="icode">N (clamped between 24 and 256)</span> connections may be opened and queued for processing.  When the queue is full, additional connections are rejected with an HTTP 503 response saying "Server too busy".
+								The server will allow <span class="icode">N</span> connections to be processed concurrently.  While more than <span class="icode">N/2</span> connections are being processed, the server is in high-load mode which prevents the use of <span class="icode">Connection: keep-alive</span>.  When the limit is reached, additional connections are rejected with an HTTP 503 response saying "Server too busy".
 							</div>
 						</div>
-					</div>
-					<div class="flexRow">
-						<label>Admin Console Theme</label>
-						<select v-model="store.currentTheme">
-							<option v-for="t in store.themeList">{{t}}</option>
-						</select>
 					</div>
 					<div class="flexRow">
 						<label>Garbage Collector Mode: {{store.gcModeServer ? "Server" : "Workstation"}}</label>
@@ -96,6 +85,13 @@
 						<div class="comment" v-if="store.showHelp">
 							The service will be restarted by systemd if the Working Set exceeds this amount.
 						</div>
+					</div>
+					<div class="flexRow">
+						<label>Admin Console Theme</label>
+						<select v-model="store.currentTheme">
+							<option v-for="t in store.themeList">{{t}}</option>
+						</select>
+						<div class="comment" v-if="store.showHelp">Only affects this web browser.</div>
 					</div>
 				</div>
 			</div>
@@ -131,7 +127,7 @@
 			</div>
 			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Routes'">
 				<h2>Proxy Routes</h2>
-				<p v-if="store.showHelp">The Proxy Routes list defines which Exitpoints are reachable from which Entrypoints.  In order for an Exitpoint to be reachable by clients, it must be bound to at least one Entrypoint via a Proxy Route.</p>
+				<p v-if="store.showHelp">The list of Proxy Routes defines which Exitpoints are reachable from which Entrypoints.  In order for an Exitpoint to be reachable by clients, it must be bound to at least one Entrypoint via a Proxy Route.</p>
 				<draggable v-model="store.proxyRoutes" handle=".dragHandle">
 					<ProxyRouteEditor v-for="proxyRoute in store.proxyRoutes" :key="proxyRoute.uniqueId" :proxyRoute="proxyRoute" @delete="deleteProxyRoute(proxyRoute)" />
 				</draggable>

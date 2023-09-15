@@ -27,7 +27,7 @@ namespace WebProxy
 		/// </summary>
 		public string host;
 		/// <summary>
-		/// If enabled, certificates for this host will be obtained and managed automatically via LetsEncrypt.  Automatic certificate management will only work if this exitpoint is mapped to an entrypoint that is reachable on the internet at 'http://host:80/' or 'https://host:443/'.  Wildcards are not allowed in <see cref="host"/> when using <see cref="autoCertificate"/>.
+		/// If enabled, certificates for this host will be obtained and managed automatically via LetsEncrypt.  Automatic certificate management will only work if this exitpoint is mapped to an entrypoint that is reachable on the internet at 'http://host:80/' or 'https://host:443/'.  Wildcards are not allowed in <see cref="host"/> when using <see cref="autoCertificate"/>, unless you have enabled DNS validation.
 		/// </summary>
 		public bool autoCertificate;
 		/// <summary>
@@ -102,6 +102,27 @@ namespace WebProxy
 			}
 			isExactMatch = false;
 			return false;
+		}
+		/// <summary>
+		/// Returns the host string that matches the host string from the client, or null if none match.  If there is no exact match, this method does wildcard expansion and may return a hostname with a wildcard in it (e.g. "*.example.com").
+		/// </summary>
+		/// <param name="hostFromRequest">Hostname requested by the client.</param>
+		/// <returns>The host string that matches the host string from the client, or null if none match</returns>
+		public string getHostnameMatch(string hostFromRequest)
+		{
+			string[] allHosts = getAllDomains();
+			string wildcardMatch = null;
+			foreach (string h in allHosts)
+			{
+				if (hostCompare(hostFromRequest, h, out bool isExactMatch))
+				{
+					if (isExactMatch)
+						return h;
+					else if (wildcardMatch == null)
+						wildcardMatch = h;
+				}
+			}
+			return wildcardMatch;
 		}
 		/// <summary>
 		/// Returns true if the given hostname matches the [host] configured here.

@@ -109,7 +109,7 @@ namespace WebProxy.LetsEncrypt
 		{
 			string[] domains = ValidateRequestOrThrow(entrypoint, exitpoint);
 
-			host = domains.FirstOrDefault(d => d.IEquals(host));
+			host = exitpoint.getHostnameMatch(host);
 
 			if (string.IsNullOrWhiteSpace(host) || host.Contains('/') || host.Contains('\\'))
 				throw new ArgumentException("host is invalid");
@@ -285,7 +285,9 @@ namespace WebProxy.LetsEncrypt
 								try
 								{
 									await CloudflareDnsValidator.CreateDNSRecord(dnsKey, dnsValue).ConfigureAwait(false);
-									Logger.Info("CertMgr.Create Cloudflare-DNS-01: " + dnsKey + " TXT record created");
+									Logger.Info("CertMgr.Create Cloudflare-DNS-01: " + dnsKey + " TXT record created.");
+									Logger.Info("CertMgr.Create Waiting 1000ms for DNS propagation so the validation is less likely to fail.");
+									await Task.Delay(1000).ConfigureAwait(false);
 
 									Certes.Acme.Resource.Challenge challenge = await ValidateAndWait(challengeContext).ConfigureAwait(false);
 									continue;
@@ -537,6 +539,8 @@ namespace WebProxy.LetsEncrypt
 		{
 			if (domain == "*")
 				return "wildcard_root";
+			if (domain.Contains("*"))
+				domain = domain.Replace("*", "wildcard");
 			string str = StringUtil.MakeSafeForFileName(domain).Trim().ToLower();
 			if (string.IsNullOrWhiteSpace(str))
 				str = "undefined";
@@ -605,13 +609,15 @@ namespace WebProxy.LetsEncrypt
 			foreach (string domain in domains)
 			{
 				if (string.IsNullOrWhiteSpace(domain))
-					return "domain is not allowed to be null or whitespace";
+					return "domain is not allowed to be null or whitespace when using LetsEncrypt";
 				if (IPAddress.TryParse(domain, out IPAddress ignored))
-					return "domain is not allowed to be an IP address";
+					return "domain is not allowed to be an IP address when using LetsEncrypt";
 				if (domain.IEquals("localhost") || domain.IEndsWith(".localhost"))
-					return "domain is not allowed to be localhost";
-				if (domain.Contains("*"))
-					return "domain is not allowed to contain wildcards";
+					return "domain is not allowed to be localhost when using LetsEncrypt";
+				if (domain == "*")
+					return "Wildcard root domain is not allowed when using LetsEncrypt";
+				if (!dnsValidationConfigured && domain.Contains("*"))
+					return "domain is not allowed to contain wildcards when using LetsEncrypt without DNS validation";
 			}
 
 			return null;

@@ -53,7 +53,7 @@ namespace WebProxy
 		/// <summary>
 		/// [8-10000] The maximum number of connections this server will process simultaneously.
 		/// </summary>
-		public int serverMaxConnectionCount = 48;
+		public int serverMaxConnectionCount = 1024;
 
 		protected override object DeserializeFromJson(string str)
 		{

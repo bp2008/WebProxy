@@ -17,9 +17,9 @@
 			<div class="flexRow" :title="hostTitle">
 				<label>Host Binding</label>
 				<input type="text" v-model="exitpoint.host" class="hostInput" autocomplete="off" />
-				<div class="exampleText" v-if="store.showHelp">Enter the hostname which should route to this exitpoint.</div>
+				<div class="exampleText" v-if="store.showHelp">Enter the hostname which should route to this exitpoint. <span class="icode">*</span> to bind to all hostnames.  Exitpoints with more-specific host bindings will take precedence over wildcard bindings.</div>
 				<div class="exampleText" v-if="store.showHelp">Multiple hostnames? Use comma and/or space to separate: <span class="icode">example.com www.example.com</span>.</div>
-				<div class="exampleText" v-if="store.showHelp">Using wildcards will disable automatic certificate creation: <span class="icode">*.example.com</span>.</div>
+				<div class="exampleText" v-if="store.showHelp">Wildcards are available (<span class="icode">*.example.com</span>), but will prevent LetsEncrypt certificate creation unless you have DNS validation configured and enabled.</div>
 			</div>
 			<template v-if="exitpoint.type === 'WebProxy'">
 				<div class="flexRow" title="Destination origin, e.g. http://example.com or https://example.com:8000">
@@ -66,7 +66,7 @@
 			<div class="dashedBorder">
 				<div>
 					<label><input type="checkbox" v-model="exitpoint.autoCertificate" /> Automatic Certificate from LetsEncrypt</label>
-					<div class="comment" v-if="store.showHelp">If enabled, certificates for this host will be obtained and managed automatically via LetsEncrypt.  Automatic certificate management will only work if this exitpoint is mapped to an entrypoint that is reachable on the internet at 'http://host:80/' or 'https://host:443/' or can be validated via a configured DNS service.  Wildcards are not allowed in [Host] when using this option.</div>
+					<div class="comment" v-if="store.showHelp">If enabled, certificates for this host will be obtained and managed automatically via LetsEncrypt.  Automatic certificate management will only work if this exitpoint is mapped to an entrypoint that is reachable on the internet at 'http://host:80/' or 'https://host:443/' or can be validated via a configured DNS service.  Wildcards are not allowed in [Host Binding] when using this option, unless you have enabled DNS validation.</div>
 				</div>
 				<div v-if="!exitpoint.autoCertificate">
 					<label><input type="checkbox" v-model="exitpoint.allowGenerateSelfSignedCertificate" /> Generate Self-Signed Certificate if Missing</label>
@@ -85,7 +85,7 @@
 					<label>Certificate Path</label>
 					<input type="text" v-model="exitpoint.certificatePath" class="certificatePathInput" placeholder="Path to the certificate file (pfx)" title="Path to the certificate file (pfx)" autocomplete="off" />
 					<UploadFileControl label="Upload Certificate" acceptFileExtension=".pfx" />
-					<div class="comment" v-if="store.showHelp">Path to the certificate file (pfx). If omitted, a path will be automatically filled in upon first use.</div>
+					<div class="comment" v-if="store.showHelp">Path to the certificate file (pfx). If omitted, a path will be automatically assigned upon first use.</div>
 				</div>
 			</div>
 			<div class="middlewares">

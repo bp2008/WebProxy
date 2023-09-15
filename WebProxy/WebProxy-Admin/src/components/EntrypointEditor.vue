@@ -29,9 +29,11 @@
 				<select v-model="entrypoint.tlsCipherSuiteSet">
 					<option v-for="cipherSet in store.tlsCipherSuiteSets">{{cipherSet}}</option>
 				</select>
+				<div class="comment" v-if="store.showHelp">Useful for meeting some cybersecurity requirements.</div>
 			</template>
 			<template v-else>
-				Allowed TLS Cipher Suites are determined by the operating system configuration.
+				<div>Allowed TLS Cipher Suites are determined by the operating system configuration.</div>
+				<div class="comment" v-if="store.showHelp">The platform WebProxy is running on does not support configuring TLS cipher suites at runtime.</div>
 			</template>
 		</div>
 		<div class="comment" v-if="store.showHelp && httpsPortEnabled && store.tlsCipherSuitesPolicySupported && tlsCipherSuiteSetDescription">
