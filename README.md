@@ -91,6 +91,15 @@ If you have an operating system not supported by the installation script, you ca
 
 
 
+## Getting Started
+
+To learn how to configure WebProxy, use the question mark button in the upper right of the admin console.  This button toggles help text throughout the admin console.
+
+If you haven't installed WebProxy yet, you can [read about WebProxy's basic concepts here](https://github.com/bp2008/WebProxy/wiki/Basic-Concepts).
+
+
+
+
 
 ## Building From Source
 
