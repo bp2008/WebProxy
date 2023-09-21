@@ -141,7 +141,7 @@ namespace WebProxy
 			{
 				string regexQuery = string.Join(".*?", hostParts.Select(p => Regex.Escape(p)));
 				regexQuery = "^" + regexQuery + "$";
-				return Regex.IsMatch(hostFromRequest, regexQuery);
+				return Regex.IsMatch(hostFromRequest, regexQuery, RegexOptions.IgnoreCase);
 			}
 			else
 				return isExactMatch = hostPattern?.IEquals(hostFromRequest) == true;

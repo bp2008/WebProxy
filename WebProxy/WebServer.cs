@@ -147,28 +147,15 @@ namespace WebProxy
 				// MiddlewareType.AddProxyServerTiming
 				bool AddProxyServerTiming = allApplicableMiddlewares.Any(m => m.Type == MiddlewareType.AddProxyServerTiming);
 
+				// MiddlewareType.AddHttpHeaderToRequest
+				List<string> overrideRequestHeaders = new List<string>();
+				foreach (Middleware m in allApplicableMiddlewares.Where(m => m.Type == MiddlewareType.AddHttpHeaderToRequest))
+					overrideRequestHeaders.AddRange(m.HttpHeaders);
+
 				// MiddlewareType.AddHttpHeaderToResponse
-				HttpHeaderCollection overrideResponseHeaders = new HttpHeaderCollection();
+				List<string> overrideResponseHeaders = new List<string>();
 				foreach (Middleware m in allApplicableMiddlewares.Where(m => m.Type == MiddlewareType.AddHttpHeaderToResponse))
-				{
-					foreach (string header in m.HttpHeaders)
-					{
-						if (string.IsNullOrWhiteSpace(header))
-							continue;
-
-						int separator = header.IndexOf(':');
-						if (separator == -1)
-							throw new ApplicationException("Invalid http header line in middleware \"" + m.Id + "\": " + header);
-
-						string name = header.Substring(0, separator);
-						int pos = separator + 1;
-						while (pos < header.Length && header[pos] == ' ')
-							pos++; // strip any spaces
-
-						string value = header.Substring(pos);
-						overrideResponseHeaders[name] = value;
-					}
-				}
+					overrideResponseHeaders.AddRange(m.HttpHeaders);
 
 				// Proxy Header Middlewares
 				Middleware xff = allApplicableMiddlewares.FirstOrDefault(m => m.Type == MiddlewareType.XForwardedFor);
@@ -241,13 +228,22 @@ namespace WebProxy
 					options.allowConnectionKeepalive = myExitpoint.useConnectionKeepAlive;
 					options.cancellationToken = cancellationToken;
 
-					HttpHeader[] orh = overrideResponseHeaders.GetHeaderArray();
-					if (orh.Length > 0)
+					if (overrideRequestHeaders.Count > 0)
+					{
+						options.BeforeRequestHeadersSent += (sender, e) =>
+						{
+							foreach (string header in overrideRequestHeaders)
+								OverrideHeader(p, e.Request.Headers, header);
+						};
+					}
+
+
+					if (overrideResponseHeaders.Count > 0)
 					{
 						options.BeforeResponseHeadersSent += (sender, e) =>
 						{
-							foreach (HttpHeader header in orh)
-								e.Response.Headers[header.Key] = header.Value;
+							foreach (string header in overrideResponseHeaders)
+								OverrideHeader(p, e.Response.Headers, header);
 						};
 					}
 
@@ -280,6 +276,64 @@ namespace WebProxy
 			}
 			return;
 		}
+		
+		private void OverrideHeader(HttpProcessor p, HttpHeaderCollection headers, string header)
+		{
+			if (string.IsNullOrWhiteSpace(header))
+				return;
+
+			int separator = header.IndexOf(':');
+			if (separator == -1)
+				headers.Remove(header);
+			else
+			{
+				string name = header.Substring(0, separator);
+				int pos = separator + 1;
+				while (pos < header.Length && header[pos] == ' ')
+					pos++; // strip any spaces
+
+				string value = header.Substring(pos);
+				value = ReplaceHeaderMacros(p, value);
+				headers.Set(name, value);
+			}
+		}
+		
+		private string ReplaceHeaderMacros(HttpProcessor p, string input)
+		{
+			StringBuilder result = new StringBuilder();
+			int i = 0;
+			while (i < input.Length)
+			{
+				if (input[i] == '$')
+				{
+					int start = i;
+					i++;
+					while (i < input.Length && StringUtil.IsAlphaNumericOrUnderscore(input[i]))
+						i++;
+					string macro = input.Substring(start, i - start);
+
+					if (macro == "$remote_addr")
+						result.Append(p.RemoteIPAddressStr);
+					else if (macro == "$remote_port")
+						result.Append(p.RemoteEndPoint.Port);
+					else if (macro == "$request_proto")
+						result.Append(p.secure_https ? "https" : "http");
+					else if (macro == "$server_name")
+						result.Append(p.HostName);
+					else if (macro == "$server_port")
+						result.Append(p.LocalEndPoint.Port);
+					else
+						result.Append(macro); // Undefined macros are output literally.
+				}
+				else
+				{
+					result.Append(input[i]);
+					i++;
+				}
+			}
+			return result.ToString();
+		}
+
 		/// <inheritdoc/>
 		protected override void stopServer()
 		{

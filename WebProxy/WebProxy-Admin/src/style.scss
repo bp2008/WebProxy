@@ -199,20 +199,36 @@ option
 		}
 
 .primaryContainer .exampleText,
-.primaryContainer .comment,
-.flexRow .exampleText,
-.flexRow .comment
+.primaryContainer .comment
 {
 	padding-left: 1em;
 	padding-top: 0px;
-	color: #00D600;
 }
 
 .flexRow .exampleText,
 .flexRow .comment
 {
+	padding-left: 1em;
 	padding-top: 3px;
 }
+
+.exampleText,
+.comment
+{
+	color: #00D600;
+}
+
+	.exampleText table
+	{
+		border-collapse: collapse;
+	}
+
+		.exampleText table th,
+		.exampleText table td
+		{
+			padding: 2px;
+			border: 1px solid currentColor;
+		}
 
 .flexRow
 {

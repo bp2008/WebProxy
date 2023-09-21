@@ -18,45 +18,49 @@ namespace WebProxy
 		/// <summary>
 		/// Client connections are dropped if they do not come from an IP address that is listed here.
 		/// </summary>
-		IPWhitelist = 0,
+		IPWhitelist,
 		/// <summary>
 		/// Requests are required to use HTTP Digest Authentication with credentials from this Dictionary.  If multiple HttpDigestAuth middlewares are required for a request, one of them will be chosen arbitrarily.
 		/// </summary>
-		HttpDigestAuth = 1,
+		HttpDigestAuth,
 		/// <summary>
 		/// <para>Requests using HTTP are automatically redirected to HTTPS on the best supported Entrypoint.</para>
 		/// <para>This Middleware only applies to requests that arrive using plain unencrypted HTTP on an Entrypoint that supports both HTTP and HTTPS.</para>
 		/// <para>This Middleware does not apply to LetsEncrypt certificate validation requests, which must use unencrypted HTTP.</para>
 		/// </summary>
-		RedirectHttpToHttps = 2,
+		RedirectHttpToHttps,
 		/// <summary>
-		/// Responses will have a static HTTP header added.
+		/// Requests will have one or more HTTP headers added, removed, or modified.
 		/// </summary>
-		AddHttpHeaderToResponse = 3,
+		AddHttpHeaderToRequest,
+		/// <summary>
+		/// Responses will have one or more HTTP headers added, removed, or modified.
+		/// </summary>
+		AddHttpHeaderToResponse,
 		/// <summary>
 		/// All proxied responses will include a Server-Timing header for debugging purposes, showing time taken to connect, send the request, and read the response.
 		/// </summary>
-		AddProxyServerTiming = 4,
+		AddProxyServerTiming,
 		/// <summary>
 		/// Allows configuration of the X-Forwarded-For header.  Default behavior (if middleware is not enabled) is to drop the header when proxying a request.
 		/// </summary>
-		XForwardedFor = 5,
+		XForwardedFor,
 		/// <summary>
 		/// Allows configuration of the X-Forwarded-Host header.  Default behavior (if middleware is not enabled) is to drop the header when proxying a request.
 		/// </summary>
-		XForwardedHost = 6,
+		XForwardedHost,
 		/// <summary>
 		/// Allows configuration of the X-Forwarded-Proto header.  Default behavior (if middleware is not enabled) is to drop the header when proxying a request.
 		/// </summary>
-		XForwardedProto = 7,
+		XForwardedProto,
 		/// <summary>
 		/// Allows configuration of the X-Real-Ip header.  Default behavior (if middleware is not enabled) is to drop the header when proxying a request.
 		/// </summary>
-		XRealIp = 8,
+		XRealIp,
 		/// <summary>
 		/// Allows the caller to provide a list of trusted IP ranges for [XForwardedFor, XForwardedHost, XForwardedProto, XRealIp] middlewares.
 		/// </summary>
-		TrustedProxyIPRanges = 9
+		TrustedProxyIPRanges
 	}
 	/// <summary>
 	/// Applies additional logic to an Entrypoint or Exitpoint.  Constraints may be applied to an Entrypoint or an Exitpoint or both.

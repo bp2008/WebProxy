@@ -538,7 +538,7 @@ namespace WebProxy
 					}
 				}
 
-				if (middleware.Type == MiddlewareType.AddHttpHeaderToResponse)
+				if (middleware.Type == MiddlewareType.AddHttpHeaderToRequest || middleware.Type == MiddlewareType.AddHttpHeaderToResponse)
 				{
 					HttpHeaderCollection collection = new HttpHeaderCollection();
 					if (middleware.HttpHeaders == null)

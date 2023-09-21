@@ -54,21 +54,56 @@
 				Requests using HTTP are automatically redirected to HTTPS on the best supported Entrypoint.  This middleware only applies to requests that arrive using plain unencrypted HTTP on an Entrypoint that supports both HTTP and HTTPS.
 			</div>
 		</template>
+		<template v-if="middleware.Type === 'AddHttpHeaderToRequest'">
+			<div>
+				This middleware adds or removes HTTP request headers when sending requests to the destination origin.  Only affects Exitpoints of type WebProxy.
+			</div>
+		</template>
 		<template v-if="middleware.Type === 'AddHttpHeaderToResponse'">
 			<div>
-				This middleware adds or removes HTTP headers on all responses.  Only affects Exitpoints of type WebProxy.
+				This middleware adds or removes HTTP response headers when sending responses to the client.  Only affects Exitpoints of type WebProxy.
 			</div>
+		</template>
+		<template v-if="middleware.Type === 'AddHttpHeaderToRequest' || middleware.Type === 'AddHttpHeaderToResponse'">
 			<div class="httpHeaderList">
 				<label>Http Headers</label>
 				<ArrayEditor v-model="middleware.HttpHeaders" arrayType="text" />
 				<div class="exampleText" v-if="store.showHelp">
+					<br />
 					To add a header, enter the header name and value, separated by a colon:<br />
 					<span class="icode">Strict-Transport-Security: max-age=31536000; includeSubDomains</span><br />
 					<br />
 					To remove a header, just provide the header name with no colon:<br />
-					<span class="icode">Strict-Transport-Security</span>
+					<span class="icode">Strict-Transport-Security</span><br />
+					<br />
+					The following macro strings will be replaced with a dynamic value when proxying:<br />
+					<br />
+					<table>
+						<thead><tr><th>Macro</th><th>Expands To</th></tr></thead>
+						<tbody>
+							<tr>
+								<td><span class="icode">$remote_addr</span></td>
+								<td>The IP address of the requesting client.</td>
+							</tr>
+							<tr>
+								<td><span class="icode">$remote_port</span></td>
+								<td>The remote port number of the requesting client.</td>
+							</tr>
+							<tr>
+								<td><span class="icode">$request_proto</span></td>
+								<td>The protocol used by the client to contact this server (<span class="icode">http</span> or <span class="icode">https</span>).</td>
+							</tr>
+							<tr>
+								<td><span class="icode">$server_name</span></td>
+								<td>The hostname which the client used in their request.</td>
+							</tr>
+							<tr>
+								<td><span class="icode">$server_port</span></td>
+								<td>The port number which the client connected to on this server.</td>
+							</tr>
+						</tbody>
+					</table>
 				</div>
-				<div class="exampleText" v-if="store.showHelp"></div>
 			</div>
 		</template>
 		<template v-if="middleware.Type === 'AddProxyServerTiming'">

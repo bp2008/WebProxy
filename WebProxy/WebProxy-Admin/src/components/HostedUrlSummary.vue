@@ -130,38 +130,37 @@
 				for (let i = 0; i < exitpoint.middlewares.length; i++)
 					middlewareNames[exitpoint.middlewares[i]] = true;
 
-				for (let middlewareName in middlewareNames)
+				for (let i = 0; i < store.middlewares.length; i++)
 				{
-					for (let i = 0; i < store.middlewares.length; i++)
+					let m = store.middlewares[i];
+					if (middlewareNames[m.Id])
 					{
-						let m = store.middlewares[i];
-						if (m.Id === middlewareName)
-						{
-							if (m.Type === "IPWhitelist")
-								constraints["IP Whitelist"] = true;
-							else if (m.Type === "HttpDigestAuth")
-								constraints["HTTP Digest Authentication"] = true;
-							else if (m.Type === "AddHttpHeaderToResponse")
-								constraints["Add Headers: " + m.Id] = true;
-							else if (m.Type === "AddProxyServerTiming")
-								constraints["Add Header: Server-Timing"] = true;
-							else if (m.Type === "RedirectHttpToHttps")
-								constraints["Force TLS"] = true;
-							else if (m.Type === "XForwardedFor")
-								constraints["Manipulate Header: X-Forwarded-For: " + m.ProxyHeaderBehavior] = true;
-							else if (m.Type === "XForwardedHost")
-								constraints["Manipulate Header: X-Forwarded-Host: " + m.ProxyHeaderBehavior] = true;
-							else if (m.Type === "XForwardedProto")
-								constraints["Manipulate Header: X-Forwarded-Proto: " + m.ProxyHeaderBehavior] = true;
-							else if (m.Type === "XRealIp")
-								constraints["Manipulate Header: X-Real-Ip: " + m.ProxyHeaderBehavior] = true;
-							else if (m.Type === "TrustedProxyIPRanges")
-								constraints["Has Trusted Proxy IP Ranges"] = true;
-							else
-								constraints["Unknown Constraint(s)"] = true;
+						if (m.Type === "IPWhitelist")
+							constraints["IP Whitelist"] = true;
+						else if (m.Type === "HttpDigestAuth")
+							constraints["HTTP Digest Authentication"] = true;
+						else if (m.Type === "AddHttpHeaderToRequest")
+							constraints["Request Headers: " + m.Id] = true;
+						else if (m.Type === "AddHttpHeaderToResponse")
+							constraints["Response Headers: " + m.Id] = true;
+						else if (m.Type === "AddProxyServerTiming")
+							constraints["Response Header: Server-Timing"] = true;
+						else if (m.Type === "RedirectHttpToHttps")
+							constraints["Force TLS"] = true;
+						else if (m.Type === "XForwardedFor")
+							constraints["Manipulate Header: X-Forwarded-For: " + m.ProxyHeaderBehavior] = true;
+						else if (m.Type === "XForwardedHost")
+							constraints["Manipulate Header: X-Forwarded-Host: " + m.ProxyHeaderBehavior] = true;
+						else if (m.Type === "XForwardedProto")
+							constraints["Manipulate Header: X-Forwarded-Proto: " + m.ProxyHeaderBehavior] = true;
+						else if (m.Type === "XRealIp")
+							constraints["Manipulate Header: X-Real-Ip: " + m.ProxyHeaderBehavior] = true;
+						else if (m.Type === "TrustedProxyIPRanges")
+							constraints["Has Trusted Proxy IP Ranges"] = true;
+						else
+							constraints["Unknown Constraint(s)"] = true;
 
-							break;
-						}
+						break;
 					}
 				}
 
