@@ -752,6 +752,10 @@
 			o.ProxyHeaderBehavior = store.proxyHeaderBehaviorOptions[0];
 		if (!o.HttpHeaders)
 			o.HttpHeaders = [];
+		if (!o.HostnameSubstitutions)
+			o.HostnameSubstitutions = [];
+		if (!o.RegexReplacements)
+			o.RegexReplacements = [];
 		o.uniqueId = idCounter++;
 		return o;
 	}

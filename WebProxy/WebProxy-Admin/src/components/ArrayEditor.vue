@@ -5,6 +5,7 @@
 				<option v-for="v in allowedValues" :key="v">{{v}}</option>
 			</select>
 			<UNPWEditor v-else-if="arrayType === 'credentials'" v-model="modelValue[index]" class="unpwEditor" />
+			<KeyValueEditor v-else-if="arrayType === 'keyvaluepair_string_string'" v-model="modelValue[index]" class="keyValuePairEditor" />
 			<input v-else :type="arrayType" v-model="modelValue[index]" autocomplete="off" />
 			<input class="removeButton" type="button" value="-" @click="removeArrayItem(index)" />
 		</div>
@@ -17,9 +18,10 @@
 <script>
 	import { reactive } from 'vue';
 	import UNPWEditor from '/src/components/UNPWEditor.vue';
+	import KeyValueEditor from '/src/components/KeyValueEditor.vue';
 
 	export default {
-		components: { UNPWEditor },
+		components: { UNPWEditor, KeyValueEditor },
 		props: {
 			modelValue: {
 				type: Array,
@@ -43,6 +45,8 @@
 					d = this.allowedValues[0];
 				else if (this.arrayType === "credentials")
 					d = { User: "", Pass: "" };
+				else if (this.arrayType === "keyvaluepair_string_string")
+					d = { Key: "", Value: "" };
 				else if (this.arrayType === "number")
 					d = 0;
 				else
@@ -80,7 +84,8 @@
 			flex: 0 0 auto;
 		}
 
-		.arrayElement > .unpwEditor:first-child
+		.arrayElement > .unpwEditor:first-child,
+		.arrayElement > .keyValuePairEditor:first-child
 		{
 			flex: 0 1 auto;
 		}

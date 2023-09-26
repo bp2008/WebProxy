@@ -60,7 +60,15 @@ namespace WebProxy
 		/// <summary>
 		/// Allows the caller to provide a list of trusted IP ranges for [XForwardedFor, XForwardedHost, XForwardedProto, XRealIp] middlewares.
 		/// </summary>
-		TrustedProxyIPRanges
+		TrustedProxyIPRanges,
+		/// <summary>
+		/// Performs hostname substitution on proxied responses, for text-based responses.  Requires the full response to be buffered.
+		/// </summary>
+		HostnameSubstitution,
+		/// <summary>
+		/// Performs Regular Expression replacements on proxied responses, for text-based responses.  Requires the full response to be buffered.
+		/// </summary>
+		RegexReplaceInResponse
 	}
 	/// <summary>
 	/// Applies additional logic to an Entrypoint or Exitpoint.  Constraints may be applied to an Entrypoint or an Exitpoint or both.
@@ -100,6 +108,16 @@ namespace WebProxy
 		/// </summary>
 		[JsonConverter(typeof(StringEnumConverter))]
 		public ProxyHeaderBehavior ProxyHeaderBehavior = ProxyHeaderBehavior.Drop;
+		/// <summary>
+		/// <para>For [Type] = HostnameSubstitution</para>
+		/// <para>The collection of Hostname pairs to perform replaces with.  For each pair, Key is replaced with Value.</para>
+		/// </summary>
+		public List<KeyValuePair<string, string>> HostnameSubstitutions = new List<KeyValuePair<string, string>>();
+		/// <summary>
+		/// <para>For [Type] = RegexReplaceInResponse</para>
+		/// <para>The collection of Regular Expression patterns and replacements to perform replaces with.  For each pair, Key is the pattern and Value is the replacement string.</para>
+		/// </summary>
+		public List<KeyValuePair<string, string>> RegexReplacements = new List<KeyValuePair<string, string>>();
 		/// <summary>
 		/// Gets the password for the given username, or null.
 		/// </summary>

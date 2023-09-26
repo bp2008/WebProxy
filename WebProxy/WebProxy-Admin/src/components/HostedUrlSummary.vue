@@ -157,10 +157,12 @@
 							constraints["Manipulate Header: X-Real-Ip: " + m.ProxyHeaderBehavior] = true;
 						else if (m.Type === "TrustedProxyIPRanges")
 							constraints["Has Trusted Proxy IP Ranges"] = true;
+						else if (m.Type === "HostnameSubstitution")
+							constraints["Hostname Substitution: " + m.Id + " (" + m.HostnameSubstitutions.length + ")"] = true;
+						else if (m.Type === "RegexReplaceInResponse")
+							constraints["Regex Replacement: " + m.Id + " (" + m.RegexReplacements.length + ")"] = true;
 						else
 							constraints["Unknown Constraint(s)"] = true;
-
-						break;
 					}
 				}
 

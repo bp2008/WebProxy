@@ -141,6 +141,36 @@
 				<div class="exampleText"><span class="icode">192.168.0.100/30</span> (subnet prefix notation)</div>
 			</template>
 		</template>
+		<template v-if="middleware.Type === 'HostnameSubstitution'">
+			<div>
+				This middleware performs hostname substitution on proxied responses.  Specific hostnames found in text-based responses will be replaced with the values defined below.  Only affects Exitpoints of type WebProxy.
+			</div>
+			<div v-if="!middleware.AuthCredentials || !middleware.AuthCredentials.length">
+				Click the <b>+</b> button below to add a hostname substitution.
+			</div>
+			<div>
+				<label>Hostname Substitutions</label>
+				<ArrayEditor v-model="middleware.HostnameSubstitutions" arrayType="keyvaluepair_string_string" />
+				<template v-if="store.showHelp">
+					<div class="exampleText">Enter on the left a hostname which you want to remove, and on the right the hostname which you want to insert in its place.</div>
+				</template>
+			</div>
+		</template>
+		<template v-if="middleware.Type === 'RegexReplaceInResponse'">
+			<div>
+				This middleware performs text replacement on proxied responses using Regular Expressions.  Only affects Exitpoints of type WebProxy.
+			</div>
+			<div v-if="!middleware.AuthCredentials || !middleware.AuthCredentials.length">
+				Click the <b>+</b> button below to add Regular Expression patterns and replacement strings.
+			</div>
+			<div>
+				<label>Regular Expression Patterns and Replacement Strings</label>
+				<ArrayEditor v-model="middleware.RegexReplacements" arrayType="keyvaluepair_string_string" />
+				<template v-if="store.showHelp">
+					<div class="exampleText">Case-sensitivity: You can use <span class="icode">(?i)</span> within the pattern to begin case-insensitive matching and <span class="icode">(?-i)</span> to end it. For example, <span class="icode">(?i)foo(?-i)bar</span> matches <span class="icode">FOObar</span> but not <span class="icode">fooBAR</span>. If you want the whole pattern to be case-insensitive then you don't need to include <span class="icode">(?-i)</span>.</div>
+				</template>
+			</div>
+		</template>
 	</div>
 </template>
 <script>

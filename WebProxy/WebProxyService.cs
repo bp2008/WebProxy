@@ -555,6 +555,28 @@ namespace WebProxy
 						}
 					}
 				}
+
+				if (middleware.Type == MiddlewareType.HostnameSubstitution)
+				{
+					foreach (KeyValuePair<string,string> kvp in middleware.HostnameSubstitutions)
+					{
+						if (string.IsNullOrWhiteSpace(kvp.Key))
+							throw new Exception("Middleware \"" + middleware.Id + "\" defines invalid hostname pattern.");
+						if (string.IsNullOrEmpty(kvp.Value))
+							throw new Exception("Middleware \"" + middleware.Id + "\" defines invalid hostname replacement.");
+					}
+				}
+
+				if (middleware.Type == MiddlewareType.RegexReplaceInResponse)
+				{
+					foreach (KeyValuePair<string, string> kvp in middleware.RegexReplacements)
+					{
+						if (string.IsNullOrEmpty(kvp.Key))
+							throw new Exception("Middleware \"" + middleware.Id + "\" defines null or empty regex pattern.");
+						if (kvp.Value == null)
+							throw new Exception("Middleware \"" + middleware.Id + "\" defines null replacement.");
+					}
+				}
 			}
 
 			nameUniqueness.Clear();

@@ -216,7 +216,7 @@
 			},
 			cpuUsagePercent()
 			{
-				if (this.data)
+				if (this.data && this.data.cpu_coreCount)
 					return parseFloat(this.data.cpu_coreUsagePercent) / this.data.cpu_coreCount;
 				return 0;
 			},

@@ -157,6 +157,16 @@ namespace WebProxy
 				foreach (Middleware m in allApplicableMiddlewares.Where(m => m.Type == MiddlewareType.AddHttpHeaderToResponse))
 					overrideResponseHeaders.AddRange(m.HttpHeaders);
 
+				// MiddlewareType.HostnameSubstitution
+				List<KeyValuePair<string, string>> hostnameSubstitutions = new List<KeyValuePair<string, string>>();
+				foreach (Middleware m in allApplicableMiddlewares.Where(m => m.Type == MiddlewareType.HostnameSubstitution))
+						hostnameSubstitutions.AddRange(m.HostnameSubstitutions);
+
+				// MiddlewareType.RegexReplaceInResponse
+				List<KeyValuePair<string, string>> regexReplacements = new List<KeyValuePair<string, string>>();
+				foreach (Middleware m in allApplicableMiddlewares.Where(m => m.Type == MiddlewareType.RegexReplaceInResponse))
+					regexReplacements.AddRange(m.RegexReplacements);
+
 				// Proxy Header Middlewares
 				Middleware xff = allApplicableMiddlewares.FirstOrDefault(m => m.Type == MiddlewareType.XForwardedFor);
 				Middleware xfh = allApplicableMiddlewares.FirstOrDefault(m => m.Type == MiddlewareType.XForwardedHost);
@@ -227,6 +237,8 @@ namespace WebProxy
 					options.proxyHeaderTrustedIpRanges = trustedProxyIPRanges.ToArray();
 					options.allowConnectionKeepalive = myExitpoint.useConnectionKeepAlive;
 					options.cancellationToken = cancellationToken;
+					options.responseHostnameSubstitutions = hostnameSubstitutions;
+					options.responseRegexReplacements = regexReplacements;
 
 					if (overrideRequestHeaders.Count > 0)
 					{
@@ -276,7 +288,7 @@ namespace WebProxy
 			}
 			return;
 		}
-		
+
 		private void OverrideHeader(HttpProcessor p, HttpHeaderCollection headers, string header)
 		{
 			if (string.IsNullOrWhiteSpace(header))
@@ -297,7 +309,7 @@ namespace WebProxy
 				headers.Set(name, value);
 			}
 		}
-		
+
 		private string ReplaceHeaderMacros(HttpProcessor p, string input)
 		{
 			StringBuilder result = new StringBuilder();
