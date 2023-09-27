@@ -34,6 +34,7 @@ namespace WebProxy
 #if LINUX
 			options.ServiceName = serviceName = "webproxy";
 			options.LinuxCommandLineInterface = runCommandLineInterface;
+			options.LinuxOnInstall = runLinuxOnInstallCallback;
 #else
 			options.ServiceName = serviceName = "WebProxy";
 			options.ServiceManagerButtons = new ButtonDefinition[] {
@@ -63,16 +64,7 @@ namespace WebProxy
 				c.Line();
 				if (input == "admin")
 				{
-					AdminInfo adminInfo = new AdminInfo();
-					c.YellowLine("------Credentials------");
-					c.Yellow("User: ").WriteLine(adminInfo.user);
-					c.Yellow("Pass: ").WriteLine(adminInfo.pass);
-					c.YellowLine("---------URLs----------");
-					if (adminInfo.httpUrl != null)
-						c.Cyan(adminInfo.httpUrl).YellowLine(" (" + adminInfo.adminIp + ")");
-					if (adminInfo.httpsUrl != null)
-						c.Cyan(adminInfo.httpsUrl).YellowLine(" (" + adminInfo.adminIp + ")");
-					c.YellowLine("-----------------------");
+					printAdminInfo();
 				}
 				else if (input == "install")
 				{
@@ -168,6 +160,24 @@ namespace WebProxy
 			ConsoleAppHelper.WriteUsageCommand("saveconfig", "Instruct the running service to save its current settings to the Settings.json file.");
 			ConsoleAppHelper.WriteUsageCommand("exit", "Close this command line interface.");
 			c.WriteLine();
+		}
+
+		private static void runLinuxOnInstallCallback()
+		{
+			printAdminInfo();
+		}
+		private static void printAdminInfo()
+		{
+			AdminInfo adminInfo = new AdminInfo();
+			c.YellowLine("------Credentials------");
+			c.Yellow("User: ").WriteLine(adminInfo.user);
+			c.Yellow("Pass: ").WriteLine(adminInfo.pass);
+			c.YellowLine("---------URLs----------");
+			if (adminInfo.httpUrl != null)
+				c.Cyan(adminInfo.httpUrl).YellowLine(" (" + adminInfo.adminIp + ")");
+			if (adminInfo.httpsUrl != null)
+				c.Cyan(adminInfo.httpsUrl).YellowLine(" (" + adminInfo.adminIp + ")");
+			c.YellowLine("-----------------------");
 		}
 #endif
 	}
