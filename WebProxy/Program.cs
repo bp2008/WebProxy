@@ -32,6 +32,8 @@ namespace WebProxy
 			// CONSIDER: Add a middleware that implements a JavaScript-based login form.  Consider supporting WebAuthn or passwordless.id, but the main goal here is to support password manager browser extensions.
 			WindowsServiceInitOptions options = new WindowsServiceInitOptions();
 #if LINUX
+			// Bypass certificate validation for localhost, to allow certain command line interface commands via https.
+			CertificateValidation.RegisterCallback(CertificateValidation.Allow_127_0_0_1_ValidationCallback);
 			options.ServiceName = serviceName = "webproxy";
 			options.LinuxCommandLineInterface = runCommandLineInterface;
 			options.LinuxOnInstall = runLinuxOnInstallCallback;
@@ -68,7 +70,7 @@ namespace WebProxy
 				}
 				else if (input == "install")
 				{
-					AppInit.InstallLinuxSystemdService(serviceName);
+					AppInit.InstallLinuxSystemdService(serviceName, new WindowsServiceInitOptions() { LinuxOnInstall = runLinuxOnInstallCallback });
 				}
 				else if (input == "uninstall")
 				{
