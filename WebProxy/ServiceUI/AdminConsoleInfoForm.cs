@@ -83,7 +83,7 @@ namespace WebProxy.ServiceUI
 					throw new ApplicationException("Unable to locate Admin Login Middleware to change credentials.");
 				editableAdminLogin.SetPassword((string)txtUser.Tag, null);
 				editableAdminLogin.SetPassword(txtUser.Text, txtPass.Text);
-				WebProxyService.SaveNewSettings(s).GetAwaiter().GetResult();
+				TaskHelper.RunAsyncCodeSafely(() => WebProxyService.SaveNewSettings(s));
 				txtUser.Tag = txtUser.Text;
 				btnCopyUser.Enabled = btnCopyPass.Enabled = true;
 			}
@@ -103,7 +103,7 @@ namespace WebProxy.ServiceUI
 				if (editableAdminLogin == null)
 					throw new ApplicationException("Unable to locate Admin Login Middleware to change credentials.");
 				editableAdminLogin.SetPassword(txtUser.Text, txtPass.Text);
-				WebProxyService.SaveNewSettings(s).GetAwaiter().GetResult();
+				TaskHelper.RunAsyncCodeSafely(() => WebProxyService.SaveNewSettings(s));
 				btnCopyUser.Enabled = btnCopyPass.Enabled = true;
 			}
 			else

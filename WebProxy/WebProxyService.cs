@@ -73,18 +73,17 @@ namespace WebProxy
 			string settingsOriginal = JsonConvert.SerializeObject(s);
 			ValidateSettings(s);
 			string settingsAfterValidation = JsonConvert.SerializeObject(s);
-			lock (settingsSaveLock)
-			{
-				if (settingsOriginal != settingsAfterValidation)
-					SaveNewSettings(s).GetAwaiter().GetResult();
-				else
-				{
-					staticSettings = s;
-					staticSettings.SaveIfNoExist();
-				}
 
-				SettingsValidateAndAdminConsoleSetup(out Entrypoint adminEntry, out Exitpoint adminExit, out Middleware adminLogin);
+			if (settingsOriginal != settingsAfterValidation)
+				TaskHelper.RunAsyncCodeSafely(() => WebProxyService.SaveNewSettings(s));
+			else
+			{
+				staticSettings = s;
+				staticSettings.SaveIfNoExist();
 			}
+
+			SettingsValidateAndAdminConsoleSetup(out Entrypoint adminEntry, out Exitpoint adminExit, out Middleware adminLogin);
+
 			ActivateSettingsChanges(s);
 		}
 		/// <summary>
@@ -389,7 +388,7 @@ namespace WebProxy
 
 			// After all changes are made to the settings object, the settings can be saved.
 			if (shouldSave)
-				SaveNewSettings(s).GetAwaiter().GetResult();
+				TaskHelper.RunAsyncCodeSafely(() => WebProxyService.SaveNewSettings(s));
 		}
 		/// <summary>
 		/// Validate the settings file and repair simple problems.  Throw an exception if anything is invalid that can't be cleanly repaired automatically.  Because this can modify the settings, this should never be passed the static settings instance, and should only be called just prior to saving the settings.  This method is automatically called by <see cref="SaveNewSettings"/>.
@@ -558,7 +557,7 @@ namespace WebProxy
 
 				if (middleware.Type == MiddlewareType.HostnameSubstitution)
 				{
-					foreach (KeyValuePair<string,string> kvp in middleware.HostnameSubstitutions)
+					foreach (KeyValuePair<string, string> kvp in middleware.HostnameSubstitutions)
 					{
 						if (string.IsNullOrWhiteSpace(kvp.Key))
 							throw new Exception("Middleware \"" + middleware.Id + "\" defines invalid hostname pattern.");
