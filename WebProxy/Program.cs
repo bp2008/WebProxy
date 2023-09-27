@@ -33,7 +33,6 @@ namespace WebProxy
 			WindowsServiceInitOptions options = new WindowsServiceInitOptions();
 #if LINUX
 			// Bypass certificate validation for localhost, to allow certain command line interface commands via https.
-			CertificateValidation.RegisterCallback(CertificateValidation.Allow_127_0_0_1_ValidationCallback);
 			options.ServiceName = serviceName = "webproxy";
 			options.LinuxCommandLineInterface = runCommandLineInterface;
 			options.LinuxOnInstall = runLinuxOnInstallCallback;
@@ -112,7 +111,7 @@ namespace WebProxy
 				input = Console.ReadLine();
 			}
 		}
-		private static WebRequestUtility wru = new WebRequestUtility("WebProxy Command Line Interface", 4000);
+		private static WebRequestUtility wru = new WebRequestUtility("WebProxy Command Line Interface", 4000) { AcceptAnyCertificate = true };
 		private static void AdminCommandLineInterfaceAPICall(string methodName)
 		{
 			try
@@ -128,7 +127,7 @@ namespace WebProxy
 					wru.BasicAuthCredentials = new NetworkCredential(adminInfo.user, adminInfo.pass);
 				BpWebResponse response = wru.POST(builder.Uri.ToString(), new byte[0], "application/json", new string[] { "X-WebProxy-CSRF-Protection", "1" });
 				if (response.StatusCode == 0)
-					c.RedLine("Failed to get a response from the service. Is it running? Tried " + builder.Uri.ToString());
+					c.RedLine("Failed to get a response from the service. Is it running? Tried " + builder.Uri.ToString() + " and got " + (response.ex == null ? "No Response" : response.ex.ToHierarchicalString()));
 				else
 				{
 					dynamic responseData = JsonConvert.DeserializeObject(response.str);

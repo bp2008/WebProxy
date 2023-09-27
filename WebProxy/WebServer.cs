@@ -110,7 +110,7 @@ namespace WebProxy
 						builder.Port = myEntrypoint.httpsPort;
 						builder.Host = p.HostName;
 						builder.Scheme = "https";
-						await p.Response.RedirectAsync(builder.Uri.ToString(), cancellationToken).ConfigureAwait(false);
+						await p.Response.RedirectTemporaryAsync(builder.Uri.ToString(), cancellationToken).ConfigureAwait(false);
 						return;
 					}
 				}
