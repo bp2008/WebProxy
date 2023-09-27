@@ -117,7 +117,7 @@ namespace WebProxy
 			try
 			{
 				AdminInfo adminInfo = new AdminInfo();
-				UriBuilder builder = new UriBuilder(adminInfo.httpUrl ?? adminInfo.httpsUrl);
+				UriBuilder builder = new UriBuilder(adminInfo.httpsUrl ?? adminInfo.httpUrl);
 				if (!string.IsNullOrWhiteSpace(adminInfo.adminEntry.ipAddress) && IPAddress.TryParse(adminInfo.adminEntry.ipAddress, out IPAddress ipAddress))
 				{
 					builder.Host = ipAddress.ToString();
