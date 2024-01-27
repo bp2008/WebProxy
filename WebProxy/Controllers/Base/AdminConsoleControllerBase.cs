@@ -50,10 +50,15 @@ namespace WebProxy.Controllers
 				}
 			}
 		}
-
-		public async Task<T> ParseRequest<T>(CancellationToken cancellationToken = default)
+		/// <summary>
+		/// Parses an API request argument (JSON) from the HTTP POST body.
+		/// </summary>
+		/// <typeparam name="T">Type of object to parse into.</typeparam>
+		/// <param name="cancellationToken">Cancellation Token</param>
+		/// <returns></returns>
+		public Task<T> ParseRequest<T>(CancellationToken cancellationToken = default)
 		{
-			return await ApiRequest.ParseRequest<T>(this, cancellationToken).ConfigureAwait(false);
+			return ApiRequest.ParseRequest<T>(this, cancellationToken);
 		}
 		/// <summary>
 		/// Returns a JsonResult containing an <see cref="ApiResponseBase"/> that indicates failure and includes the specified error message.

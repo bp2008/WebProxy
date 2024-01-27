@@ -104,6 +104,7 @@
 						<div style="min-height: 100vh" v-if="data.activeConnections">
 							<div class="activeConnection" v-for="c in data.activeConnections" :key="c.ID">
 								<div class="header" title="[[Connection ID]] [Client IP] -> [Host][:Port] [Num Requests Completed This Connection]">[{{c.ID}}] {{c.ClientIP}} -> {{c.Host}}{{getPortStr(c)}}{{c.Tls ? " (TLS)" : ""}} R#{{c.RequestsHandled}}</div>
+								<input type="button" class="ProxyOptionsButton" @click="viewProxyOptions(c.ID)" title="View the proxyOptions for this connection" value="P?">
 								<div class="request">
 									<!-- Line 1 -->
 									Request:
@@ -186,6 +187,7 @@
 	import ClockLoader from '/src/assets/clockLoader.svg?component';
 	import CircularMeter from '/src/components/CircularMeter.vue';
 	import store from '/src/library/store';
+	import ExecAPI from '/src/library/API';
 
 	export default {
 		components: { ClockLoader, CircularMeter },
@@ -289,6 +291,23 @@
 				if (!c.Https && c.LocalPort === 80)
 					return "";
 				return ":" + c.LocalPort;
+			},
+			async viewProxyOptions(connectionID)
+			{
+				const response = await ExecAPI("ServerStatus/GetProxyOptions", { connectionID });
+
+				if (response.success)
+				{
+					console.log("Connection " + connectionID + " ProxyOptions:");
+					console.log(response.proxyOptions);
+					console.log(response.proxyOptions.log);
+					alert("Connection " + connectionID + " ProxyOptions.log:\n\n"
+						+ response.proxyOptions.log);
+				}
+				else
+				{
+					toaster.error(response.error);
+				}
 			}
 		},
 		mounted()
@@ -489,6 +508,14 @@
 	canvas
 	{
 		vertical-align: text-top;
+	}
+
+	.ProxyOptionsButton
+	{
+		float: right;
+		position: relative;
+		top: 1px;
+		right: 1px;
 	}
 
 	@media (min-width: 650px)

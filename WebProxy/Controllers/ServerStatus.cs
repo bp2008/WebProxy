@@ -159,6 +159,32 @@ namespace WebProxy.Controllers
 
 			return ApiSuccessNoAutocomplete(new GCResponse(sw.ElapsedMilliseconds));
 		}
+		/// <summary>
+		/// Gets the proxyOptions instance currently associated with the given ConnectionID.  Will return an API error if the Connection is not found, or null if the connection does not currently have a proxyOptions instance.
+		/// </summary>
+		/// <returns></returns>
+		public async Task<ActionResult> GetProxyOptions()
+		{
+			ProxyOptionsRequest request = await ParseRequest<ProxyOptionsRequest>().ConfigureAwait(false);
+			HttpProcessor p = Context.Server.GetActiveHttpProcessors().FirstOrDefault(p => p.ConnectionID == request.connectionID);
+			if (p == null)
+				return ApiError("Connection ID " + request.connectionID + " was not found.");
+
+			BPUtil.SimpleHttp.Client.ProxyOptions options = p.proxyOptions;
+			string json = null;
+			if (options != null)
+			{
+				JsonSerializerSettings settings = new JsonSerializerSettings
+				{
+					Converters = { new Utility.StringBuilderConverter() },
+				};
+				ProxyOptionsResponse response = new ProxyOptionsResponse(options);
+				json = JsonConvert.SerializeObject(response, Formatting.Indented, settings);
+				return new StringResult(json, "application/json") { ResponseStatus = "418 Success But Prevent Autocomplete" };
+			}
+			else
+				return ApiError("Connection ID " + request.connectionID + " does not have ProxyOptions.");
+		}
 	}
 	public class GCResponse : ApiResponseBase
 	{
@@ -166,6 +192,21 @@ namespace WebProxy.Controllers
 		public GCResponse(long milliseconds) : base(true)
 		{
 			this.milliseconds = milliseconds;
+		}
+	}
+	public class ProxyOptionsRequest
+	{
+		/// <summary>
+		/// ID of the connection. Connection IDs are simple auto-incremented numbers starting with 1 at the start of the server process.
+		/// </summary>
+		public long connectionID;
+	}
+	public class ProxyOptionsResponse : ApiResponseBase
+	{
+		public BPUtil.SimpleHttp.Client.ProxyOptions proxyOptions;
+		public ProxyOptionsResponse(BPUtil.SimpleHttp.Client.ProxyOptions proxyOptions) : base(true)
+		{
+			this.proxyOptions = proxyOptions;
 		}
 	}
 }

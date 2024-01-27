@@ -55,7 +55,7 @@ namespace WebProxy
 		/// </summary>
 		public int serverMaxConnectionCount = 1024;
 
-		protected override object DeserializeFromJson(string str)
+		protected override SerializableObjectJson DeserializeFromJson(string str)
 		{
 			return Newtonsoft.Json.JsonConvert.DeserializeObject<Settings>(str);
 		}

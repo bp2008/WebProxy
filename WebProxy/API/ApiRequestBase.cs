@@ -20,19 +20,19 @@ namespace WebProxy
 		/// <summary>
 		/// Parses an API request argument (JSON) from the HTTP POST body.
 		/// </summary>
-		/// <typeparam name="T"></typeparam>
+		/// <typeparam name="T">Type of object to parse into.</typeparam>
 		/// <param name="controller">The <see cref="Controller"/> you are calling from. ("this")</param>
 		/// <param name="cancellationToken">Cancellation Token</param>
 		/// <returns></returns>
-		public static async Task<T> ParseRequest<T>(Controller controller, CancellationToken cancellationToken = default)
+		public static Task<T> ParseRequest<T>(Controller controller, CancellationToken cancellationToken = default)
 		{
-			return await ParseRequest<T>(controller.Context.httpProcessor, cancellationToken).ConfigureAwait(false);
+			return ParseRequest<T>(controller.Context.httpProcessor, cancellationToken);
 		}
 
 		/// <summary>
 		/// Parses an API request argument (JSON) from the HTTP POST body.
 		/// </summary>
-		/// <typeparam name="T"></typeparam>
+		/// <typeparam name="T">Type of object to parse into.</typeparam>
 		/// <param name="httpProcessor">The <see cref="HttpProcessor"/> which is handling the API request.</param>
 		/// <param name="cancellationToken">Cancellation Token</param>
 		/// <returns></returns>

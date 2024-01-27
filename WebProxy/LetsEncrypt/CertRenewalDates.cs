@@ -22,7 +22,7 @@ namespace WebProxy
 		[JsonProperty("certificateRenewalDatesPerDomain")]
 		private ConcurrentDictionary<string, long> certificateRenewalDatesPerDomain = new ConcurrentDictionary<string, long>();
 
-		protected override object DeserializeFromJson(string str)
+		protected override SerializableObjectJson DeserializeFromJson(string str)
 		{
 			return Newtonsoft.Json.JsonConvert.DeserializeObject<Settings>(str);
 		}
