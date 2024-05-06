@@ -256,10 +256,11 @@ namespace WebProxy
 		/// <param name="s">Settings object to apply settings from.</param>
 		private static void ActivateSettingsChanges(Settings s)
 		{
-			SimpleHttpLogger.RegisterLogger(Logger.httpLogger, s.verboseWebServerLogs);
-
 			if (webServer != null)
+			{
+				webServer.EnableLogging(s.verboseWebServerLogs);
 				webServer.MaxConnections = s.serverMaxConnectionCount;
+			}
 
 			UpdateWebServerBindings();
 		}
