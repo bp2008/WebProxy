@@ -285,9 +285,9 @@ namespace WebProxy.LetsEncrypt
 								try
 								{
 									await CloudflareDnsValidator.CreateDNSRecord(dnsKey, dnsValue).ConfigureAwait(false);
-									Logger.Info("CertMgr.Create Cloudflare-DNS-01: " + dnsKey + " TXT record created.");
-									Logger.Info("CertMgr.Create Waiting 1000ms for DNS propagation so the validation is less likely to fail.");
-									await Task.Delay(1000).ConfigureAwait(false);
+									Logger.Info("CertMgr.Create Cloudflare-DNS-01: " + dnsKey + " TXT record created with value: \"" + dnsValue + "\"");
+									Logger.Info("CertMgr.Create Waiting 5000ms for DNS propagation so the validation is less likely to fail.");
+									await Task.Delay(5000).ConfigureAwait(false);
 
 									Certes.Acme.Resource.Challenge challenge = await ValidateAndWait(challengeContext).ConfigureAwait(false);
 									continue;
