@@ -22,6 +22,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Certes" Version="3.0.4" />
+		<PackageReference Include="DnsClient" Version="1.8.0" />
 		<PackageReference Include="FluentCloudflare" Version="0.3.0" />
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
 		<PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
@@ -40,8 +41,8 @@
 	</ItemGroup>
 	<PropertyGroup>
 		<Nullable>disable</Nullable>
-		<FileVersion>1.28.2.0</FileVersion>
-		<AssemblyVersion>1.28.2.0</AssemblyVersion>
+		<FileVersion>1.28.3.0</FileVersion>
+		<AssemblyVersion>1.28.3.0</AssemblyVersion>
 		<NeutralLanguage>en-US</NeutralLanguage>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

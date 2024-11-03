@@ -196,7 +196,7 @@ namespace WebProxy
 		private static Settings staticSettings;
 
 		/// <summary>
-		/// Returns a snapshot of the settings.  Store the returned value in a local variable and use it from there, because calling this method is not guaranteed to return the same object each time.  Failure to treat the returned object as read-only will yield race conditions and errors in other threads.
+		/// Returns a reference to the settings object which must be treated as read-only.  Store the returned value in a local variable and use it from there, because calling this method is not guaranteed to return the same object each time.  Failure to treat the returned object as read-only will yield race conditions and errors in other threads.
 		/// </summary>
 		/// <returns></returns>
 		public static Settings MakeLocalSettingsReference()

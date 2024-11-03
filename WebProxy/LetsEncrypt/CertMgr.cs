@@ -13,6 +13,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using WebProxy.Utility;
 
 namespace WebProxy.LetsEncrypt
 {
@@ -242,10 +243,6 @@ namespace WebProxy.LetsEncrypt
 				// Domains to include in the certificate.
 				string[] domains = exitpoint.getAllDomains();
 
-				Settings settings = WebProxyService.MakeLocalSettingsReference();
-				string cloudflareApiToken = null;
-				if (dns01Cloudflare)
-					cloudflareApiToken = settings.cloudflareApiToken;
 				if (!standardHttpSupported && !standardHttpsSupported && !dns01Cloudflare)
 					throw new ArgumentException("Certificate creation will not be attempted because no ACME validation method is currently possible. Ensure that this server is listening on public port 80 (http), 443 (https), or that DNS validation is properly configured.");
 
@@ -285,8 +282,17 @@ namespace WebProxy.LetsEncrypt
 								try
 								{
 									await CloudflareDnsValidator.CreateDNSRecord(dnsKey, dnsValue).ConfigureAwait(false);
-									Logger.Info("CertMgr.Create Cloudflare-DNS-01: " + dnsKey + " TXT record created with value: \"" + dnsValue + "\"");
-									Logger.Info("CertMgr.Create Waiting 5000ms for DNS propagation so the validation is less likely to fail.");
+									Logger.Info("CertMgr.Create Cloudflare-DNS-01: " + dnsKey + " TXT record created with value: \"" + dnsValue + "\". Waiting up to 1 minute or until TXT query succeeds.");
+									// 2024-11-03 - One of my certificates expired because a fixed 5 second wait time between creation and validation is simply not long enough to be reliable anymore.
+									// So, now we will wait up to one minute until our own DNS query succeeds and THEN wait an additional 5 seconds.
+									string result = await DnsLookupHelper.GetTXTRecord(dnsKey, TimeSpan.FromMinutes(1)).ConfigureAwait(false);
+									if (result == dnsValue)
+										Logger.Info("CertMgr.Create TXT query received the expected result.");
+									else if (result == null)
+										Logger.Info("CertMgr.Create TXT query was unable to retrieve a result.");
+									else
+										Logger.Info("CertMgr.Create TXT query retrieved unexpected result: \"" + result + "\".");
+									Logger.Info("CertMgr.Create Waiting an additional 5 seconds so the validation is less likely to fail.");
 									await Task.Delay(5000).ConfigureAwait(false);
 
 									Certes.Acme.Resource.Challenge challenge = await ValidateAndWait(challengeContext).ConfigureAwait(false);
