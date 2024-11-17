@@ -1,7 +1,5 @@
 <template>
-	<div class="middlewareEditor primaryContainer">
-		<FloatingButtons @delete="$emit('delete')" />
-		<div class="primaryContainerHeading">Middleware</div>
+	<PrimaryContainer class="middlewareEditor" @delete="$emit('delete')" title="Middleware" :name="middleware.Id">
 		<div class="flexRow">
 			<label>Name</label>
 			<input type="text" v-model="middleware.Id" autocomplete="off" />
@@ -171,15 +169,15 @@
 				</template>
 			</div>
 		</template>
-	</div>
+	</PrimaryContainer>
 </template>
 <script>
 	import store from '/src/library/store';
 	import ArrayEditor from '/src/components/ArrayEditor.vue';
-	import FloatingButtons from '/src/components/FloatingButtons.vue'
+	import PrimaryContainer from '/src/components/PrimaryContainer.vue';
 
 	export default {
-		components: { ArrayEditor, FloatingButtons },
+		components: { ArrayEditor, PrimaryContainer },
 		props: {
 			middleware: Object
 		},

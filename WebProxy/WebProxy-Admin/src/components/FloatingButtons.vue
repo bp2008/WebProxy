@@ -21,6 +21,7 @@
 		position: relative;
 		top: -10px;
 		right: -5px;
+		z-index: 1;
 	}
 
 		.floatingButtons > span > *

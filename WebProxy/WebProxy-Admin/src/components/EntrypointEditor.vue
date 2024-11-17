@@ -1,7 +1,5 @@
 <template>
-	<div class="entrypointEditor primaryContainer">
-		<FloatingButtons @delete="$emit('delete')" />
-		<div class="primaryContainerHeading">Entrypoint</div>
+	<PrimaryContainer class="entrypointEditor" @delete="$emit('delete')" title="Entrypoint" :name="entrypoint.name">
 		<div class="flexRow">
 			<label>Name</label>
 			<input type="text" v-model="entrypoint.name" autocomplete="off" />
@@ -42,14 +40,14 @@
 		<div class="middlewares">
 			<MiddlewareSelector v-model="entrypoint.middlewares"></MiddlewareSelector>
 		</div>
-	</div>
+	</PrimaryContainer>
 </template>
 <script>
 	import MiddlewareSelector from './MiddlewareSelector.vue';
-	import FloatingButtons from '/src/components/FloatingButtons.vue'
+	import PrimaryContainer from '/src/components/PrimaryContainer.vue';
 	import store from '/src/library/store';
 	export default {
-		components: { MiddlewareSelector, FloatingButtons },
+		components: { MiddlewareSelector, PrimaryContainer },
 		props: {
 			entrypoint: Object
 		},

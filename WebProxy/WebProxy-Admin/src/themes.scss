@@ -23,6 +23,10 @@
 
 .theme-dark
 {
+	--text-color: rgba(255,255,255,0.87);
+	--button-background: #2E2E2E;
+	--button-active-background: #353535;
+
 	a
 	{
 		color: #1fdeff;
@@ -35,7 +39,7 @@
 
 	h1, h2, h3, h4, h5, h6, .primaryContainerHeading
 	{
-		color: rgba(255,255,255,0.87);
+		color: var(--text-color);
 	}
 
 	button, input[type="button"], .button
@@ -57,7 +61,7 @@
 	select
 	{
 		background-color: rgba(255,255,255,0.07);
-		color: rgba(255,255,255,0.87);
+		color: var(--text-color);
 		border-color: #666666;
 	}
 
@@ -97,7 +101,7 @@
 
 	.helpToggle
 	{
-		background: #2E2E2E;
+		background: var(--button-background);
 		color: rgba(255,255,255,0.77);
 		border-color: #666666;
 		box-shadow: 0px 1px 4px 4px rgba(0,0,0,0.6);
@@ -204,6 +208,10 @@
 
 .theme-dark2
 {
+	--text-color: rgba(255,255,255,0.87);
+	--button-background: #2E2E2E;
+	--button-active-background: #353535;
+
 	a
 	{
 		color: #1fdeff;
@@ -216,7 +224,7 @@
 
 	h1, h2, h3, h4, h5, h6, .primaryContainerHeading
 	{
-		color: rgba(255,255,255,0.87);
+		color: var(--text-color);
 	}
 
 	button, input[type="button"], .button
@@ -238,7 +246,7 @@
 	select
 	{
 		background-color: rgba(255,255,255,0.07);
-		color: rgba(255,255,255,0.87);
+		color: var(--text-color);
 		border-color: #666666;
 	}
 
@@ -277,7 +285,7 @@
 
 	.helpToggle
 	{
-		background: #2E2E2E;
+		background: var(--button-background);
 		color: rgba(255,255,255,0.77);
 		border-color: #666666;
 		box-shadow: 0px 1px 4px 4px rgba(0,0,0,0.6);
@@ -353,9 +361,14 @@
 
 .theme-light
 {
+	--text-color: rgba(0,0,0,0.87);
+	--button-background: #ffffff;
+	--button-active-background: #eeeeee;
+	--button-box-shadow: 0px 1px 4px 4px rgba(0,0,0,0.15);
+
 	h1, h2, h3, h4, h5, h6, .primaryContainerHeading
 	{
-		color: rgba(0,0,0,0.87);
+		color: var(--text-color);
 	}
 
 	button, input[type="button"], .button
@@ -377,7 +390,7 @@
 	select
 	{
 		background-color: rgba(255,255,255,0.87);
-		color: rgba(0,0,0,0.87);
+		color: var(--text-color);
 		border-color: #999999;
 	}
 
@@ -424,10 +437,10 @@
 
 	.helpToggle
 	{
-		background-color: #ffffff;
+		background-color: var(--button-background);
 		color: rgba(0,0,0,0.38);
 		border-color: #666666;
-		box-shadow: 0px 1px 4px 4px rgba(0,0,0,0.15);
+		box-shadow: var(--button-box-shadow);
 	}
 
 		.helpToggle:hover

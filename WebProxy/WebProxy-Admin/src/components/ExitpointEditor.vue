@@ -1,7 +1,5 @@
 <template>
-	<div class="exitpointEditor primaryContainer">
-		<FloatingButtons @delete="$emit('delete')" />
-		<div class="primaryContainerHeading">Exitpoint</div>
+	<PrimaryContainer class="exitpointEditor" @delete="$emit('delete')" title="Exitpoint" :name="exitpoint.name">
 		<div class="flexRow">
 			<label><b>Name</b></label>
 			<input type="text" v-model="exitpoint.name" class="nameInput" autocomplete="off" />
@@ -92,17 +90,17 @@
 				<MiddlewareSelector v-model="exitpoint.middlewares"></MiddlewareSelector>
 			</div>
 		</template>
-	</div>
+	</PrimaryContainer>
 </template>
 
 <script>
 	import MiddlewareSelector from './MiddlewareSelector.vue';
 	import store from '/src/library/store';
-	import FloatingButtons from '/src/components/FloatingButtons.vue'
 	import UploadFileControl from '/src/components/UploadFileControl.vue';
+	import PrimaryContainer from '/src/components/PrimaryContainer.vue';
 
 	export default {
-		components: { MiddlewareSelector, FloatingButtons, UploadFileControl },
+		components: { MiddlewareSelector, UploadFileControl, PrimaryContainer },
 		props: {
 			exitpoint: Object,
 			allMiddlewares: {
@@ -114,11 +112,13 @@
 		{
 			return {
 				store,
-				hostTitle: "DNS hostname template.\n\nIn order to access this Exitpoint, a client must request a host which matches this template.\n\nNull or empty string will make this Exitpoint be unreachable by a standard HTTP client.\n\nAny number of '*' characters can be used as wildcards where each '*' means 0 or more characters.  Wildcard matches are lower priority than exact host matches."
+				hostTitle: "DNS hostname template.\n\nIn order to access this Exitpoint, a client must request a host which matches this template.\n\nNull or empty string will make this Exitpoint be unreachable by a standard HTTP client.\n\nAny number of '*' characters can be used as wildcards where each '*' means 0 or more characters.  Wildcard matches are lower priority than exact host matches.",
+				expanded: true
 			};
 		},
 		created()
 		{
+			this.expanded = false;
 		},
 		computed:
 		{
@@ -129,13 +129,18 @@
 			destinationOriginIsHttps()
 			{
 				return this.exitpoint && this.exitpoint.destinationOrigin && this.exitpoint.destinationOrigin.toLowerCase().indexOf("https:") === 0;
-			}
+			},
+
 		},
 		methods:
 		{
 			async uploadCertClicked(selectedFileBase64)
 			{
 				this.$emit('uploadCert', { exitpoint: this.exitpoint, certificateBase64: selectedFileBase64 });
+			},
+			ToggleExpansion()
+			{
+
 			}
 		},
 		watch:

@@ -29,7 +29,8 @@ const store = reactive({
 	windowSize: computed(() => store.windowWidth + "x" + store.windowHeight),
 	mobileLayout: false,
 	tabBarHeight: 0,
-	recalcTabBarHeight: recalcTabBarHeight
+	recalcTabBarHeight: recalcTabBarHeight,
+	expansionState: {},
 });
 
 // Mobile Layout
@@ -97,6 +98,58 @@ mediaQuery_theme.addEventListener('change', e =>
 {
 	store.currentTheme = e.matches ? 'dark' : 'light';
 })
+
+// Primary Container Expansion State (Load / Save)
+const expansionStateKey = "wp_expansion_state";
+function LoadExpansionState()
+{
+	try
+	{
+		let expansionState = localStorage.getItem(expansionStateKey);
+		if (typeof expansionState !== "string")
+			expansionState = "{}";
+		let expansionMap = JSON.parse(expansionState);
+		if (typeof expansionMap === "object")
+			return expansionMap;
+	}
+	catch (ex)
+	{
+		console.log(ex);
+	}
+	return {};
+}
+store.expansionState = LoadExpansionState();
+watch(() => store.expansionState, () =>
+{
+	if (store.entrypoints.length > 0)
+	{
+		// data is loaded, so we can delete stale expansion states
+		let validKeys = {};
+		for (let i = 0; i < store.entrypoints.length; i++)
+			validKeys["Entrypoint_" + store.entrypoints[i].name] = true;
+		for (let i = 0; i < store.exitpoints.length; i++)
+			validKeys["Exitpoint_" + store.exitpoints[i].name] = true;
+		for (let i = 0; i < store.middlewares.length; i++)
+			validKeys["Middleware_" + store.middlewares[i].Id] = true;
+
+		for (let key in store.expansionState)
+		{
+			if (store.expansionState.hasOwnProperty(key))
+			{
+				if (!validKeys[key])
+					delete store.expansionState[key];
+			}
+		}
+	}
+	try
+	{
+		localStorage.setItem(expansionStateKey, JSON.stringify(store.expansionState));
+	}
+	catch (ex)
+	{
+		console.error(ex);
+	}
+}, { deep: true });
 
 // Export
 window.appStore = store; // Handle for debugging

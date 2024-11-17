@@ -96,7 +96,7 @@
 				</div>
 			</div>
 			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Entrypoints'">
-				<h2>Entrypoints</h2>
+				<h2>Entrypoints <ExpandCollapseButtons title="Entrypoint" /></h2>
 				<p v-if="store.showHelp">Entrypoints define how the web server listens for incoming network requests.</p>
 				<draggable v-model="store.entrypoints" handle=".dragHandle">
 					<EntrypointEditor v-for="entrypoint in store.entrypoints" :key="entrypoint.uniqueId" :entrypoint="entrypoint" @delete="deleteEntrypoint(entrypoint)" />
@@ -106,7 +106,7 @@
 				</div>
 			</div>
 			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Exitpoints'">
-				<h2>Exitpoints</h2>
+				<h2>Exitpoints <ExpandCollapseButtons title="Exitpoint" /></h2>
 				<p v-if="store.showHelp">An Exitpoint is a web destination which a client wants to reach.  This Admin Console is an Exitpoint, but an Exitpoint could also be another web server.</p>
 				<draggable v-model="store.exitpoints" handle=".dragHandle">
 					<ExitpointEditor v-for="exitpoint in store.exitpoints" :key="exitpoint.uniqueId" :exitpoint="exitpoint" @delete="deleteExitpoint(exitpoint)" @renew="renewCertificate(exitpoint)" @uploadCert="uploadCertificate" />
@@ -116,7 +116,7 @@
 				</div>
 			</div>
 			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Middlewares'">
-				<h2>Middlewares</h2>
+				<h2>Middlewares <ExpandCollapseButtons title="Middleware" /></h2>
 				<p v-if="store.showHelp">A Middleware is a module which applies additional logic to Entrypoints or Exitpoints.  A Middleware is typically used for access control or to manipulate default WebProxy behavior in some way, such as by adding an HTTP header to all responses.</p>
 				<draggable v-model="store.middlewares" handle=".dragHandle">
 					<MiddlewareEditor v-for="middleware in store.middlewares" :key="middleware.uniqueId" :middleware="middleware" @delete="deleteMiddleware(middleware)" />
@@ -172,6 +172,7 @@
 	import ServerStatus from './components/ServerStatus.vue';
 	import PasswordInput from './components/PasswordInput.vue';
 	import LogReader from './components/LogReader.vue';
+	import ExpandCollapseButtons from './components/ExpandCollapseSectionButtons.vue';
 	import UploadFileControl from '/src/components/UploadFileControl.vue';
 	import ExecAPI from './library/API';
 	import store from '/src/library/store';
@@ -179,7 +180,7 @@
 	import { VueDraggableNext } from 'vue-draggable-next';
 
 	export default {
-		components: { EntrypointEditor, ExitpointEditor, MiddlewareEditor, ProxyRouteEditor, HostedUrlSummary, PasswordInput, LogReader, Loading, draggable: VueDraggableNext, UploadFileControl, ServerStatus },
+		components: { EntrypointEditor, ExitpointEditor, MiddlewareEditor, ProxyRouteEditor, HostedUrlSummary, PasswordInput, LogReader, Loading, draggable: VueDraggableNext, UploadFileControl, ServerStatus, ExpandCollapseButtons },
 		data()
 		{
 			return {
