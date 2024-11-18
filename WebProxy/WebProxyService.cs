@@ -547,7 +547,8 @@ namespace WebProxy
 					{
 						try
 						{
-							collection.AssignHeaderFromString(header);
+							if (!string.IsNullOrWhiteSpace(header))
+								collection.AssignHeaderFromString(header);
 						}
 						catch (Exception ex)
 						{
