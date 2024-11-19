@@ -1,5 +1,6 @@
 ﻿using BPUtil;
 using BPUtil.SimpleHttp;
+using BPUtil.SimpleHttp.TLS;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -87,14 +88,14 @@ namespace WebProxy.LetsEncrypt
 					await WebProxyService.SaveNewSettings(newSettings).ConfigureAwait(false);
 				}
 
-				if (!staticCertDict.TryGetValue(certPath, out CachedCertificate cached))
-					cached = new CachedCertificate(GetCert(myExitpoint)); // Reload certificate from file synchronously.
+				if (!staticCertDict.TryGetValue(certPath, out ReloadingCertificateSelector cached))
+				{
+					certPath = GetCertPath(myExitpoint);
+					CertificatePfxInfo cpi = new CertificatePfxInfo(certPath, null);
+					staticCertDict[certPath] = cached = new ReloadingCertificateSelector(() => cpi);
+				}
 
-				if (cached.Certificate == null || cached.Age.Elapsed > TimeSpan.FromSeconds(60))
-					cached = new CachedCertificate(GetCert(myExitpoint)); // Reload certificate from file synchronously.
-				else if (cached.Age.Elapsed > TimeSpan.FromSeconds(10))
-					_ = Task.Run(() => { GetCert(myExitpoint); }).ConfigureAwait(false); // Reload certificate from file asynchronously.
-				return cached.Certificate;
+				return await cached.GetCertificate(p, serverName);
 			}
 		}
 		private static string[] GetDomainsForSelfSignedCert(Exitpoint exitpoint)
@@ -109,11 +110,11 @@ namespace WebProxy.LetsEncrypt
 			return domains;
 		}
 		/// <summary>
-		/// Loads the certificate for the given Exitpoint from disk, generating a self-signed certificate if necessary.  Returns null if the certificate is not available and self-signed generation is disabled.
+		/// Returns the path of a certificate file, if one exists and is ready to read.  This method generates a self-signed certificate if necessary.  Returns null if the certificate is not available and self-signed generation is disabled.
 		/// </summary>
 		/// <param name="exitpoint">The Exitpoint for which to get the certificate.</param>
 		/// <returns></returns>
-		private static X509Certificate2 GetCert(Exitpoint exitpoint)
+		private static string GetCertPath(Exitpoint exitpoint)
 		{
 			string[] domains = null;
 			string certPath = exitpoint.certificatePath;
@@ -153,25 +154,15 @@ namespace WebProxy.LetsEncrypt
 								File.WriteAllBytes(fiCert.FullName, certData);
 							}, 50, 6);
 
-							return ssl_certificate;
+							return certPath;
 						}
 					}
 				}
 			}
 			// If we get here, the certificate file was just confirmed to exist.
-			return new X509Certificate2(certPath);
+			return certPath;
 		}
 		private static object selfSignedCertLock = new object();
-		private ConcurrentDictionary<string, CachedCertificate> staticCertDict = new ConcurrentDictionary<string, CachedCertificate>();
-	}
-	class CachedCertificate
-	{
-		public X509Certificate2 Certificate { get; set; }
-		public Stopwatch Age = Stopwatch.StartNew();
-		public CachedCertificate() { }
-		public CachedCertificate(X509Certificate2 certificate)
-		{
-			Certificate = certificate;
-		}
+		private ConcurrentDictionary<string, ReloadingCertificateSelector> staticCertDict = new ConcurrentDictionary<string, ReloadingCertificateSelector>();
 	}
 }

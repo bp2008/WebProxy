@@ -82,7 +82,7 @@
 				<div class="flexRow" v-if="!exitpoint.autoCertificate">
 					<label>Certificate Path</label>
 					<input type="text" v-model="exitpoint.certificatePath" class="certificatePathInput" placeholder="Path to the certificate file (pfx)" title="Path to the certificate file (pfx)" autocomplete="off" />
-					<UploadFileControl label="Upload Certificate" acceptFileExtension=".pfx" />
+					<UploadFileControl label="Upload Certificate" acceptFileExtension=".pfx" @upload="uploadCertClicked" />
 					<div class="comment" v-if="store.showHelp">Path to the certificate file (pfx). If omitted, a path will be automatically assigned upon first use.</div>
 				</div>
 			</div>
@@ -137,10 +137,6 @@
 			async uploadCertClicked(selectedFileBase64)
 			{
 				this.$emit('uploadCert', { exitpoint: this.exitpoint, certificateBase64: selectedFileBase64 });
-			},
-			ToggleExpansion()
-			{
-
 			}
 		},
 		watch:

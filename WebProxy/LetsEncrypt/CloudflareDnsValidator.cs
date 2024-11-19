@@ -22,7 +22,7 @@ namespace WebProxy.LetsEncrypt
 		{
 			string key = WebProxyService.MakeLocalSettingsReference().cloudflareApiToken;
 			if (key == null)
-				return null;
+				throw new Exception("The Cloudflare API Token was not found in settings.");
 			return FluentCloudflare.Cloudflare.WithToken(key);
 		}
 		private static async Task<Zone> GetZone(IAuthorizedSyntax context, string recordName)

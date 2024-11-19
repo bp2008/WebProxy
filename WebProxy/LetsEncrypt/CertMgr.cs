@@ -391,6 +391,15 @@ namespace WebProxy.LetsEncrypt
 							File.WriteAllBytes(GetDefaultCertificatePath(domain), pfx);
 						}, 50, 100);
 					}
+
+					try
+					{
+						BPUtil.SimpleHttp.TLS.CertificateStoreUpdater.EnsureIntermediateCertificatesAreInStore(pfx, null);
+					}
+					catch (Exception ex)
+					{
+						Logger.Debug(ex, "Unable to save intermediate certificates to \"Intermediate Certificate Authorites\" store.");
+					}
 				}
 				finally
 				{
