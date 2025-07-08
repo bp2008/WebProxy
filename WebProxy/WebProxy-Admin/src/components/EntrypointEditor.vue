@@ -1,5 +1,5 @@
 <template>
-	<PrimaryContainer class="entrypointEditor" @delete="$emit('delete')" title="Entrypoint" :name="entrypoint.name">
+	<PrimaryContainer class="entrypointEditor" title="Entrypoint" :name="entrypoint.name">
 		<div class="flexRow">
 			<label>Name</label>
 			<input type="text" v-model="entrypoint.name" autocomplete="off" />

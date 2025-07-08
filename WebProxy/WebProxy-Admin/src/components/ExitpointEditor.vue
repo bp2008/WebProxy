@@ -1,5 +1,5 @@
 <template>
-	<PrimaryContainer class="exitpointEditor" @delete="$emit('delete')" title="Exitpoint" :name="exitpoint.name">
+	<PrimaryContainer class="exitpointEditor" title="Exitpoint" :name="exitpoint.name">
 		<div class="flexRow">
 			<label><b>Name</b></label>
 			<input type="text" v-model="exitpoint.name" class="nameInput" autocomplete="off" />

@@ -1,5 +1,5 @@
 <template>
-	<PrimaryContainer class="middlewareEditor" @delete="$emit('delete')" title="Middleware" :name="middleware.Id">
+	<PrimaryContainer class="middlewareEditor" title="Middleware" :name="middleware.Id">
 		<div class="flexRow">
 			<label>Name</label>
 			<input type="text" v-model="middleware.Id" autocomplete="off" />
