@@ -1,6 +1,7 @@
 ﻿using BPUtil;
-using Certes;
-using Certes.Acme;
+using Certify.ACME.Anvil;
+using Certify.ACME.Anvil.Acme;
+using Certify.ACME.Anvil.Acme.Resource;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -14,6 +15,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using WebProxy.Utility;
+using Authorization = Certify.ACME.Anvil.Acme.Resource.Authorization;
+using Directory = System.IO.Directory;
 
 namespace WebProxy.LetsEncrypt
 {
@@ -39,7 +42,7 @@ namespace WebProxy.LetsEncrypt
 		/// The last email address in use when Initialize was called.
 		/// </summary>
 		private static string LastEmail = null;
-		private static async void Initialize()
+		private static async Task Initialize()
 		{
 			Settings settings = WebProxyService.MakeLocalSettingsReference();
 			if (string.IsNullOrWhiteSpace(settings.acmeAccountEmail))
@@ -75,12 +78,13 @@ namespace WebProxy.LetsEncrypt
 					IKey accountKey = KeyFactory.FromPem(settings.acmeAccountKey);
 					acme = new AcmeContext(acmeServerUri, accountKey);
 					IAccountContext accountContext = await acme.Account().ConfigureAwait(false);
-					Certes.Acme.Resource.Account account = await accountContext.Resource().ConfigureAwait(false);
+					Account account = await accountContext.Resource().ConfigureAwait(false);
 					string emailContact = "mailto:" + settings.acmeAccountEmail;
-					if (account.Contact.Count < 1 || account.Contact[0] != emailContact)
+					if (account.Contact == null || account.Contact.Count < 1 || account.Contact[0] != emailContact)
 					{
+						string oldContactStr = account.Contact == null ? "null" : string.Join(",", account.Contact);
 						List<string> newContact = new List<string>(new string[] { emailContact });
-						Logger.Info("CertMgr.Initialize: Changing LetsEncrypt Account Contact from \"" + string.Join(",", account.Contact) + "\" to \"" + string.Join(",", newContact) + "\"");
+						Logger.Info("CertMgr.Initialize: Changing LetsEncrypt Account Contact from \"" + oldContactStr + "\" to \"" + string.Join(",", newContact) + "\"");
 						await accountContext.Update(newContact, true).ConfigureAwait(false);
 					}
 				}
@@ -246,7 +250,7 @@ namespace WebProxy.LetsEncrypt
 				if (!standardHttpSupported && !standardHttpsSupported && !dns01Cloudflare)
 					throw new ArgumentException("Certificate creation will not be attempted because no ACME validation method is currently possible. Ensure that this server is listening on public port 80 (http), 443 (https), or that DNS validation is properly configured.");
 
-				Initialize();
+				await Initialize().ConfigureAwait(false);
 
 
 				await myLock.WaitAsync().ConfigureAwait(false);
@@ -255,14 +259,14 @@ namespace WebProxy.LetsEncrypt
 					// Create order for certificate.
 					Logger.Info("CertMgr.Create: order");
 					IOrderContext orderContext = await acme.NewOrder(domains).ConfigureAwait(false);
-					Certes.Acme.Resource.Order order = await orderContext.Resource().ConfigureAwait(false);
+					Order order = await orderContext.Resource().ConfigureAwait(false);
 					IEnumerable<IAuthorizationContext> authorizations = await orderContext.Authorizations().ConfigureAwait(false);
 					IKey alpnCertKey = null;
 					foreach (IAuthorizationContext authz in authorizations)
 					{
-						Certes.Acme.Resource.Authorization authResource = await authz.Resource().ConfigureAwait(false);
+						Authorization authResource = await authz.Resource().ConfigureAwait(false);
 						string domain = authResource.Identifier.Value;
-						if (authResource.Status == Certes.Acme.Resource.AuthorizationStatus.Valid)
+						if (authResource.Status == AuthorizationStatus.Valid)
 						{
 							Logger.Info("CertMgr.Create: " + domain + " is already validated with expiration: " + authResource.Expires);
 							continue;
@@ -295,7 +299,7 @@ namespace WebProxy.LetsEncrypt
 									Logger.Info("CertMgr.Create Waiting an additional 5 seconds so the validation is less likely to fail.");
 									await Task.Delay(5000).ConfigureAwait(false);
 
-									Certes.Acme.Resource.Challenge challenge = await ValidateAndWait(challengeContext).ConfigureAwait(false);
+									Challenge challenge = await ValidateAndWait(challengeContext).ConfigureAwait(false);
 									continue;
 								}
 								finally
@@ -322,7 +326,7 @@ namespace WebProxy.LetsEncrypt
 								{
 									SetupHttpChallenge(domain, challengeContext.Token, challengeContext.KeyAuthz);
 
-									Certes.Acme.Resource.Challenge challenge = await ValidateAndWait(challengeContext).ConfigureAwait(false);
+									Challenge challenge = await ValidateAndWait(challengeContext).ConfigureAwait(false);
 									continue;
 								}
 								finally
@@ -343,7 +347,7 @@ namespace WebProxy.LetsEncrypt
 								{
 									SetupTlsAlpn01Challenge(challengeContext.Token, domain, alpnCertKey);
 
-									Certes.Acme.Resource.Challenge challenge = await ValidateAndWait(challengeContext).ConfigureAwait(false);
+									Challenge challenge = await ValidateAndWait(challengeContext).ConfigureAwait(false);
 									continue;
 								}
 								finally
@@ -360,7 +364,7 @@ namespace WebProxy.LetsEncrypt
 					CsrInfo csrInfo = new CsrInfo();
 					csrInfo.CommonName = domains[0];
 					CertificateChain cert = await orderContext.Generate(csrInfo, privateKey).ConfigureAwait(false);
-					Certes.Pkcs.PfxBuilder pfxBuilder = cert.ToPfx(privateKey);
+					Certify.ACME.Anvil.Pkcs.PfxBuilder pfxBuilder = cert.ToPfx(privateKey);
 					if (acmeServerUri == WellKnownServers.LetsEncryptStagingV2)
 					{
 						DirectoryInfo diCerts = new DirectoryInfo(Path.Combine(WebServer.projectDirPath, "StagingCerts"));
@@ -373,7 +377,6 @@ namespace WebProxy.LetsEncrypt
 						else
 						{
 							Logger.Info("CertMgr.Create: StagingCerts directory not found.  The pfx output will not include the full chain.");
-							pfxBuilder.FullChain = false;
 						}
 					}
 					byte[] pfx = pfxBuilder.Build(domains[0], "");
@@ -419,11 +422,11 @@ namespace WebProxy.LetsEncrypt
 		/// </summary>
 		/// <param name="challenge"></param>
 		/// <returns></returns>
-		private static async Task<Certes.Acme.Resource.Challenge> ValidateAndWait(IChallengeContext challenge)
+		private static async Task<Challenge> ValidateAndWait(IChallengeContext challenge)
 		{
-			Certes.Acme.Resource.Challenge result = await challenge.Validate().ConfigureAwait(false);
+			Challenge result = await challenge.Validate().ConfigureAwait(false);
 			CountdownStopwatch sw = CountdownStopwatch.StartNew(TimeSpan.FromMinutes(1));
-			while (!sw.Finished && result.Status == Certes.Acme.Resource.ChallengeStatus.Pending || result.Status == Certes.Acme.Resource.ChallengeStatus.Processing)
+			while (!sw.Finished && result.Status == ChallengeStatus.Pending || result.Status == ChallengeStatus.Processing)
 			{
 				result = await challenge.Resource().ConfigureAwait(false);
 				await Task.Delay(500).ConfigureAwait(false);
@@ -485,7 +488,7 @@ namespace WebProxy.LetsEncrypt
 		{
 			string pem = acme.AccountKey.TlsAlpnCertificate(token, domain, alpnCertKey);
 			CertificateChain cert = new CertificateChain(pem);
-			Certes.Pkcs.PfxBuilder pfxBuilder = cert.ToPfx(alpnCertKey);
+			Certify.ACME.Anvil.Pkcs.PfxBuilder pfxBuilder = cert.ToPfx(alpnCertKey);
 			byte[] pfx = pfxBuilder.Build(domain, "");
 			alpnCerts[domain] = new X509Certificate2(pfx);
 		}
