@@ -236,6 +236,7 @@ namespace WebProxy
 					options.xRealIp = xri?.ProxyHeaderBehavior ?? ProxyHeaderBehavior.Drop;
 					options.proxyHeaderTrustedIpRanges = trustedProxyIPRanges.ToArray();
 					options.allowConnectionKeepalive = myExitpoint.useConnectionKeepAlive;
+					options.acceptAnyCert = myExitpoint.proxyAcceptAnyCertificate;
 					options.cancellationToken = cancellationToken;
 					options.responseHostnameSubstitutions = hostnameSubstitutions;
 					options.responseRegexReplacements = regexReplacements;
