@@ -145,6 +145,8 @@
 							constraints["Response Headers: " + m.Id] = true;
 						else if (m.Type === "AddProxyServerTiming")
 							constraints["Response Header: Server-Timing"] = true;
+						else if (m.Type === "RewriteOriginRequestHeader")
+							constraints["Manipulate Header: Origin (rewrite)"] = true;
 						else if (m.Type === "RedirectHttpToHttps")
 							constraints["Force TLS"] = true;
 						else if (m.Type === "XForwardedFor")

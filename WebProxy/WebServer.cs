@@ -147,6 +147,8 @@ namespace WebProxy
 				// MiddlewareType.AddProxyServerTiming
 				bool AddProxyServerTiming = allApplicableMiddlewares.Any(m => m.Type == MiddlewareType.AddProxyServerTiming);
 
+				bool RewriteOriginRequestHeader = allApplicableMiddlewares.Any(m => m.Type == MiddlewareType.RewriteOriginRequestHeader);
+
 				// MiddlewareType.AddHttpHeaderToRequest
 				List<string> overrideRequestHeaders = new List<string>();
 				foreach (Middleware m in allApplicableMiddlewares.Where(m => m.Type == MiddlewareType.AddHttpHeaderToRequest))
@@ -240,6 +242,7 @@ namespace WebProxy
 					options.cancellationToken = cancellationToken;
 					options.responseHostnameSubstitutions = hostnameSubstitutions;
 					options.responseRegexReplacements = regexReplacements;
+					options.rewriteOriginRequestHeader = RewriteOriginRequestHeader;
 
 					if (overrideRequestHeaders.Count > 0)
 					{

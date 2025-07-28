@@ -104,6 +104,11 @@
 				</div>
 			</div>
 		</template>
+		<template v-if="middleware.Type === 'RewriteOriginRequestHeader'">
+			<div>
+				This middleware rewrites the "Origin" HTTP header if present in incoming requests from a client so that it matches the origin string configured for the Exitpoint.  If no "Origin" header was included by the client, this middleware will have no effect.  Only affects Exitpoints of type WebProxy.
+			</div>
+		</template>
 		<template v-if="middleware.Type === 'AddProxyServerTiming'">
 			<div>
 				This middleware adds a "Server-Timing" HTTP header to all responses.  Only affects Exitpoints of type WebProxy.

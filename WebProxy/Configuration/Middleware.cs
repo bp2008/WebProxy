@@ -42,6 +42,10 @@ namespace WebProxy
 		/// </summary>
 		AddProxyServerTiming,
 		/// <summary>
+		/// Rewrite the "Origin" request header to match the origin written in the exitpoint configuration.  This does not create the "Origin" request header if it was not already present in the client's request.
+		/// </summary>
+		RewriteOriginRequestHeader,
+		/// <summary>
 		/// Allows configuration of the X-Forwarded-For header.  Default behavior (if middleware is not enabled) is to drop the header when proxying a request.
 		/// </summary>
 		XForwardedFor,

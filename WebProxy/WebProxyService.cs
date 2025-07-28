@@ -616,8 +616,8 @@ namespace WebProxy
 					.Select(name => s.middlewares.FirstOrDefault(m => m.Id == name))
 					.Where(m => m != null);
 
-				ThrowIfMultiple(routeId, enabledMiddlewares, MiddlewareType.RedirectHttpToHttps);
-				ThrowIfMultiple(routeId, enabledMiddlewares, MiddlewareType.AddProxyServerTiming);
+				//ThrowIfMultiple(routeId, enabledMiddlewares, MiddlewareType.RedirectHttpToHttps);
+				//ThrowIfMultiple(routeId, enabledMiddlewares, MiddlewareType.AddProxyServerTiming);
 				ThrowIfMultiple(routeId, enabledMiddlewares, MiddlewareType.XForwardedFor);
 				ThrowIfMultiple(routeId, enabledMiddlewares, MiddlewareType.XForwardedHost);
 				ThrowIfMultiple(routeId, enabledMiddlewares, MiddlewareType.XForwardedProto);
