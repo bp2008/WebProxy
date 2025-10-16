@@ -34,9 +34,6 @@
 		<PackageReference Include="Webprofusion.Certify.ACME.Anvil" Version="3.3.2" />
 	</ItemGroup>
 	<ItemGroup>
-		<ProjectReference Include="..\..\BPUtil\BPUtil\BPUtil6Linux.csproj" />
-	</ItemGroup>
-	<ItemGroup>
 		<Reference Include="ErrorTrackerClient">
 			<HintPath>Libs\ErrorTrackerClient\ErrorTrackerClient.dll</HintPath>
 		</Reference>
@@ -45,6 +42,9 @@
 		<Compile Remove="obj\**" />
 		<EmbeddedResource Remove="obj\**" />
 		<None Remove="obj\**" />
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\..\BPUtil\BPUtil\BPUtil.csproj" />
 	</ItemGroup>
 	<PropertyGroup>
 		<Nullable>disable</Nullable>

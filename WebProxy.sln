@@ -4,8 +4,6 @@ VisualStudioVersion = 17.2.32616.157
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebProxy", "WebProxy\WebProxy.csproj", "{910A05A8-3EB9-48C7-9D97-4B06EC3F619C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BPUtil6", "..\BPUtil\BPUtil\BPUtil6.csproj", "{7CBA7FAE-C446-4EB2-A600-840AED367793}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebProxyTests", "WebProxyTests\WebProxyTests.csproj", "{33744D5C-71F9-42CF-A9CA-8F61C35732E0}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebProxyLinux", "WebProxy\WebProxyLinux.csproj", "{AF18A5A4-0131-4979-B0E6-7F963BD1EF56}"
@@ -13,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebProxyLinux", "WebProxy\W
 		{910A05A8-3EB9-48C7-9D97-4B06EC3F619C} = {910A05A8-3EB9-48C7-9D97-4B06EC3F619C}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BPUtil6Linux", "..\BPUtil\BPUtil\BPUtil6Linux.csproj", "{0218C03F-131B-4DE0-9B73-830DFDD48073}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BPUtil", "..\BPUtil\BPUtil\BPUtil.csproj", "{622752A9-2FB2-822B-2875-70E99A939908}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,10 +23,6 @@ Global
 		{910A05A8-3EB9-48C7-9D97-4B06EC3F619C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{910A05A8-3EB9-48C7-9D97-4B06EC3F619C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{910A05A8-3EB9-48C7-9D97-4B06EC3F619C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7CBA7FAE-C446-4EB2-A600-840AED367793}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7CBA7FAE-C446-4EB2-A600-840AED367793}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7CBA7FAE-C446-4EB2-A600-840AED367793}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7CBA7FAE-C446-4EB2-A600-840AED367793}.Release|Any CPU.Build.0 = Release|Any CPU
 		{33744D5C-71F9-42CF-A9CA-8F61C35732E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{33744D5C-71F9-42CF-A9CA-8F61C35732E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{33744D5C-71F9-42CF-A9CA-8F61C35732E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -37,10 +31,10 @@ Global
 		{AF18A5A4-0131-4979-B0E6-7F963BD1EF56}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AF18A5A4-0131-4979-B0E6-7F963BD1EF56}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AF18A5A4-0131-4979-B0E6-7F963BD1EF56}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0218C03F-131B-4DE0-9B73-830DFDD48073}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0218C03F-131B-4DE0-9B73-830DFDD48073}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0218C03F-131B-4DE0-9B73-830DFDD48073}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0218C03F-131B-4DE0-9B73-830DFDD48073}.Release|Any CPU.Build.0 = Release|Any CPU
+		{622752A9-2FB2-822B-2875-70E99A939908}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{622752A9-2FB2-822B-2875-70E99A939908}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{622752A9-2FB2-822B-2875-70E99A939908}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{622752A9-2FB2-822B-2875-70E99A939908}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

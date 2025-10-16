@@ -18,7 +18,7 @@
 		<None Remove="WebProxy-Admin\node_modules\**" />
 	</ItemGroup>
 	<ItemGroup>
-		<ProjectReference Include="..\..\BPUtil\BPUtil\BPUtil6.csproj" />
+		<ProjectReference Include="..\..\BPUtil\BPUtil\BPUtil.csproj" />
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="DnsClient" Version="1.8.0" />
