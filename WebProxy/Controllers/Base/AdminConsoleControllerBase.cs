@@ -18,7 +18,7 @@ namespace WebProxy.Controllers
 		/// Implements Cross-Site Request Forgery (CSRF) protection.
 		/// </summary>
 		/// <returns></returns>
-		public override Task<ActionResult> OnAuthorization()
+		protected override Task<ActionResult> OnAuthorization()
 		{
 			// "GET" requests are excluded from this requirement, as they are not typically able to use this the HTTP header method of CSRF protection.
 			// Instead, we ensure that no "GET" requests can be used to mutate the server state in a meaningful way.
@@ -36,8 +36,9 @@ namespace WebProxy.Controllers
 		/// <summary>
 		/// When overridden in a derived class, this method may modify any ActionResult before it is sent to the client.
 		/// </summary>
-		public override async Task PreprocessResult(ActionResult result)
+		protected override async Task<ActionResult> PreprocessResult(ActionResult result)
 		{
+			//result = await base.PreprocessResult(result).ConfigureAwait(false);
 			if (Context.httpProcessor.Request.RequestBodyStream != null)
 			{
 				ByteUtil.DiscardToEndResult discardResult = await ByteUtil.DiscardUntilEndOfStreamWithMaxLengthAsync(Context.httpProcessor.Request.RequestBodyStream, ApiRequest.RequestBodySizeLimit, 5000, CancellationToken).ConfigureAwait(false);
@@ -49,6 +50,7 @@ namespace WebProxy.Controllers
 						+ "Controller type: " + this.GetType().Name);
 				}
 			}
+			return result;
 		}
 		/// <summary>
 		/// Parses an API request argument (JSON) from the HTTP POST body.
