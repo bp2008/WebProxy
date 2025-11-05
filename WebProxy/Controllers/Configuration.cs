@@ -451,9 +451,9 @@ namespace WebProxy.Controllers
 		public string[] exitpointTypes = Enum.GetNames(typeof(ExitpointType));
 		public string[] middlewareTypes = Enum.GetNames(typeof(MiddlewareType));
 		public string[] proxyHeaderBehaviorOptions = Enum.GetNames(typeof(BPUtil.SimpleHttp.Client.ProxyHeaderBehavior));
-		public Dictionary<string, string> proxyHeaderBehaviorOptionsDescriptions = DescriptionAttribute.GetDescriptions<BPUtil.SimpleHttp.Client.ProxyHeaderBehavior>();
+		public Dictionary<string, string> proxyHeaderBehaviorOptionsDescriptions = DescriptionHelper.GetDescriptions<BPUtil.SimpleHttp.Client.ProxyHeaderBehavior>();
 		public string[] tlsCipherSuiteSets = Enum.GetNames(typeof(TlsCipherSuiteSet));
-		public Dictionary<string, string> tlsCipherSuiteSetDescriptions = DescriptionAttribute.GetDescriptions<TlsCipherSuiteSet>();
+		public Dictionary<string, string> tlsCipherSuiteSetDescriptions = DescriptionHelper.GetDescriptions<TlsCipherSuiteSet>();
 		public bool tlsCipherSuitesPolicySupported = BPUtil.SimpleHttp.HttpServer.IsTlsCipherSuitesPolicySupported();
 		public LogFile[] logFiles = GetLogFiles();
 		public bool gcModeServer = GCSettings.IsServerGC;
