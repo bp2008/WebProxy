@@ -137,7 +137,7 @@ namespace WebProxy.Controllers
 			try
 			{
 				certBytes = Base64UrlMod.FromBase64UrlMod(request.certificateBase64);
-				cert = new X509Certificate2(certBytes);
+				cert = X509CertificateLoader.LoadPkcs12(certBytes, null, X509KeyStorageFlags.DefaultKeySet);
 			}
 			catch (Exception ex)
 			{

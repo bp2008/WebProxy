@@ -490,7 +490,7 @@ namespace WebProxy.LetsEncrypt
 			CertificateChain cert = new CertificateChain(pem);
 			Certify.ACME.Anvil.Pkcs.PfxBuilder pfxBuilder = cert.ToPfx(alpnCertKey);
 			byte[] pfx = pfxBuilder.Build(domain, "");
-			alpnCerts[domain] = new X509Certificate2(pfx);
+			alpnCerts[domain] = X509CertificateLoader.LoadCertificate(pfx);
 		}
 		private static void ClearTlsAlpn01Challenge(string domain)
 		{
@@ -528,7 +528,7 @@ namespace WebProxy.LetsEncrypt
 					if (certData == null || certData.Length == 0)
 						return null;
 					else
-						return new X509Certificate2(certData);
+						return X509CertificateLoader.LoadCertificate(certData);
 				}
 				, TimeSpan.FromMinutes(1)
 				, TimeSpan.FromDays(1)

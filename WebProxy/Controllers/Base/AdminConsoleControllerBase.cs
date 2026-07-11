@@ -72,7 +72,7 @@ namespace WebProxy.Controllers
 			return new JsonResult(new ApiResponseBase(false, errorMessage)) { ResponseStatus = "418 Error But Prevent Autocomplete" };
 		}
 		/// <summary>
-		/// Returns a JsonResult containing an <see cref="ApiResponseBase"/> that indicates failure and includes the specified error message. This result specifies that a non-2xx HTTP response status code should be used in order to prevent autocompelte.
+		/// Returns a JsonResult containing an <see cref="ApiResponseBase"/> that indicates failure and includes the specified error message. This result specifies that a non-2xx HTTP response status code should be used in order to prevent autocomplete.
 		/// </summary>
 		/// <param name="obj">Result object that should be serialized as JSON.</param>
 		/// <returns></returns>
@@ -90,7 +90,7 @@ namespace WebProxy.Controllers
 			return Task.FromResult<ActionResult>(ApiError(errorMessage));
 		}
 		/// <summary>
-		/// Returns a JsonResult containing an <see cref="ApiResponseBase"/> that indicates failure and includes the specified error message. This result specifies that a non-2xx HTTP response status code should be used in order to prevent autocompelte.
+		/// Returns a JsonResult containing an <see cref="ApiResponseBase"/> that indicates failure and includes the specified error message. This result specifies that a non-2xx HTTP response status code should be used in order to prevent autocomplete.
 		/// </summary>
 		/// <param name="obj">Result object that should be serialized as JSON.</param>
 		/// <returns></returns>

@@ -43,13 +43,6 @@ namespace WebProxy
 
 			InitializeSettings();
 
-			// These should not affect proxying because we use TcpClient and implement HTTP at a low level instead of any built-in high level HTTP client.
-			// Nonetheless I'm setting them.
-			if (!ServicePointManager.SecurityProtocol.HasFlag(SecurityProtocolType.Tls12))
-				ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-			if (ServicePointManager.DefaultConnectionLimit < 16)
-				ServicePointManager.DefaultConnectionLimit = 16;
-
 #if !LINUX
 			InitializeComponent();
 #endif
