@@ -15,6 +15,10 @@ const store = reactive({
 	entrypoints: [],
 	exitpoints: [],
 	middlewares: [],
+	pluginInstances: [],
+	installedPlugins: [],
+	pluginInstanceErrors: {},
+	allowRemotePluginFileManagement: false,
 	proxyRoutes: [],
 	acmeAccountEmail: "",
 	errorTrackerSubmitUrl: "",
@@ -131,6 +135,8 @@ watch(() => store.expansionState, () =>
 			validKeys["Exitpoint_" + store.exitpoints[i].name] = true;
 		for (let i = 0; i < store.middlewares.length; i++)
 			validKeys["Middleware_" + store.middlewares[i].Id] = true;
+		for (let i = 0; i < store.pluginInstances.length; i++)
+			validKeys["Plugin Instance_" + store.pluginInstances[i].Id] = true;
 
 		for (let key in store.expansionState)
 		{

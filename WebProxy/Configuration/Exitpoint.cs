@@ -87,6 +87,10 @@ namespace WebProxy
 		/// </summary>
 		public string[] middlewares;
 		/// <summary>
+		/// Array of unique identifiers for plugin instances that apply to all requests matching this Exitpoint.
+		/// </summary>
+		public string[] plugins;
+		/// <summary>
 		/// Returns true if the given hostname matches the [host] configured here.
 		/// </summary>
 		/// <param name="hostFromRequest">Hostname requested by the client.</param>

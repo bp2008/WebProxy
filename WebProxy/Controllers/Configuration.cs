@@ -37,7 +37,11 @@ namespace WebProxy.Controllers
 			response.entrypoints = s.entrypoints.ToArray();
 			response.exitpoints = s.exitpoints.ToArray();
 			response.middlewares = s.middlewares.ToArray();
+			response.pluginInstances = s.pluginInstances.ToArray();
+			response.installedPlugins = PluginManager.GetInstalledPackages().ToArray();
+			response.pluginInstanceErrors = PluginManager.GetInstanceErrors();
 			response.proxyRoutes = s.proxyRoutes.ToArray();
+			response.allowRemotePluginFileManagement = SecureSettings.GetCurrent().AllowRemotePluginFileManagement;
 			response.errorTrackerSubmitUrl = s.errorTrackerSubmitUrl;
 			response.cloudflareApiToken = s.cloudflareApiToken;
 			response.verboseWebServerLogs = s.verboseWebServerLogs;
@@ -70,6 +74,7 @@ namespace WebProxy.Controllers
 			s.entrypoints = request.entrypoints.ToList();
 			s.exitpoints = request.exitpoints.ToList();
 			s.middlewares = request.middlewares.ToList();
+			s.pluginInstances = request.pluginInstances != null ? request.pluginInstances.ToList() : new List<PluginInstance>();
 			s.proxyRoutes = request.proxyRoutes.ToList();
 			s.errorTrackerSubmitUrl = request.errorTrackerSubmitUrl;
 			s.cloudflareApiToken = request.cloudflareApiToken;
@@ -144,17 +149,14 @@ namespace WebProxy.Controllers
 				return ApiError("Invalid data was uploaded: " + ex.Message);
 			}
 
-
 			string certPath = exitpoint.certificatePath;
-			if (string.IsNullOrWhiteSpace(certPath))
+			if (string.IsNullOrWhiteSpace(certPath) || !IsCertPathEligibleForUpload(certPath))
 			{
+				// Path is unset or is outside of the default certificates directory, so we will replace it with the default path for this exitpoint.
 				string[] domains = exitpoint.getAllDomains();
 				if (domains.Length == 0)
-					return ApiError("This exitpoint does not have any domains configured, so a certificate path can't be automatically generated yet.");
-				Settings newSettings = WebProxyService.CloneSettingsObjectSlow();
-				exitpoint = newSettings.exitpoints.First(e => e.name == exitpoint.name);
-				exitpoint.certificatePath = certPath = CertMgr.GetDefaultCertificatePath(domains[0]);
-				await WebProxyService.SaveNewSettings(newSettings).ConfigureAwait(false);
+					return ApiError("We need to replace the certificate path for this exitpoint, but this exitpoint does not have any domains configured, so a certificate path can't be automatically generated yet.");
+				certPath = CertMgr.GetDefaultCertificatePath(domains[0]);
 			}
 
 			DirectoryInfo diCertDir = new FileInfo(certPath).Directory;
@@ -171,6 +173,108 @@ namespace WebProxy.Controllers
 			{
 				await File.WriteAllBytesAsync(certPath, certBytes, CancellationToken).ConfigureAwait(false);
 			}, 50, 6, CancellationToken).ConfigureAwait(false);
+
+			if (exitpoint.certificatePath != certPath)
+			{
+				// Since the upload succeeded, write the new certificate path to the settings file.
+				Settings newSettings = WebProxyService.CloneSettingsObjectSlow();
+				exitpoint = newSettings.exitpoints.First(e => e.name == exitpoint.name);
+				exitpoint.certificatePath = certPath;
+				await WebProxyService.SaveNewSettings(newSettings).ConfigureAwait(false);
+			}
+
+			return await Get(false).ConfigureAwait(false);
+		}
+		/// <summary>
+		/// Returns true if the given certPath is within the default certificates directory, which is the only place we allow uploaded certificates to be written to.  This is a security measure to prevent arbitrary system-wide file writes.
+		/// </summary>
+		/// <param name="certPath">Path to test.</param>
+		/// <returns>True if the path is eligible for uploading a certificate to; otherwise, false.</returns>
+		private bool IsCertPathEligibleForUpload(string certPath)
+		{
+			try
+			{
+				FileUtil.RelativePath(CertMgr.CertsBaseDir, certPath);
+				return true;
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
+		/// <summary>
+		/// Error message returned by API methods which are disabled because <see cref="SecureSettings.AllowRemotePluginFileManagement"/> is false.
+		/// </summary>
+		private const string RemotePluginFileManagementDisabledMessage = "Remote plugin file management is disabled on this server (\"AllowRemotePluginFileManagement\" is false in SecureSettings.json).  Plugin files must be managed by an administrator with shell access to the server.  See PLUGINS.md in the WebProxy source repository for details.";
+		public async Task<ActionResult> UploadPlugin()
+		{
+			if (!SecureSettings.GetCurrent().AllowRemotePluginFileManagement)
+				return ApiError(RemotePluginFileManagementDisabledMessage);
+
+			UploadPluginRequest request = await ParseRequest<UploadPluginRequest>().ConfigureAwait(false);
+
+			byte[] dllBytes;
+			try
+			{
+				dllBytes = Base64UrlMod.FromBase64UrlMod(request.base64);
+			}
+			catch (Exception ex)
+			{
+				return ApiError("Invalid data was uploaded: " + ex.Message);
+			}
+
+			try
+			{
+				await TaskHelper.RunBlockingCodeSafely(() =>
+				{
+					PluginManager.InstallPluginDll(request.fileName, dllBytes);
+				}, CancellationToken).ConfigureAwait(false);
+			}
+			catch (Exception ex)
+			{
+				return ApiError(ex.FlattenMessages());
+			}
+
+			return await Get(false).ConfigureAwait(false);
+		}
+		public async Task<ActionResult> DeletePlugin()
+		{
+			if (!SecureSettings.GetCurrent().AllowRemotePluginFileManagement)
+				return ApiError(RemotePluginFileManagementDisabledMessage);
+
+			DeletePluginRequest request = await ParseRequest<DeletePluginRequest>().ConfigureAwait(false);
+			try
+			{
+				await TaskHelper.RunBlockingCodeSafely(() =>
+				{
+					PluginManager.DeletePluginPackage(request.packageName);
+				}, CancellationToken).ConfigureAwait(false);
+			}
+			catch (Exception ex)
+			{
+				return ApiError(ex.FlattenMessages());
+			}
+
+			return await Get(false).ConfigureAwait(false);
+		}
+		/// <summary>
+		/// <para>Sets <see cref="SecureSettings.AllowRemotePluginFileManagement"/> to false, returning the server to the secure default state where plugin files can not be installed or deleted via the web console.</para>
+		/// <para>There is deliberately no API method to enable the flag; enabling requires shell access to the server (see PLUGINS.md).</para>
+		/// </summary>
+		public async Task<ActionResult> DisableRemotePluginFileManagement()
+		{
+			try
+			{
+				await TaskHelper.RunBlockingCodeSafely(() =>
+				{
+					SecureSettings.SetAllowRemotePluginFileManagement(false);
+				}, CancellationToken).ConfigureAwait(false);
+			}
+			catch (Exception ex)
+			{
+				return ApiError(ex.FlattenMessages());
+			}
 
 			return await Get(false).ConfigureAwait(false);
 		}
@@ -282,7 +386,7 @@ namespace WebProxy.Controllers
 						}
 						else if (entryData.RelativePath == "CertRenewalDates.json") // Read Cert Renewal Dates
 							certRenewalData = entryData;
-						else if (entryData.RelativePath.StartsWith("Certs/")) // Read Certs
+						else if (entryData.RelativePath.StartsWith("Certs/") && !entryData.RelativePath.EndsWith("/")) // Read Certs (skipping directory entries)
 							certs.Add(entryData);
 					}
 				}
@@ -300,7 +404,10 @@ namespace WebProxy.Controllers
 			{
 				foreach (ZipArchiveEntryData cert in certs)
 				{
-					string path = Path.Combine(Globals.WritableDirectoryBase, cert.RelativePath);
+					// Zip entry names are untrusted input and may contain ".." sequences.  Resolve the path safely, requiring it to remain within the Certs directory, so that a malicious archive can not write elsewhere in the data folder (e.g. overwriting SecureSettings.json).
+					string path = FileUtil.GetNonEscapingAbsolutePath(CertMgr.CertsBaseDir, cert.RelativePath.Substring("Certs/".Length));
+					if (path == null)
+						return ApiError("The archive you are trying to import contains an entry with an unacceptable path: " + cert.RelativePath);
 					FileInfo fi = new FileInfo(path);
 					await Robust.RetryPeriodicAsync(async () =>
 					{
@@ -447,6 +554,13 @@ namespace WebProxy.Controllers
 		public Entrypoint[] entrypoints;
 		public Exitpoint[] exitpoints;
 		public Middleware[] middlewares;
+		public PluginInstance[] pluginInstances;
+		public LoadedPluginPackage[] installedPlugins;
+		public Dictionary<string, string> pluginInstanceErrors;
+		/// <summary>
+		/// Value of <see cref="SecureSettings.AllowRemotePluginFileManagement"/>.  This is read-only state as far as the web console is concerned, except that the web console is allowed to set it to false (the secure default) via <see cref="Configuration.DisableRemotePluginFileManagement"/>.
+		/// </summary>
+		public bool allowRemotePluginFileManagement;
 		public ProxyRoute[] proxyRoutes;
 		public string[] exitpointTypes = Enum.GetNames(typeof(ExitpointType));
 		public string[] middlewareTypes = Enum.GetNames(typeof(MiddlewareType));
@@ -497,6 +611,7 @@ namespace WebProxy.Controllers
 		public Entrypoint[] entrypoints;
 		public Exitpoint[] exitpoints;
 		public Middleware[] middlewares;
+		public PluginInstance[] pluginInstances;
 		public ProxyRoute[] proxyRoutes;
 	}
 	public class ForceRenewRequest
@@ -511,6 +626,15 @@ namespace WebProxy.Controllers
 	public class UploadSettingsAndCertificatesRequest
 	{
 		public string base64;
+	}
+	public class UploadPluginRequest
+	{
+		public string fileName;
+		public string base64;
+	}
+	public class DeletePluginRequest
+	{
+		public string packageName;
 	}
 	public class SetMemoryMaxMiBRequest
 	{

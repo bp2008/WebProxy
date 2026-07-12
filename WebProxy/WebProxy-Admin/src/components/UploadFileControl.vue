@@ -55,7 +55,7 @@
 					}
 					let arrayBuffer = await this.selectedFile.arrayBuffer();
 					let base64 = _arrayBufferToBase64(arrayBuffer);
-					this.$emit("upload", base64);
+					this.$emit("upload", base64, this.selectedFile.name);
 				}
 				else
 					toaster.error('No file is selected');

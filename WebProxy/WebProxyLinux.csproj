@@ -44,6 +44,7 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <ProjectReference Include="..\..\BPUtil\BPUtil\BPUtil.csproj" />
+	  <ProjectReference Include="..\WebProxy.Plugins\WebProxy.Plugins.csproj" />
 	</ItemGroup>
 	<PropertyGroup>
 		<Nullable>disable</Nullable>

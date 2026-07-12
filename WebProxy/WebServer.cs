@@ -15,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using WebProxy.Controllers;
 using WebProxy.LetsEncrypt;
+using WebProxy.Plugins;
 
 namespace WebProxy
 {
@@ -182,6 +183,63 @@ namespace WebProxy
 						trustedProxyIPRanges.AddRange(m.WhitelistedIpRanges);
 				}
 
+				// Plugins
+				// Compute the destination URI early so that plugins can see and modify it.
+				Uri defaultDestinationUri = null;
+				if (myExitpoint.type == ExitpointType.WebProxy)
+				{
+					Uri destinationOrigin = new Uri(myExitpoint.destinationOrigin);
+					UriBuilder destinationBuilder = new UriBuilder(p.Request.Url);
+					destinationBuilder.Scheme = destinationOrigin.Scheme;
+					destinationBuilder.Host = destinationOrigin.DnsSafeHost;
+					destinationBuilder.Port = destinationOrigin.Port;
+					defaultDestinationUri = destinationBuilder.Uri;
+				}
+
+				PluginRequestContext pluginContext = null;
+				RuntimePluginInstance[] applicablePlugins = PluginManager.GetPluginsForRequest(myEntrypoint, myExitpoint);
+				if (applicablePlugins.Length > 0)
+				{
+					bet.Start("Plugins OnRequest");
+					pluginContext = new PluginRequestContext(p, myEntrypoint.name, myExitpoint.name, myExitpoint.type == ExitpointType.WebProxy, defaultDestinationUri, myExitpoint.destinationHostHeader, cancellationToken);
+					foreach (RuntimePluginInstance pluginInstance in applicablePlugins)
+					{
+						if (pluginInstance.Error != null)
+						{
+							// Fail closed: a faulted plugin instance is attached to this request's Entrypoint or Exitpoint.  Skipping it could silently disable access control behavior the plugin was supposed to provide.
+							WebProxyService.ReportError("Request from client " + p.RemoteIPAddressStr + " to " + p.Request.Url + " was refused because plugin instance \"" + pluginInstance.Id + "\" is faulted: " + pluginInstance.Error);
+							p.Response.Simple("500 Internal Server Error");
+							return;
+						}
+						PluginRequestAction action;
+						try
+						{
+							pluginContext.CurrentPluginInstanceId = pluginInstance.Id;
+							action = await pluginInstance.Plugin.OnRequestAsync(pluginContext).ConfigureAwait(false);
+						}
+						catch (Exception ex)
+						{
+							if (HttpProcessor.IsOrdinaryDisconnectException(ex))
+								ex.Rethrow();
+							WebProxyService.ReportError(ex, "Plugin instance \"" + pluginInstance.Id + "\" threw an exception in OnRequestAsync while handling a request from client " + p.RemoteIPAddressStr + " to " + p.Request.Url + ".");
+							if (!p.Response.ResponseHeaderWritten)
+								p.Response.Simple("500 Internal Server Error");
+							return;
+						}
+						finally
+						{
+							pluginContext.CurrentPluginInstanceId = null;
+						}
+						if (action == PluginRequestAction.Handled)
+							return;
+						else if (action == PluginRequestAction.CloseConnection)
+						{
+							p.Response.CloseWithoutResponse();
+							return;
+						}
+					}
+					bet.Stop();
+				}
 
 				// Process the request in the context of the chosen Exitpoint.
 				if (myExitpoint.type == ExitpointType.AdminConsole)
@@ -220,17 +278,15 @@ namespace WebProxy
 				else if (myExitpoint.type == ExitpointType.WebProxy)
 				{
 					bet.Start("Start proxying " + p.Request.HttpMethod + " " + p.Request.Url);
-					Uri destinationOrigin = new Uri(myExitpoint.destinationOrigin);
-					UriBuilder builder = new UriBuilder(p.Request.Url);
-					builder.Scheme = destinationOrigin.Scheme;
-					builder.Host = destinationOrigin.DnsSafeHost;
-					builder.Port = destinationOrigin.Port;
+					// Plugins were given the opportunity to change the destination URI and destination host header.
+					Uri destinationUri = pluginContext?.DestinationUri ?? defaultDestinationUri;
+					string destinationHostHeader = pluginContext != null ? pluginContext.DestinationHostHeader : myExitpoint.destinationHostHeader;
 
 					ProxyOptions options = new ProxyOptions();
 					options.connectTimeoutMs = myExitpoint.connectTimeoutSec * 1000;
 					options.networkTimeoutMs = myExitpoint.networkTimeoutSec * 1000;
 					options.bet = bet;
-					options.host = myExitpoint.destinationHostHeader;
+					options.host = destinationHostHeader;
 					options.includeServerTimingHeader = AddProxyServerTiming;
 					options.xForwardedFor = xff?.ProxyHeaderBehavior ?? ProxyHeaderBehavior.Drop;
 					options.xForwardedHost = xfh?.ProxyHeaderBehavior ?? ProxyHeaderBehavior.Drop;
@@ -263,10 +319,13 @@ namespace WebProxy
 						};
 					}
 
+					if (pluginContext?.ResponseHeadersHooks != null)
+						WirePluginResponseHooks(options, pluginContext);
+
 					bet.Start("Calling p.ProxyToAsync");
 					try
 					{
-						await p.ProxyToAsync(builder.Uri.ToString(), options).ConfigureAwait(false);
+						await p.ProxyToAsync(destinationUri.ToString(), options).ConfigureAwait(false);
 						bet.Stop();
 						if (settings.verboseWebServerLogs)
 							Logger.Info("Proxy Completed: " + p.Request.HttpMethod + " " + p.Request.Url + "\r\n\r\n" + options.log.ToString() + "\r\n");
@@ -291,6 +350,67 @@ namespace WebProxy
 				//	Logger.Info(p.Request.HttpMethod + " " + p.Request.Url + "\r\n\r\n" + bet.ToString("\r\n") + "\r\n");
 			}
 			return;
+		}
+
+		/// <summary>
+		/// Wires the response headers hooks (and response body filters) which plugins registered during OnRequestAsync into the ProxyOptions for this request.
+		/// </summary>
+		/// <param name="options">ProxyOptions for the request which is about to be proxied.</param>
+		/// <param name="pluginContext">The plugin request context holding registered hooks.</param>
+		private static void WirePluginResponseHooks(ProxyOptions options, PluginRequestContext pluginContext)
+		{
+			List<PluginResponseContext> responseContexts = new List<PluginResponseContext>();
+			options.BeforeResponseHeadersSentAsync = async (HttpProcessor processor) =>
+			{
+				foreach (KeyValuePair<string, Func<PluginResponseContext, Task>> registration in pluginContext.ResponseHeadersHooks)
+				{
+					PluginResponseContext responseContext = new PluginResponseContext(processor, pluginContext, registration.Key);
+					try
+					{
+						await registration.Value(responseContext).ConfigureAwait(false);
+					}
+					catch (Exception ex)
+					{
+						if (!HttpProcessor.IsOrdinaryDisconnectException(ex))
+							WebProxyService.ReportError(ex, "Plugin instance \"" + registration.Key + "\" threw an exception in a response headers hook while handling a request from client " + processor.RemoteIPAddressStr + " to " + processor.Request.Url + ".  The request will be aborted.");
+						ex.Rethrow();
+					}
+					responseContexts.Add(responseContext);
+				}
+			};
+			options.ProxyResponseBodyFilter = async (HttpProcessor processor, Stream sourceStream) =>
+			{
+				if (!responseContexts.Any(rc => rc.ResponseBodyFilter != null))
+					return sourceStream;
+
+				// While plugin filters run, clear the Content-Length response header so that a filter which changes the body length without correcting the header cannot cause corrupt response framing.  Filters may set Content-Length themselves; if the body stream ends up unchanged and no filter set the header, the original value is restored.
+				long? originalContentLength = processor.Response.ContentLength;
+				processor.Response.ContentLength = null;
+
+				Stream stream = sourceStream;
+				foreach (PluginResponseContext responseContext in responseContexts)
+				{
+					if (responseContext.ResponseBodyFilter == null)
+						continue;
+					try
+					{
+						Stream replacement = await responseContext.ResponseBodyFilter(stream).ConfigureAwait(false);
+						if (replacement != null)
+							stream = replacement;
+					}
+					catch (Exception ex)
+					{
+						if (!HttpProcessor.IsOrdinaryDisconnectException(ex))
+							WebProxyService.ReportError(ex, "Plugin instance \"" + responseContext.PluginInstanceId + "\" threw an exception in a response body filter while handling a request from client " + processor.RemoteIPAddressStr + " to " + processor.Request.Url + ".  The request will be aborted.");
+						ex.Rethrow();
+					}
+				}
+
+				if (stream == sourceStream && processor.Response.ContentLength == null)
+					processor.Response.ContentLength = originalContentLength;
+
+				return stream;
+			};
 		}
 
 		private void OverrideHeader(HttpProcessor p, HttpHeaderCollection headers, string header)

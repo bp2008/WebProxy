@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<Nullable>disable</Nullable>
+		<FileVersion>1.0.0.0</FileVersion>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<NeutralLanguage>en-US</NeutralLanguage>
+		<Description>Stable plugin API for WebProxy.  Reference this assembly (and BPUtil) from a class library project to create a WebProxy plugin.</Description>
+	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\BPUtil\BPUtil\BPUtil.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<InternalsVisibleTo Include="WebProxy" />
+		<InternalsVisibleTo Include="WebProxyLinux" />
+	</ItemGroup>
+</Project>

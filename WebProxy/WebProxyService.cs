@@ -61,6 +61,9 @@ namespace WebProxy
 			crd.SaveIfNoExist();
 			certRenewalDates = crd;
 
+			// Ensure SecureSettings.json exists on disk so that administrators can find and edit it.  SecureSettings is deliberately not cached; consumers re-read the file on demand via SecureSettings.GetCurrent().
+			new SecureSettings().SaveIfNoExist();
+
 			Settings s = new Settings();
 			s.Load();
 			string settingsOriginal = JsonConvert.SerializeObject(s);
@@ -245,6 +248,7 @@ namespace WebProxy
 		/// <para>* Registers the HTTP logger</para>
 		/// <para>* sets the HTTP server pool max threads</para>
 		/// <para>* updates HTTP server bindings</para>
+		/// <para>* rebuilds configured plugin instances</para>
 		/// </summary>
 		/// <param name="s">Settings object to apply settings from.</param>
 		private static void ActivateSettingsChanges(Settings s)
@@ -253,6 +257,15 @@ namespace WebProxy
 			{
 				webServer.EnableLogging(s.verboseWebServerLogs);
 				webServer.MaxConnections = s.serverMaxConnectionCount;
+			}
+
+			try
+			{
+				PluginManager.OnSettingsChanged(s);
+			}
+			catch (Exception ex)
+			{
+				ReportError(ex, "Failed to load plugins while activating settings changes.");
 			}
 
 			UpdateWebServerBindings();
@@ -402,6 +415,8 @@ namespace WebProxy
 				s.exitpoints = new List<Exitpoint>();
 			if (s.middlewares == null)
 				s.middlewares = new List<Middleware>();
+			if (s.pluginInstances == null)
+				s.pluginInstances = new List<PluginInstance>();
 			if (s.proxyRoutes == null)
 				s.proxyRoutes = new List<ProxyRoute>();
 
@@ -421,6 +436,12 @@ namespace WebProxy
 
 				for (int i = 0; i < entrypoint.middlewares.Length; i++)
 					entrypoint.middlewares[i] = entrypoint.middlewares[i].Trim();
+
+				if (entrypoint.plugins == null)
+					entrypoint.plugins = new string[0];
+
+				for (int i = 0; i < entrypoint.plugins.Length; i++)
+					entrypoint.plugins[i] = entrypoint.plugins[i].Trim();
 
 				entrypoint.name = entrypoint.name.Trim();
 				if (nameUniqueness.Contains(entrypoint.name.ToLower()))
@@ -444,6 +465,12 @@ namespace WebProxy
 
 				for (int i = 0; i < exitpoint.middlewares.Length; i++)
 					exitpoint.middlewares[i] = exitpoint.middlewares[i].Trim();
+
+				if (exitpoint.plugins == null)
+					exitpoint.plugins = new string[0];
+
+				for (int i = 0; i < exitpoint.plugins.Length; i++)
+					exitpoint.plugins[i] = exitpoint.plugins[i].Trim();
 
 				if (exitpoint.type == ExitpointType.AdminConsole || exitpoint.type == ExitpointType.WebProxy)
 				{
@@ -571,6 +598,27 @@ namespace WebProxy
 							throw new Exception("Middleware \"" + middleware.Id + "\" defines null replacement.");
 					}
 				}
+			}
+
+			nameUniqueness.Clear();
+
+			// Validate Plugin Instances
+			foreach (PluginInstance pluginInstance in s.pluginInstances)
+			{
+				if (pluginInstance == null)
+					throw new Exception("Plugin instance is null.");
+
+				if (string.IsNullOrWhiteSpace(pluginInstance.Id))
+					throw new Exception("Plugin instance index " + s.pluginInstances.IndexOf(pluginInstance) + " does not have a name.");
+
+				pluginInstance.Id = pluginInstance.Id.Trim();
+				if (nameUniqueness.Contains(pluginInstance.Id.ToLower()))
+					throw new Exception("Plugin instance names are not unique. Duplicate name: \"" + pluginInstance.Id + "\"");
+				nameUniqueness.Add(pluginInstance.Id.ToLower());
+
+				if (string.IsNullOrWhiteSpace(pluginInstance.PluginTypeName))
+					throw new Exception("Plugin instance \"" + pluginInstance.Id + "\" does not specify a plugin type.");
+				pluginInstance.PluginTypeName = pluginInstance.PluginTypeName.Trim();
 			}
 
 			nameUniqueness.Clear();

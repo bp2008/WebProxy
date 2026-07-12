@@ -52,6 +52,11 @@
 				this.myCollectionSelector = () => store.middlewares;
 				this.myKeySelector = obj => obj.Id;
 			}
+			else if (this.title === "Plugin Instance")
+			{
+				this.myCollectionSelector = () => store.pluginInstances;
+				this.myKeySelector = obj => obj.Id;
+			}
 		},
 		computed:
 		{

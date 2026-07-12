@@ -27,6 +27,10 @@ namespace WebProxy
 		/// </summary>
 		public List<Middleware> middlewares = new List<Middleware>();
 		/// <summary>
+		/// All plugin instances currently configured.  A plugin instance is a plugin type combined with a set of option values, and can be attached to Entrypoints and Exitpoints by its Id.
+		/// </summary>
+		public List<PluginInstance> pluginInstances = new List<PluginInstance>();
+		/// <summary>
 		/// All proxy routes (mappings from Entrypoint to Exitpoint) currently configured.
 		/// </summary>
 		public List<ProxyRoute> proxyRoutes = new List<ProxyRoute>();

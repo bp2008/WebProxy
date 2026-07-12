@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<Nullable>disable</Nullable>
+		<FileVersion>1.0.0.0</FileVersion>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<NeutralLanguage>en-US</NeutralLanguage>
+		<Description>Example plugins for WebProxy.  Upload the compiled WebProxy.ExamplePlugin.dll via the Plugins page of the WebProxy Admin Console.</Description>
+	</PropertyGroup>
+	<ItemGroup>
+		<!--
+		This example references the WebProxy.Plugins project directly because it lives in the WebProxy source tree.
+		A standalone plugin project would instead reference the WebProxy.Plugins.dll and BPUtil.dll files from a WebProxy installation:
+
+		<Reference Include="WebProxy.Plugins">
+			<HintPath>path\to\WebProxy\WebProxy.Plugins.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="BPUtil">
+			<HintPath>path\to\WebProxy\BPUtil.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
+
+		Do not deploy BPUtil.dll or WebProxy.Plugins.dll with your plugin; WebProxy provides them at runtime.
+		-->
+		<ProjectReference Include="..\WebProxy.Plugins\WebProxy.Plugins.csproj" />
+	</ItemGroup>
+</Project>

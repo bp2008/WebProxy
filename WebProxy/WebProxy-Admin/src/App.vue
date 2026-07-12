@@ -87,6 +87,14 @@
 						</div>
 					</div>
 					<div class="flexRow">
+						<label>Remote Plugin File Management: <b>{{store.allowRemotePluginFileManagement ? "Enabled" : "Disabled"}}</b></label>
+						<div v-if="store.allowRemotePluginFileManagement"><input type="button" value="Disable Remote Plugin File Management" @click="disableRemotePluginFileManagement" title="Return to the secure default state where plugin files can not be installed or deleted via this web console." /></div>
+						<div class="comment" v-if="store.showHelp">
+							<p>Reflects the <span class="icode">AllowRemotePluginFileManagement</span> flag in <span class="icode">SecureSettings.json</span>, which controls whether plugin files (DLLs) may be installed and deleted via this web console.  Plugins are .NET code which runs with the privileges of the WebProxy service, so enabling this grants remote code execution capability to anyone who can log into this web console.  For that reason it is disabled by default and can not be enabled from here; an administrator with shell access to the server must enable it via the command line interface (Linux), the Service Manager GUI (Windows), or by editing <span class="icode">SecureSettings.json</span>.  See <span class="icode">PLUGINS.md</span> in the WebProxy source repository for details.</p>
+							<p>This flag only controls the ability to remotely add or remove plugin files.  Plugin instances can be configured and used regardless of the state of this flag.</p>
+						</div>
+					</div>
+					<div class="flexRow">
 						<label>Admin Console Theme</label>
 						<select v-model="store.currentTheme">
 							<option v-for="t in store.themeList">{{t}}</option>
@@ -123,6 +131,34 @@
 				</draggable>
 				<div class="buttonBar">
 					<button @click="addMiddleware()">Add New Middleware</button>
+				</div>
+			</div>
+			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Plugins'">
+				<h2>Installed Plugins</h2>
+				<p v-if="store.showHelp">A Plugin is a DLL file which extends WebProxy with custom behavior, similar to an advanced Middleware.  Plugins can inspect and modify requests, block or answer requests themselves, and inspect and modify proxied responses.  See <span class="icode">PLUGINS.md</span> in the WebProxy source repository to learn how to create plugins.</p>
+				<div class="primaryContainer installedPluginPackage" v-for="pkg in store.installedPlugins" :key="pkg.PackageName">
+					<div class="packageTitle">{{pkg.PackageName}}</div>
+					<div class="packageError" v-if="pkg.LoadError">{{pkg.LoadError}}</div>
+					<div v-for="t in pkg.PluginTypes" :key="t.TypeFullName" class="pluginType">
+						<b>{{t.Name}}</b> <span class="pluginTypeDetail">{{t.TypeFullName}} (version {{t.Version}})</span>
+						<div class="pluginTypeDescription" v-if="t.Description">{{t.Description}}</div>
+					</div>
+					<div v-if="store.allowRemotePluginFileManagement"><input type="button" value="Delete Plugin" @click="deletePluginPackage(pkg)" /></div>
+				</div>
+				<div v-if="!store.installedPlugins || !store.installedPlugins.length">No plugins are installed.</div>
+				<div><br /></div>
+				<template v-if="store.allowRemotePluginFileManagement">
+					<UploadFileControl label="Upload Plugin DLL" acceptFileExtension=".dll" @upload="uploadPluginClicked" />
+					<p v-if="store.showHelp">Upload a plugin DLL file to install it.  Uploading a DLL with the same file name as an existing plugin replaces that plugin.  Plugins with multiple files can be installed manually by creating a subdirectory in the <span class="icode">Plugins</span> directory within WebProxy's data folder.</p>
+				</template>
+				<p v-else>Installing and deleting plugin files via this web console is disabled (the secure default).  Plugin files can be managed manually by an administrator with shell access to the server; see <span class="icode">PLUGINS.md</span> in the WebProxy source repository.</p>
+				<h2>Plugin Instances <ExpandCollapseButtons title="Plugin Instance" /></h2>
+				<p v-if="store.showHelp">A Plugin Instance is an installed plugin combined with a set of option values.  Like a Middleware, a Plugin Instance takes effect when it is attached to Entrypoints or Exitpoints.  Each Plugin Instance has its own options, so you can create multiple instances of the same plugin with different options for different websites.</p>
+				<draggable v-model="store.pluginInstances" handle=".dragHandle">
+					<PluginInstanceEditor v-for="pluginInstance in store.pluginInstances" :key="pluginInstance.uniqueId" :pluginInstance="pluginInstance" @delete="deletePluginInstance(pluginInstance)" />
+				</draggable>
+				<div class="buttonBar">
+					<button @click="addPluginInstance()">Add New Plugin Instance</button>
 				</div>
 			</div>
 			<div v-show="selectedTab.Name === 'All' || selectedTab.Name === 'Routes'">
@@ -167,6 +203,7 @@
 	import EntrypointEditor from './components/EntrypointEditor.vue';
 	import ExitpointEditor from './components/ExitpointEditor.vue';
 	import MiddlewareEditor from './components/MiddlewareEditor.vue';
+	import PluginInstanceEditor from './components/PluginInstanceEditor.vue';
 	import ProxyRouteEditor from './components/ProxyRouteEditor.vue';
 	import HostedUrlSummary from './components/HostedUrlSummary.vue';
 	import ServerStatus from './components/ServerStatus.vue';
@@ -180,7 +217,7 @@
 	import { VueDraggableNext } from 'vue-draggable-next';
 
 	export default {
-		components: { EntrypointEditor, ExitpointEditor, MiddlewareEditor, ProxyRouteEditor, HostedUrlSummary, PasswordInput, LogReader, Loading, draggable: VueDraggableNext, UploadFileControl, ServerStatus, ExpandCollapseButtons },
+		components: { EntrypointEditor, ExitpointEditor, MiddlewareEditor, PluginInstanceEditor, ProxyRouteEditor, HostedUrlSummary, PasswordInput, LogReader, Loading, draggable: VueDraggableNext, UploadFileControl, ServerStatus, ExpandCollapseButtons },
 		data()
 		{
 			return {
@@ -196,6 +233,7 @@
 					{ Name: "Entrypoints", scrollTop: true },
 					{ Name: "Exitpoints", scrollTop: true },
 					{ Name: "Middlewares", scrollTop: true },
+					{ Name: "Plugins", scrollTop: true },
 					{ Name: "Routes", scrollTop: true },
 					{ Name: "Log", scrollTop: true }
 				],
@@ -239,6 +277,7 @@
 					entrypoints: store.entrypoints,
 					exitpoints: store.exitpoints,
 					middlewares: store.middlewares,
+					pluginInstances: store.pluginInstances,
 					proxyRoutes: store.proxyRoutes
 				});
 			},
@@ -298,6 +337,7 @@
 						entrypoints: store.entrypoints,
 						exitpoints: store.exitpoints,
 						middlewares: store.middlewares,
+						pluginInstances: store.pluginInstances,
 						proxyRoutes: store.proxyRoutes
 					});
 
@@ -383,12 +423,22 @@
 				for (let i = 0; i < response.middlewares.length; i++)
 					FixMiddleware(response.middlewares[i]);
 
+				store.installedPlugins = response.installedPlugins ? response.installedPlugins : [];
+				store.pluginInstanceErrors = response.pluginInstanceErrors ? response.pluginInstanceErrors : {};
+				store.allowRemotePluginFileManagement = !!response.allowRemotePluginFileManagement;
+
+				if (!response.pluginInstances)
+					response.pluginInstances = [];
+				for (let i = 0; i < response.pluginInstances.length; i++)
+					FixPluginInstance(response.pluginInstances[i]);
+
 				for (let i = 0; i < response.proxyRoutes.length; i++)
 					FixProxyRoute(response.proxyRoutes[i]);
 
 				store.entrypoints = response.entrypoints;
 				store.exitpoints = response.exitpoints;
 				store.middlewares = response.middlewares;
+				store.pluginInstances = response.pluginInstances;
 				store.proxyRoutes = response.proxyRoutes;
 
 				this.originalJson = this.currentJson;
@@ -404,6 +454,10 @@
 			addMiddleware()
 			{
 				store.middlewares.push(FixMiddleware({}));
+			},
+			addPluginInstance()
+			{
+				store.pluginInstances.push(FixPluginInstance({}));
 			},
 			addProxyRoute()
 			{
@@ -423,6 +477,11 @@
 			{
 				if (confirm("You are about to delete Middleware: " + middleware.Id))
 					DeleteFromArray(middleware, store.middlewares);
+			},
+			deletePluginInstance(pluginInstance)
+			{
+				if (confirm("You are about to delete Plugin Instance: " + pluginInstance.Id))
+					DeleteFromArray(pluginInstance, store.pluginInstances);
 			},
 			deleteProxyRoute(proxyRoute)
 			{
@@ -518,6 +577,97 @@
 
 					if (response.success)
 						toaster.success("Test success.");
+					else
+						toaster.error(response.error);
+				}
+				catch (ex)
+				{
+					console.log(ex);
+					toaster.error(ex);
+				}
+				finally
+				{
+					this.showFullscreenLoader = false;
+				}
+			},
+			async uploadPluginClicked(selectedFileBase64, fileName)
+			{
+				if (this.configurationChanged)
+				{
+					toaster.info("Please save the changes on this page, then try again.");
+					return;
+				}
+				try
+				{
+					this.showFullscreenLoader = true;
+					const response = await ExecAPI("Configuration/UploadPlugin", { fileName: fileName, base64: selectedFileBase64 });
+					if (response.success)
+					{
+						toaster.success("Plugin uploaded.");
+						this.consumeConfigurationResponse(response);
+					}
+					else
+						toaster.error(response.error);
+				}
+				catch (ex)
+				{
+					console.log(ex);
+					toaster.error(ex);
+				}
+				finally
+				{
+					this.showFullscreenLoader = false;
+				}
+			},
+			async deletePluginPackage(pkg)
+			{
+				if (this.configurationChanged)
+				{
+					toaster.info("Please save the changes on this page, then try again.");
+					return;
+				}
+				if (!confirm("You are about to delete the installed plugin: " + pkg.PackageName + "\n\nPlugin Instances that use this plugin will stop working until the plugin is reinstalled or the instances are deleted."))
+					return;
+				try
+				{
+					this.showFullscreenLoader = true;
+					const response = await ExecAPI("Configuration/DeletePlugin", { packageName: pkg.PackageName });
+					if (response.success)
+					{
+						toaster.success("Plugin deleted.");
+						this.consumeConfigurationResponse(response);
+					}
+					else
+						toaster.error(response.error);
+				}
+				catch (ex)
+				{
+					console.log(ex);
+					toaster.error(ex);
+				}
+				finally
+				{
+					this.showFullscreenLoader = false;
+				}
+			},
+			async disableRemotePluginFileManagement()
+			{
+				if (this.configurationChanged)
+				{
+					toaster.info("Please save the changes on this page, then try again.");
+					return;
+				}
+				if (!confirm("Remote plugin file management will be disabled, preventing plugin files from being installed or deleted via this web console.\n\nIt can only be re-enabled by an administrator with shell access to the server (see PLUGINS.md).\n\nContinue?"))
+					return;
+				try
+				{
+					this.showFullscreenLoader = true;
+					const response = await ExecAPI("Configuration/DisableRemotePluginFileManagement");
+					if (response.success)
+					{
+						toaster.success("Remote plugin file management is now disabled.");
+						this.consumeConfigurationResponse(response);
+					}
 					else
 						toaster.error(response.error);
 				}
@@ -719,6 +869,8 @@
 	{
 		if (!o.middlewares)
 			o.middlewares = [];
+		if (!o.plugins)
+			o.plugins = [];
 		if (!o.tlsCipherSuiteSet)
 			o.tlsCipherSuiteSet = store.tlsCipherSuiteSets[0];
 		o.uniqueId = idCounter++; // uniqueId is a clientside-only field useful as a sticky identifier for each object.  uniqueId is not persisted by the server.
@@ -728,6 +880,8 @@
 	{
 		if (!o.middlewares)
 			o.middlewares = [];
+		if (!o.plugins)
+			o.plugins = [];
 		if (!o.type)
 			o.type = store.exitpointTypes[0];
 		if (typeof o.allowGenerateSelfSignedCertificate === "undefined")
@@ -760,6 +914,61 @@
 		o.uniqueId = idCounter++;
 		return o;
 	}
+	function FixPluginInstance(o)
+	{
+		if (!o.Id)
+			o.Id = "";
+		if (!o.PluginTypeName)
+		{
+			o.PluginTypeName = "";
+			// Default to the first installed plugin type, if any exist.
+			if (store.installedPlugins)
+			{
+				for (let i = 0; i < store.installedPlugins.length && !o.PluginTypeName; i++)
+				{
+					let types = store.installedPlugins[i].PluginTypes;
+					if (types && types.length)
+						o.PluginTypeName = types[0].TypeFullName;
+				}
+			}
+		}
+		if (!o.Options || typeof o.Options !== "object")
+			o.Options = {};
+		// Apply default option values from the plugin's option schema now, so that rendering the plugin instance editor (which does the same) does not create spurious unsaved changes.
+		let t = FindInstalledPluginType(o.PluginTypeName);
+		if (t && t.OptionFields)
+		{
+			for (let i = 0; i < t.OptionFields.length; i++)
+			{
+				let field = t.OptionFields[i];
+				let currentValue = o.Options[field.Key];
+				if (field.FieldType === "stringArray")
+				{
+					if (!Array.isArray(currentValue))
+						o.Options[field.Key] = Array.isArray(field.DefaultValue) ? field.DefaultValue.slice() : [];
+				}
+				else if (typeof currentValue === "undefined" || currentValue === null)
+					o.Options[field.Key] = typeof field.DefaultValue === "undefined" ? null : field.DefaultValue;
+			}
+		}
+		o.uniqueId = idCounter++;
+		return o;
+	}
+	function FindInstalledPluginType(typeFullName)
+	{
+		if (store.installedPlugins)
+		{
+			for (let i = 0; i < store.installedPlugins.length; i++)
+			{
+				let types = store.installedPlugins[i].PluginTypes;
+				if (types)
+					for (let n = 0; n < types.length; n++)
+						if (types[n].TypeFullName === typeFullName)
+							return types[n];
+			}
+		}
+		return null;
+	}
 	function FixProxyRoute(o)
 	{
 		if (!o.entrypointName)
@@ -787,6 +996,37 @@
 	.hiddenFormToPreventAutofill
 	{
 		display: none;
+	}
+
+	.installedPluginPackage .packageTitle
+	{
+		font-size: 1.25em;
+		font-weight: bold;
+		margin-bottom: 0.5em;
+	}
+
+	.installedPluginPackage .packageError
+	{
+		font-weight: bold;
+		color: #FF3300;
+		white-space: pre-wrap;
+		margin-bottom: 0.5em;
+	}
+
+	.installedPluginPackage .pluginType
+	{
+		margin-bottom: 0.75em;
+	}
+
+	.installedPluginPackage .pluginTypeDetail
+	{
+		opacity: 0.75;
+		font-size: 0.85em;
+	}
+
+	.installedPluginPackage .pluginTypeDescription
+	{
+		white-space: pre-wrap;
 	}
 
 	.topBar

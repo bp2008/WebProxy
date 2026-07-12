@@ -40,14 +40,18 @@
 		<div class="middlewares">
 			<MiddlewareSelector v-model="entrypoint.middlewares"></MiddlewareSelector>
 		</div>
+		<div class="plugins">
+			<PluginSelector v-model="entrypoint.plugins"></PluginSelector>
+		</div>
 	</PrimaryContainer>
 </template>
 <script>
 	import MiddlewareSelector from './MiddlewareSelector.vue';
+	import PluginSelector from './PluginSelector.vue';
 	import PrimaryContainer from '/src/components/PrimaryContainer.vue';
 	import store from '/src/library/store';
 	export default {
-		components: { MiddlewareSelector, PrimaryContainer },
+		components: { MiddlewareSelector, PluginSelector, PrimaryContainer },
 		props: {
 			entrypoint: Object
 		},

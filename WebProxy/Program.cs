@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 #if !LINUX
+using System.Windows.Forms;
 using WebProxy.ServiceUI;
 #endif
 
@@ -43,12 +44,49 @@ namespace WebProxy
 				{
 					AdminConsoleInfoForm f = new AdminConsoleInfoForm();
 					f.ShowDialog();
+				}),
+				new ButtonDefinition("Remote Plugin Mgmt", (object sender, EventArgs e) =>
+				{
+					RemotePluginManagementDialog();
 				})
 			};
 #endif
 			AppInit.WindowsService<WebProxyService>(options);
 			return 0;
 		}
+
+#if !LINUX
+		/// <summary>
+		/// Shows the current state of <see cref="SecureSettings.AllowRemotePluginFileManagement"/> and offers to toggle it.  This is deliberately only reachable from the Service Manager GUI (requiring shell access to the machine); the web-based Admin Console can only disable the flag, never enable it.
+		/// </summary>
+		private static void RemotePluginManagementDialog()
+		{
+			const string title = "Remote Plugin File Management";
+			if (SecureSettings.GetCurrent().AllowRemotePluginFileManagement)
+			{
+				if (MessageBox.Show("Remote plugin file management is currently ENABLED."
+					+ "\n\nAuthenticated users of the web-based Admin Console are allowed to install and delete plugin DLL files.  Plugins are .NET code which runs with the privileges of the WebProxy service, so this capability is equivalent to remote code execution for anyone who can log into the Admin Console."
+					+ "\n\nDo you want to DISABLE remote plugin file management (the secure default)?"
+					, title, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+				{
+					SecureSettings.SetAllowRemotePluginFileManagement(false);
+					MessageBox.Show("Remote plugin file management is now DISABLED.  The change takes effect immediately, even if the service is already running.", title);
+				}
+			}
+			else
+			{
+				if (MessageBox.Show("Remote plugin file management is currently DISABLED (the secure default).  Plugin files can only be managed by an administrator with access to this machine."
+					+ "\n\nEnabling remote plugin file management will allow anyone who can log into the web-based Admin Console to install and delete plugin DLL files.  Plugins are .NET code which runs with the privileges of the WebProxy service, so this is equivalent to granting remote code execution capability to Admin Console users."
+					+ "\n\nDo you want to ENABLE remote plugin file management?"
+					, title, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) == DialogResult.Yes)
+				{
+					SecureSettings.SetAllowRemotePluginFileManagement(true);
+					MessageBox.Show("Remote plugin file management is now ENABLED.  The change takes effect immediately, even if the service is already running."
+						+ "\n\nIt can be disabled again from this dialog, from the Settings section of the web-based Admin Console, or by editing SecureSettings.json in the data directory.", title);
+				}
+			}
+		}
+#endif
 
 #if LINUX
 		private static EConsole c = EConsole.I;
@@ -103,6 +141,33 @@ namespace WebProxy
 				{
 					AdminCommandLineInterfaceAPICall("SaveConfig");
 				}
+				else if (input == "remoteplugins")
+				{
+					bool enabled = SecureSettings.GetCurrent().AllowRemotePluginFileManagement;
+					c.Write("AllowRemotePluginFileManagement: ");
+					if (enabled)
+						c.YellowLine("true").Line("Plugin files can be installed and deleted via the web-based Admin Console.  Use the \"disableremoteplugins\" command to return to the secure default.");
+					else
+						c.GreenLine("false").Line("Plugin files can not be installed or deleted via the web-based Admin Console (the secure default).");
+				}
+				else if (input == "enableremoteplugins")
+				{
+					c.YellowLine("Enabling remote plugin file management will allow anyone who can log into the web-based Admin Console to install and delete plugin DLL files.  Plugins are .NET code which runs with the privileges of the WebProxy service, so this is equivalent to granting remote code execution capability to Admin Console users.");
+					c.Line();
+					c.Write("Type \"yes\" to enable remote plugin file management: ");
+					if (Console.ReadLine() == "yes")
+					{
+						SecureSettings.SetAllowRemotePluginFileManagement(true);
+						c.YellowLine("AllowRemotePluginFileManagement is now true.  The change takes effect immediately, even if the service is already running.");
+					}
+					else
+						c.Line("Cancelled.  Remote plugin file management remains in its previous state.");
+				}
+				else if (input == "disableremoteplugins")
+				{
+					SecureSettings.SetAllowRemotePluginFileManagement(false);
+					c.GreenLine("AllowRemotePluginFileManagement is now false (the secure default).  The change takes effect immediately, even if the service is already running.");
+				}
 				else
 				{
 					c.RedLine("Unrecognized command");
@@ -152,7 +217,7 @@ namespace WebProxy
 		{
 			c.WriteLine();
 			c.WriteLine("Commands:");
-			ConsoleAppHelper.MaxCommandSize = 11;
+			ConsoleAppHelper.MaxCommandSize = 21;
 			ConsoleAppHelper.WriteUsageCommand("admin", "Display admin console login link and credentials.");
 			ConsoleAppHelper.WriteUsageCommand("install", "Install as service using systemd.");
 			ConsoleAppHelper.WriteUsageCommand("uninstall", "Uninstall as service using systemd.");
@@ -163,6 +228,9 @@ namespace WebProxy
 			ConsoleAppHelper.WriteUsageCommand("readconfig", "Read current configuration from the running service and display it here.");
 			ConsoleAppHelper.WriteUsageCommand("loadconfig", "Instruct the running service to validate and reload the Settings.json file.");
 			ConsoleAppHelper.WriteUsageCommand("saveconfig", "Instruct the running service to save its current settings to the Settings.json file.");
+			ConsoleAppHelper.WriteUsageCommand("remoteplugins", "Display whether plugin files may be installed/deleted via the web-based Admin Console (SecureSettings.json flag \"AllowRemotePluginFileManagement\").");
+			ConsoleAppHelper.WriteUsageCommand("enableremoteplugins", "Allow plugin files to be installed/deleted via the web-based Admin Console (requires confirmation).");
+			ConsoleAppHelper.WriteUsageCommand("disableremoteplugins", "Disallow installing/deleting plugin files via the web-based Admin Console (the secure default).");
 			ConsoleAppHelper.WriteUsageCommand("exit", "Close this command line interface.");
 			c.WriteLine();
 		}

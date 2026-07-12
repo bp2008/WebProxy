@@ -89,18 +89,22 @@
 			<div class="middlewares">
 				<MiddlewareSelector v-model="exitpoint.middlewares"></MiddlewareSelector>
 			</div>
+			<div class="plugins">
+				<PluginSelector v-model="exitpoint.plugins"></PluginSelector>
+			</div>
 		</template>
 	</PrimaryContainer>
 </template>
 
 <script>
 	import MiddlewareSelector from './MiddlewareSelector.vue';
+	import PluginSelector from './PluginSelector.vue';
 	import store from '/src/library/store';
 	import UploadFileControl from '/src/components/UploadFileControl.vue';
 	import PrimaryContainer from '/src/components/PrimaryContainer.vue';
 
 	export default {
-		components: { MiddlewareSelector, UploadFileControl, PrimaryContainer },
+		components: { MiddlewareSelector, PluginSelector, UploadFileControl, PrimaryContainer },
 		props: {
 			exitpoint: Object,
 			allMiddlewares: {

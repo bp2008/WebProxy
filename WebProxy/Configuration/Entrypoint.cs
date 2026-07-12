@@ -37,6 +37,10 @@ namespace WebProxy
 		/// </summary>
 		public string[] middlewares;
 		/// <summary>
+		/// Array of unique identifiers for plugin instances that apply to all requests matching this Entrypoint.
+		/// </summary>
+		public string[] plugins;
+		/// <summary>
 		/// Returns true if the given IPAddress is matched by the [ipAddress] string configured in this Entrypoint.
 		/// </summary>
 		/// <param name="interfaceAddress">IPAddress of the interface being tested against this Entrypoint.</param>
