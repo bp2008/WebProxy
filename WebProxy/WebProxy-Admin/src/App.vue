@@ -911,6 +911,8 @@
 			o.HostnameSubstitutions = [];
 		if (!o.RegexReplacements)
 			o.RegexReplacements = [];
+		if (typeof o.TcpSendBufferSize !== "number")
+			o.TcpSendBufferSize = 65536;
 		o.uniqueId = idCounter++;
 		return o;
 	}

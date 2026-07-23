@@ -174,6 +174,18 @@
 				</template>
 			</div>
 		</template>
+		<template v-if="middleware.Type === 'TcpSendBufferSize'">
+			<div>
+				This middleware sets the TCP send buffer size on the client connection while the server is not under high load.  A larger buffer can improve throughput for high-latency or high-bandwidth clients at the cost of additional memory per connection.
+			</div>
+			<div class="flexRow">
+				<label>Send Buffer Size: {{sendBufferSizeLabel}}</label>
+				<input type="range" v-model.number="middleware.TcpSendBufferSize" min="65536" max="16777216" step="65536" autocomplete="off" />
+			</div>
+			<div class="exampleText" v-if="store.showHelp">
+				<span class="icode">[64 KiB - 16 MiB; Default: 64 KiB]</span>  The default of 64 KiB is the legacy behavior and is typically fine.  If multiple TcpSendBufferSize middlewares apply to the same request, the largest configured size is used.
+			</div>
+		</template>
 	</PrimaryContainer>
 </template>
 <script>
@@ -227,6 +239,13 @@
 			proxyHeaderBehaviorDescription()
 			{
 				return store.proxyHeaderBehaviorOptionsDescriptions[this.middleware.ProxyHeaderBehavior];
+			},
+			sendBufferSizeLabel()
+			{
+				let bytes = Number(this.middleware.TcpSendBufferSize);
+				if (bytes >= 1048576)
+					return parseFloat((bytes / 1048576).toFixed(4)) + " MiB";
+				return (bytes / 1024) + " KiB";
 			}
 		},
 		methods:

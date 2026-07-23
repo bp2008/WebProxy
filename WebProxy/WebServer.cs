@@ -163,7 +163,7 @@ namespace WebProxy
 				// MiddlewareType.HostnameSubstitution
 				List<KeyValuePair<string, string>> hostnameSubstitutions = new List<KeyValuePair<string, string>>();
 				foreach (Middleware m in allApplicableMiddlewares.Where(m => m.Type == MiddlewareType.HostnameSubstitution))
-						hostnameSubstitutions.AddRange(m.HostnameSubstitutions);
+					hostnameSubstitutions.AddRange(m.HostnameSubstitutions);
 
 				// MiddlewareType.RegexReplaceInResponse
 				List<KeyValuePair<string, string>> regexReplacements = new List<KeyValuePair<string, string>>();
@@ -181,6 +181,14 @@ namespace WebProxy
 				{
 					if (m.WhitelistedIpRanges != null)
 						trustedProxyIPRanges.AddRange(m.WhitelistedIpRanges);
+				}
+
+				// MiddlewareType.TcpSendBufferSize
+				if (!p.ServerIsUnderHighLoad)
+				{
+					Middleware[] sendBufferMiddlewares = allApplicableMiddlewares.Where(m => m.Type == MiddlewareType.TcpSendBufferSize).ToArray();
+					if (sendBufferMiddlewares.Length > 0)
+						p.GetTcpClient().SendBufferSize = sendBufferMiddlewares.Max(m => m.TcpSendBufferSize);
 				}
 
 				// Plugins

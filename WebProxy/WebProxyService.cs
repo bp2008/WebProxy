@@ -598,6 +598,13 @@ namespace WebProxy
 							throw new Exception("Middleware \"" + middleware.Id + "\" defines null replacement.");
 					}
 				}
+
+				if (middleware.Type == MiddlewareType.TcpSendBufferSize)
+				{
+					// Clamp the send buffer size to the supported range, then round to the nearest multiple of 65536.  Both bounds are multiples of 65536, so the rounded result stays within range.
+					int sendBufferSize = middleware.TcpSendBufferSize.Clamp(65536, 16 * 1024 * 1024);
+					middleware.TcpSendBufferSize = (int)Math.Round(sendBufferSize / 65536.0) * 65536;
+				}
 			}
 
 			nameUniqueness.Clear();

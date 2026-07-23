@@ -72,7 +72,11 @@ namespace WebProxy
 		/// <summary>
 		/// Performs Regular Expression replacements on proxied responses, for text-based responses.  Requires the full response to be buffered.
 		/// </summary>
-		RegexReplaceInResponse
+		RegexReplaceInResponse,
+		/// <summary>
+		/// Sets the TCP send buffer size on the client connection while the server is not under high load.  A larger buffer can improve throughput for high-latency or high-bandwidth clients at the cost of additional memory per connection.  If multiple such middlewares apply to a request, the largest configured size is used.
+		/// </summary>
+		TcpSendBufferSize
 	}
 	/// <summary>
 	/// Applies additional logic to an Entrypoint or Exitpoint.  Constraints may be applied to an Entrypoint or an Exitpoint or both.
@@ -122,6 +126,11 @@ namespace WebProxy
 		/// <para>The collection of Regular Expression patterns and replacements to perform replaces with.  For each pair, Key is the pattern and Value is the replacement string.</para>
 		/// </summary>
 		public List<KeyValuePair<string, string>> RegexReplacements = new List<KeyValuePair<string, string>>();
+		/// <summary>
+		/// <para>For [Type] = TcpSendBufferSize</para>
+		/// <para>[65536-16777216] The TCP send buffer size (in bytes) to apply to the client connection while the server is not under high load.  Suggested to be a multiple of 65536.  Default is 65536 bytes (legacy behavior).</para>
+		/// </summary>
+		public int TcpSendBufferSize = 65536;
 		/// <summary>
 		/// Gets the password for the given username, or null.
 		/// </summary>
