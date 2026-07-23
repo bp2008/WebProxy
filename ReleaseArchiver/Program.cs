@@ -10,8 +10,8 @@ namespace ReleaseArchiver
 	{
 		static void Main(string[] args)
 		{
-			CreateRelease("net6.0", "WebProxy Linux", "WebProxyLinux.dll");
-			CreateRelease("net6.0-windows", "WebProxy Windows", "WebProxy.dll");
+			CreateRelease("net10.0", "WebProxy Linux", "WebProxyLinux.dll");
+			CreateRelease("net10.0-windows7.0", "WebProxy Windows", "WebProxy.dll");
 			Console.WriteLine();
 			Console.WriteLine("Press ENTER to exit.");
 			Console.ReadLine();
