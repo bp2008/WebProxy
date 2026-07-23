@@ -69,14 +69,6 @@ The Linux release of WebProxy is primarly tested on Ubuntu Server 22.04, but sho
 
 On supported operating systems, run these commands to download and start the installation script:
 
-#### Ubuntu 22 one-time command
-
-On Ubuntu 22, dotnet 10 is not available by default.  To make it available, run this before the General Installation Script:
-
-```
-sudo add-apt-repository ppa:dotnet/backports
-```
-
 #### General Installation Script
 
 ```
