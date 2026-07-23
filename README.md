@@ -33,6 +33,7 @@ See the [Admin Console Tour](https://github.com/bp2008/WebProxy/wiki/Admin-Conso
   * `XForwardedProto` - Adds an `X-Forwarded-Proto` header according to rules you specify.
   * `XRealIp` - Adds an `X-Real-Ip` header according to rules you specify.
   * `TrustedProxyIPRanges` - Allows you to specify which client IP addresses are trusted to provide proxy-related headers such as `X-Forwarded-For`.
+  * `TcpSendBufferSize` - Allows you to override the default send buffer size assigned to the TCP connections which WebProxy is proxying. (default size: 65536 bytes)
 * Plugin system (since release 1.34) for custom behavior that is not baked into the WebProxy release.  Plugins are cross-platform DLL files which behave like advanced middlewares: they can inspect and modify requests, answer or block requests themselves, and inspect or manipulate proxied response headers and bodies.  Plugins are configured on the Plugins page of the Admin Console and expose their own options there, while plugin files themselves are installed by an administrator with shell access to the server (remote installation via the Admin Console exists but is disabled by default for security).  See [PLUGINS.md](PLUGINS.md) for details and for how to create plugins.
 
 
