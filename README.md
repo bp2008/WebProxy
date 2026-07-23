@@ -67,6 +67,8 @@ The Linux release of WebProxy is primarly tested on Ubuntu Server 22.04, but sho
 
 On supported operating systems, run these commands to download and start the installation script:
 
+#### Installation script updated 2026-07-23 for dotnet 10.0 runtime
+
 ```
 wget https://raw.githubusercontent.com/bp2008/WebProxy/master/WebProxy/webproxy_install.sh
 chmod u+x webproxy_install.sh
