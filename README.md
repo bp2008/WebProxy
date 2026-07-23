@@ -72,6 +72,7 @@ On supported operating systems, run these commands to download and start the ins
 #### General Installation Script
 
 ```
+rm -f webproxy_install.sh
 wget https://raw.githubusercontent.com/bp2008/WebProxy/master/WebProxy/webproxy_install.sh
 chmod u+x webproxy_install.sh
 ./webproxy_install.sh
