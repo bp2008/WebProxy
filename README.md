@@ -65,15 +65,26 @@ To update, just download a new release, stop the service, overwrite it, and star
 
 The Linux release of WebProxy is primarly tested on Ubuntu Server 22.04, but should work on any operating system that supports the .NET 10.0 Runtime.
 
+#### Installation script updated 2026-07-23 to install the dotnet 10.0 runtime
+
 On supported operating systems, run these commands to download and start the installation script:
 
-#### Installation script updated 2026-07-23 for dotnet 10.0 runtime
+#### Ubuntu 22 one-time command
+
+On Ubuntu 22, dotnet 10 is not available by default.  To make it available, run this before the General Installation Script:
+
+```
+sudo add-apt-repository ppa:dotnet/backports
+```
+
+#### General Installation Script
 
 ```
 wget https://raw.githubusercontent.com/bp2008/WebProxy/master/WebProxy/webproxy_install.sh
 chmod u+x webproxy_install.sh
 ./webproxy_install.sh
 ```
+
 
 The installation script will ask if you wish to `1) Install/Update` or `2) Uninstall`.  The installation procedure will take a few minutes the first time, as it must install .NET 10.0.  Later install/update operations are completed in seconds.  Once installed, WebProxy will start automatically as a background service.
 
