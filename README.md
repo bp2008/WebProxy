@@ -62,7 +62,7 @@ To update, just download a new release, stop the service, overwrite it, and star
 
 ### Linux Installation Script
 
-The Linux release of WebProxy is primarly tested on Ubuntu Server 22.04, but should work on any operating system that supports the .NET 6.0 Runtime.
+The Linux release of WebProxy is primarly tested on Ubuntu Server 22.04, but should work on any operating system that supports the .NET 10.0 Runtime.
 
 On supported operating systems, run these commands to download and start the installation script:
 
@@ -72,7 +72,7 @@ chmod u+x webproxy_install.sh
 ./webproxy_install.sh
 ```
 
-The installation script will ask if you wish to `1) Install/Update` or `2) Uninstall`.  The installation procedure will take a few minutes the first time, as it must install .NET 6.0.  Later install/update operations are completed in seconds.  Once installed, WebProxy will start automatically as a background service.
+The installation script will ask if you wish to `1) Install/Update` or `2) Uninstall`.  The installation procedure will take a few minutes the first time, as it must install .NET 10.0.  Later install/update operations are completed in seconds.  Once installed, WebProxy will start automatically as a background service.
 
 Access the interactive command line interface by running WebProxy with the argument "cmd":
 
@@ -87,7 +87,7 @@ The command line interface offers service management commands for install, unins
 
 ### Can't use the installation script?
 
-If you have an operating system not supported by the installation script, you can manually [install the .NET 6.0 Runtime](https://www.google.com/search?q=install+.net+6.0+runtime+on+linux), then download and extract the WebProxy Linux release of your choice from Github's [Releases Section](https://github.com/bp2008/WebProxy/releases).  Once extracted, access the interactive command line interface via `sudo /usr/bin/dotnet ~/webproxy/WebProxyLinux.dll cmd`.  If your computer has `systemd`, you can use WebProxy's `install` and other related commands to manage the service.  If you need to use a different service manager, you should have it set an environment variable `INVOCATION_ID=1` to trick WebProxy into thinking it is being run by `systemd`, and then run it via this command: `sudo /usr/bin/dotnet ~/webproxy/WebProxyLinux.dll svc`.
+If you have an operating system not supported by the installation script, you can manually [install the .NET 10.0 Runtime](https://www.google.com/search?q=install+.net+10.0+runtime+on+linux), then download and extract the WebProxy Linux release of your choice from Github's [Releases Section](https://github.com/bp2008/WebProxy/releases).  Once extracted, access the interactive command line interface via `sudo /usr/bin/dotnet ~/webproxy/WebProxyLinux.dll cmd`.  If your computer has `systemd`, you can use WebProxy's `install` and other related commands to manage the service.  If you need to use a different service manager, you should have it set an environment variable `INVOCATION_ID=1` to trick WebProxy into thinking it is being run by `systemd`, and then run it via this command: `sudo /usr/bin/dotnet ~/webproxy/WebProxyLinux.dll svc`.
 
 
 
@@ -105,10 +105,10 @@ If you haven't installed WebProxy yet, you can [read about WebProxy's basic conc
 ## Building From Source
 
 Requirements:
-* [Visual Studio 2022 or newer](https://visualstudio.microsoft.com/downloads/)
-* [.NET 6.0 SDK](https://dotnet.microsoft.com/en-us/download/visual-studio-sdks)
+* [Visual Studio 2026 or newer](https://visualstudio.microsoft.com/downloads/)
+* [.NET 10.0 SDK](https://dotnet.microsoft.com/en-us/download/visual-studio-sdks)
 * [BPUtil utility library source](https://github.com/bp2008/BPUtil) (frequently updated; not published on Nuget)
-* [Node.js (tested with version 18)](https://nodejs.org/en/download) to build the Admin Console website
+* [Node.js (tested with version 24)](https://nodejs.org/en/download) to build the Admin Console website
 
 WebProxy and BPUtil repositories must be downloaded/cloned separately.  To avoid needing to repair Project references, it is recommended to place both repositories in the same parent directory, e.g.
 * `~/Repos/bp2008/BPUtil/BPUtil.sln`
@@ -120,7 +120,7 @@ To build WebProxy:
 
 Notes:
 * Output will be in the `bin/Debug` or `bin/Release` folders.
-  * The cross-platform build (WebProxyLinux) will be located in a subfolder called `net6.0`.
-  * The Windows build (WebProxy) will be located in a subfolder called `net6.0-windows`.
+  * The cross-platform build (WebProxyLinux) will be located in a subfolder called `net10.0`.
+  * The Windows build (WebProxy) will be located in a subfolder called `net10.0-windows7.0`.
 * In order for WebProxyLinux's post-build event to complete successfully, it must be built last, after WebProxy has finished.  This serial ordering was set up by right clicking the WebProxyLinux project in Solution Explorer and choosing Build Dependencies > Project Dependencies.  In this dialog, WebProxy was selected as a dependency of WebProxyLinux.
 
