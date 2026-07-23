@@ -1,5 +1,0 @@
-<Project>
-	<PropertyGroup Condition="'$(MSBuildProjectName)' == 'WebProxyLinux'">
-		<BaseIntermediateOutputPath>objLinux</BaseIntermediateOutputPath>
-	</PropertyGroup>
-</Project>

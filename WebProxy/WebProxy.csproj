@@ -1,21 +1,53 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net10.0-windows7.0</TargetFramework>
-		<OutputType>WinExe</OutputType>
+		<!-- Multi-targeting: the first TFM produces the Windows build, the second produces the cross-platform (Linux) build. -->
+		<TargetFrameworks>net10.0-windows7.0;net10.0</TargetFrameworks>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-		<UseWindowsForms>true</UseWindowsForms>
-		<ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+		<Nullable>disable</Nullable>
+		<RootNamespace>WebProxy</RootNamespace>
+		<FileVersion>2.0.0.0</FileVersion>
+		<AssemblyVersion>2.0.0.0</AssemblyVersion>
+		<NeutralLanguage>en-US</NeutralLanguage>
+		<PackageId>WebProxy</PackageId>
 	</PropertyGroup>
+	<!-- Windows build: WinForms service/tray UI. Output assembly is "WebProxy.dll". -->
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-windows7.0'">
+		<OutputType>WinExe</OutputType>
+		<UseWindowsForms>true</UseWindowsForms>
+		<AssemblyName>WebProxy</AssemblyName>
+	</PropertyGroup>
+	<!-- Cross-platform (Linux) build: headless console app. Output assembly is "WebProxyLinux.dll". -->
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+		<OutputType>Exe</OutputType>
+		<AssemblyName>WebProxyLinux</AssemblyName>
+		<DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+	</PropertyGroup>
+	<!-- Files that are never part of the compilation on any platform. -->
 	<ItemGroup>
 		<Compile Remove="Libs\**" />
+		<Compile Remove="objLinux\**" />
 		<Compile Remove="WebProxy-Admin\dist\**" />
 		<Compile Remove="WebProxy-Admin\node_modules\**" />
 		<EmbeddedResource Remove="Libs\**" />
+		<EmbeddedResource Remove="objLinux\**" />
 		<EmbeddedResource Remove="WebProxy-Admin\dist\**" />
 		<EmbeddedResource Remove="WebProxy-Admin\node_modules\**" />
 		<None Remove="Libs\**" />
+		<None Remove="objLinux\**" />
 		<None Remove="WebProxy-Admin\dist\**" />
 		<None Remove="WebProxy-Admin\node_modules\**" />
+	</ItemGroup>
+	<!-- The WinForms UI (Windows service/tray UI and its resources) is only compiled for the Windows build. -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+		<Compile Remove="Properties\**" />
+		<Compile Remove="Resources\**" />
+		<Compile Remove="ServiceUI\**" />
+		<EmbeddedResource Remove="Properties\**" />
+		<EmbeddedResource Remove="Resources\**" />
+		<EmbeddedResource Remove="ServiceUI\**" />
+		<None Remove="Properties\**" />
+		<None Remove="Resources\**" />
+		<None Remove="ServiceUI\**" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\BPUtil\BPUtil\BPUtil.csproj" />
@@ -28,29 +60,34 @@
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="Webprofusion.Certify.ACME.Anvil" Version="3.3.2" />
 	</ItemGroup>
+	<!-- The Windows target gets System.ServiceProcess from the Windows platform reference assemblies;
+	     other targets need the NuGet package to compile the ServiceController usage. -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+		<PackageReference Include="System.ServiceProcess.ServiceController" Version="7.0.1" />
+	</ItemGroup>
 	<ItemGroup>
 		<Reference Include="ErrorTrackerClient">
 			<HintPath>Libs\ErrorTrackerClient\ErrorTrackerClient.dll</HintPath>
 		</Reference>
 	</ItemGroup>
-	<ItemGroup>
-		<Compile Remove="objLinux\**" />
-		<EmbeddedResource Remove="objLinux\**" />
-		<None Remove="objLinux\**" />
-	</ItemGroup>
-	<PropertyGroup>
-		<Nullable>disable</Nullable>
-		<FileVersion>2.0.0.0</FileVersion>
-		<AssemblyVersion>2.0.0.0</AssemblyVersion>
-		<NeutralLanguage>en-US</NeutralLanguage>
-	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<NoWarn>1701;1702;CA1416</NoWarn>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
 		<NoWarn>1701;1702;CA1416</NoWarn>
 	</PropertyGroup>
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Command="echo SolutionDir = $(SolutionDir)&#xD;&#xA;echo SolutionName = $(SolutionName)&#xD;&#xA;echo SolutionFileName = $(SolutionFileName)&#xD;&#xA;echo SolutionPath = $(SolutionPath)&#xD;&#xA;echo OutDir: $(OutDir)&#xD;&#xA;echo ProjectDir = $(ProjectDir)&#xD;&#xA;echo ProjectName = $(ProjectName)&#xD;&#xA;echo ProjectFileName = $(ProjectFileName)&#xD;&#xA;echo ProjectPath = $(ProjectPath)&#xD;&#xA;echo TargetDir = $(TargetDir)&#xD;&#xA;echo TargetName = $(TargetName)&#xD;&#xA;echo TargetFileName = $(TargetFileName)&#xD;&#xA;echo TargetPath = $(TargetPath)&#xD;&#xA;&#xD;&#xA;echo Building admin console with vite&#xD;&#xA;cd &quot;$(ProjectDir)WebProxy-Admin&quot;&#xD;&#xA;call npm run-script build&#xD;&#xA;echo cd &quot;$(ProjectDir)&quot;&#xD;&#xA;&#xD;&#xA;echo Deploying dist to &quot;$(TargetDir)www&quot;&#xD;&#xA;rmdir /S /Q &quot;$(TargetDir)www&quot;&#xD;&#xA;xcopy &quot;$(ProjectDir)WebProxy-Admin\dist&quot; &quot;$(TargetDir)www&quot; /E /C /R /Y /I" />
+	<!-- Build the Vue/Vite admin console and deploy it as "www" into this framework's output folder.
+	     Runs once per target framework (after that framework's build), the same simple post-build hook
+	     the original single-target project used. NO_COLOR and the vite "warn" log level keep vite from
+	     emitting ANSI color codes / non-ASCII characters that the Visual Studio output window mangles. -->
+	<Target Name="BuildAndDeployAdminConsole" AfterTargets="PostBuildEvent">
+		<Message Importance="high" Text="Building admin console with vite" />
+		<Exec WorkingDirectory="$(ProjectDir)WebProxy-Admin" Command="set NO_COLOR=1&#xD;&#xA;npm run-script build -- --logLevel warn" />
+		<Message Importance="high" Text="Deploying admin console to $(TargetDir)www" />
+		<ItemGroup>
+			<AdminConsoleFiles Include="$(ProjectDir)WebProxy-Admin\dist\**\*" />
+		</ItemGroup>
+		<RemoveDir Directories="$(TargetDir)www" />
+		<Copy SourceFiles="@(AdminConsoleFiles)" DestinationFiles="@(AdminConsoleFiles->'$(TargetDir)www\%(RecursiveDir)%(Filename)%(Extension)')" />
 	</Target>
 </Project>

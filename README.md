@@ -133,8 +133,8 @@ To build WebProxy:
 2. In Visual Studio, Build > Build Solution.
 
 Notes:
-* Output will be in the `bin/Debug` or `bin/Release` folders.
-  * The cross-platform build (WebProxyLinux) will be located in a subfolder called `net10.0`.
-  * The Windows build (WebProxy) will be located in a subfolder called `net10.0-windows7.0`.
-* In order for WebProxyLinux's post-build event to complete successfully, it must be built last, after WebProxy has finished.  This serial ordering was set up by right clicking the WebProxyLinux project in Solution Explorer and choosing Build Dependencies > Project Dependencies.  In this dialog, WebProxy was selected as a dependency of WebProxyLinux.
+* The WebProxy project multi-targets, so a single build produces both outputs under the `bin/Debug` or `bin/Release` folders.
+  * The cross-platform build (`WebProxyLinux.dll`) will be located in a subfolder called `net10.0`.
+  * The Windows build (`WebProxy.dll`) will be located in a subfolder called `net10.0-windows7.0`.
+* The Admin Console website is built once with vite and deployed as `www` into both output folders automatically.
 
