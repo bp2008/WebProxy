@@ -490,7 +490,7 @@ namespace WebProxy.LetsEncrypt
 			CertificateChain cert = new CertificateChain(pem);
 			Certify.ACME.Anvil.Pkcs.PfxBuilder pfxBuilder = cert.ToPfx(alpnCertKey);
 			byte[] pfx = pfxBuilder.Build(domain, "");
-			alpnCerts[domain] = X509CertificateLoader.LoadCertificate(pfx);
+			alpnCerts[domain] = LoadCertificateFileRobust(pfx, "TLS-ALPN-01 challenge cert for " + domain);
 		}
 		private static void ClearTlsAlpn01Challenge(string domain)
 		{
@@ -528,13 +528,44 @@ namespace WebProxy.LetsEncrypt
 					if (certData == null || certData.Length == 0)
 						return null;
 					else
-						return X509CertificateLoader.LoadCertificate(certData);
+						return LoadCertificateFileRobust(certData, CertsBaseDir + fileName);
 				}
 				, TimeSpan.FromMinutes(1)
 				, TimeSpan.FromDays(1)
 				, WebProxyService.ReportError);
 			}
 			return cache;
+		}
+		/// <summary>
+		/// Loads an X509Certificate2 from the bytes of a certificate file.  The bytes are expected to be a PKCS#12 (.pfx) container, which is what WebProxy writes.  For resilience, a bare DER/PEM certificate is also accepted as a fallback (matching the auto-detecting behavior of the obsolete <c>new X509Certificate2(byte[])</c> constructor).  If the data cannot be loaded, a <see cref="System.Security.Cryptography.CryptographicException"/> is thrown with diagnostic details (source path, length, and leading bytes).
+		/// </summary>
+		/// <param name="certData">The raw bytes of the certificate file.</param>
+		/// <param name="sourcePath">Path the bytes were read from, used only for diagnostic messages.</param>
+		/// <returns>The loaded certificate.</returns>
+		private static X509Certificate2 LoadCertificateFileRobust(byte[] certData, string sourcePath)
+		{
+			try
+			{
+				// The expected/normal path: WebProxy writes PKCS#12 (.pfx) containers holding the cert and its private key.
+				return X509CertificateLoader.LoadPkcs12(certData, null, X509KeyStorageFlags.DefaultKeySet);
+			}
+			catch (System.Security.Cryptography.CryptographicException pkcs12Ex)
+			{
+				try
+				{
+					// Fallback for a bare certificate (DER or PEM) with no private key. Unlikely for WebProxy-managed files, but harmless to attempt.
+					return X509CertificateLoader.LoadCertificate(certData);
+				}
+				catch
+				{
+					// Report against the more meaningful PKCS#12 failure, enriched with details to distinguish a truly corrupt file from other causes.
+					string leadingBytes = BitConverter.ToString(certData, 0, Math.Min(16, certData.Length));
+					throw new System.Security.Cryptography.CryptographicException(
+						"Failed to load certificate from \"" + sourcePath + "\" (" + certData.Length + " bytes, leading bytes: " + leadingBytes + "). "
+						+ "The file is expected to be a valid PKCS#12 (.pfx) container. If this persists, the file may be corrupt and should be deleted so it can be regenerated.",
+						pkcs12Ex);
+				}
+			}
 		}
 		#endregion
 		#region Helpers
