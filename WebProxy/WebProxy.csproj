@@ -5,8 +5,8 @@
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<Nullable>disable</Nullable>
 		<RootNamespace>WebProxy</RootNamespace>
-		<FileVersion>2.0.2</FileVersion>
-		<AssemblyVersion>2.0.2</AssemblyVersion>
+		<FileVersion>2.1.0</FileVersion>
+		<AssemblyVersion>2.1.0</AssemblyVersion>
 		<NeutralLanguage>en-US</NeutralLanguage>
 		<PackageId>WebProxy</PackageId>
 	</PropertyGroup>
