@@ -1,14 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<!-- Multi-targeting: the first TFM produces the Windows build, the second produces the cross-platform (Linux) build. -->
 		<TargetFrameworks>net10.0-windows7.0;net10.0</TargetFrameworks>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<Nullable>disable</Nullable>
 		<RootNamespace>WebProxy</RootNamespace>
-		<FileVersion>2.1.0</FileVersion>
-		<AssemblyVersion>2.1.0</AssemblyVersion>
+		<FileVersion>2.2.0</FileVersion>
+		<AssemblyVersion>2.2.0</AssemblyVersion>
 		<NeutralLanguage>en-US</NeutralLanguage>
-		<PackageId>WebProxy</PackageId>
+		<PackageId>$(AssemblyName)</PackageId>
 	</PropertyGroup>
 	<!-- Windows build: WinForms service/tray UI. Output assembly is "WebProxy.dll". -->
 	<PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-windows7.0'">
